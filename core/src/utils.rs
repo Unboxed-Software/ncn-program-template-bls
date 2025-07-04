@@ -61,3 +61,39 @@ pub fn can_operator_vote(
     // Operator can vote if they haven't voted and have stake weight
     true
 }
+use crate::constants::MODULUS;
+use dashu::integer::UBig;
+
+/// Computes a scalar alpha by hashing together all prover-controlled inputs and reducing modulo the curve order.
+/// Inputs should be provided as byte slices or arrays (e.g., message, signature, agg_pubkey, apk2).
+/// Returns a 32-byte scalar (big-endian, mod curve order).
+pub fn compute_alpha(
+    message: &[u8; 64],
+    signature: &[u8; 64],
+    apk1: &[u8; 64],
+    apk2: &[u8; 128],
+) -> [u8; 32] {
+    // Concatenate all inputs
+    let mut input = Vec::with_capacity(message.len() + signature.len() + apk1.len() + apk2.len());
+    input.extend_from_slice(message);
+    input.extend_from_slice(signature);
+    input.extend_from_slice(apk1);
+    input.extend_from_slice(apk2);
+
+    // Hash the concatenated input
+    let hash = solana_nostd_sha256::hashv(&[&input]);
+
+    // Convert hash to UBig and reduce modulo MODULUS
+    let hash_ubig = UBig::from_be_bytes(&hash) % MODULUS.clone();
+    let mut alpha_bytes = [0u8; 32];
+    let hash_bytes = hash_ubig.to_be_bytes();
+    // Copy to 32 bytes, pad with zeros if needed
+    let pad = 32usize.saturating_sub(hash_bytes.len());
+    if pad > 0 {
+        alpha_bytes[..pad].fill(0);
+        alpha_bytes[pad..].copy_from_slice(&hash_bytes);
+    } else {
+        alpha_bytes.copy_from_slice(&hash_bytes[hash_bytes.len() - 32..]);
+    }
+    alpha_bytes
+}
