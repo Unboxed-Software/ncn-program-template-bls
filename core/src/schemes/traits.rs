@@ -1,4 +1,4 @@
-use crate::{errors::BLSError, g1_point::G1Point};
+use crate::{error::NCNProgramError, g1_point::G1Point};
 
 pub trait HashToCurve {
     /// # Try Hash To Curve
@@ -11,10 +11,10 @@ pub trait HashToCurve {
     /// - Hashing algorithm
     /// - Hash scalar normalization
     /// - Domain separation
-    fn try_hash_to_curve<T: AsRef<[u8]>>(message: T) -> Result<G1Point, BLSError>;
+    fn try_hash_to_curve<T: AsRef<[u8]>>(message: T) -> Result<G1Point, NCNProgramError>;
 }
 
 // Trait to represent any type that can be used as a BLS signature
 pub trait BLSSignature {
-    fn to_bytes(&self) -> Result<[u8; 64], BLSError>;
+    fn to_bytes(&self) -> Result<[u8; 64], NCNProgramError>;
 }

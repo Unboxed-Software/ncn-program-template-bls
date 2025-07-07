@@ -20,7 +20,7 @@ use solana_program::msg;
 
 use crate::{
     constants::{G1_GENERATOR, G2_MINUS_ONE},
-    errors::BLSError,
+    error::NCNProgramError,
     g1_point::G1Point,
     privkey::PrivKey,
     schemes::{BLSSignature, HashToCurve},
@@ -32,7 +32,7 @@ impl G2Point {
         self,
         signature: S,
         message: T,
-    ) -> Result<(), BLSError> {
+    ) -> Result<(), NCNProgramError> {
         let mut input = [0u8; 384];
 
         // 1) Hash message to curve
@@ -54,10 +54,10 @@ impl G2Point {
             ]) {
                 Ok(())
             } else {
-                Err(BLSError::BLSVerificationError)
+                Err(NCNProgramError::BLSVerificationError)
             }
         } else {
-            Err(BLSError::AltBN128PairingError)
+            Err(NCNProgramError::AltBN128PairingError)
         }
     }
 
@@ -66,7 +66,7 @@ impl G2Point {
         agg_signature: G1Point,
         message: T,
         apk1: G1Point,
-    ) -> Result<(), BLSError> {
+    ) -> Result<(), NCNProgramError> {
         let msg_hash = H::try_hash_to_curve(message)?.0;
         let alpha = compute_alpha(&msg_hash, &agg_signature.0, &apk1.0, &self.0);
 
@@ -100,10 +100,10 @@ impl G2Point {
             ]) {
                 Ok(())
             } else {
-                Err(BLSError::BLSVerificationError)
+                Err(NCNProgramError::BLSVerificationError)
             }
         } else {
-            Err(BLSError::AltBN128PairingError)
+            Err(NCNProgramError::AltBN128PairingError)
         }
     }
 }
@@ -120,7 +120,7 @@ impl core::ops::Add for G2Point {
 #[cfg(not(target_os = "solana"))]
 impl CheckedAdd for G2Point {
     fn checked_add(&self, rhs: &Self) -> Option<Self> {
-        let result = (|| -> Result<Self, BLSError> {
+        let result = (|| -> Result<Self, NCNProgramError> {
             let mut s0 = G2CompressedPoint::try_from(self)?.0;
             let mut s1 = G2CompressedPoint::try_from(rhs)?.0;
 
@@ -128,19 +128,19 @@ impl CheckedAdd for G2Point {
             s1.reverse();
 
             let g2_agg = ark_bn254::G2Affine::deserialize_compressed(&s0[..])
-                .map_err(|_| BLSError::G2PointCompressionError)?
+                .map_err(|_| NCNProgramError::G2PointCompressionError)?
                 + ark_bn254::G2Affine::deserialize_compressed(&s1[..])
-                    .map_err(|_| BLSError::G2PointCompressionError)?;
+                    .map_err(|_| NCNProgramError::G2PointCompressionError)?;
 
             let mut g2_agg_bytes = [0u8; 64];
             g2_agg
                 .serialize_compressed(&mut &mut g2_agg_bytes[..])
-                .map_err(|_| BLSError::SerializationError)?;
+                .map_err(|_| NCNProgramError::SerializationError)?;
 
             g2_agg_bytes.reverse();
 
             G2Point::try_from(G2CompressedPoint(g2_agg_bytes))
-                .map_err(|_| BLSError::G2PointDecompressionError)
+                .map_err(|_| NCNProgramError::G2PointDecompressionError)
         })();
 
         result.ok()
@@ -152,7 +152,7 @@ impl G2CompressedPoint {
         self,
         signature: S,
         message: T,
-    ) -> Result<(), BLSError> {
+    ) -> Result<(), NCNProgramError> {
         let mut input = [0u8; 384];
 
         // 1) Hash message to curve
@@ -173,17 +173,17 @@ impl G2CompressedPoint {
             ]) {
                 Ok(())
             } else {
-                Err(BLSError::BLSVerificationError)
+                Err(NCNProgramError::BLSVerificationError)
             }
         } else {
-            Err(BLSError::AltBN128PairingError)
+            Err(NCNProgramError::AltBN128PairingError)
         }
     }
 }
 
 #[cfg(not(target_os = "solana"))]
 impl TryFrom<&PrivKey> for G2CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: &PrivKey) -> Result<G2CompressedPoint, Self::Error> {
         let mut pk = value.0;
@@ -191,7 +191,7 @@ impl TryFrom<&PrivKey> for G2CompressedPoint {
         pk.reverse();
 
         let secret_key =
-            Fr::deserialize_compressed(&pk[..]).map_err(|_| BLSError::SecretKeyError)?;
+            Fr::deserialize_compressed(&pk[..]).map_err(|_| NCNProgramError::SecretKeyError)?;
 
         let g2_public_key = ark_bn254::G2Affine::generator() * secret_key;
 
@@ -199,7 +199,7 @@ impl TryFrom<&PrivKey> for G2CompressedPoint {
 
         g2_public_key
             .serialize_compressed(&mut &mut g2_public_key_bytes[..])
-            .map_err(|_| BLSError::G2PointCompressionError)?;
+            .map_err(|_| NCNProgramError::G2PointCompressionError)?;
 
         g2_public_key_bytes.reverse();
 
@@ -209,32 +209,34 @@ impl TryFrom<&PrivKey> for G2CompressedPoint {
 
 #[cfg(not(target_os = "solana"))]
 impl TryFrom<&PrivKey> for G2Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: &PrivKey) -> Result<G2Point, Self::Error> {
         Ok(G2Point(
             alt_bn128_g2_decompress(&G2CompressedPoint::try_from(value)?.0)
-                .map_err(|_| BLSError::G2PointDecompressionError)?,
+                .map_err(|_| NCNProgramError::G2PointDecompressionError)?,
         ))
     }
 }
 
 impl TryFrom<&G2Point> for G2CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: &G2Point) -> Result<Self, Self::Error> {
         Ok(G2CompressedPoint(
-            alt_bn128_g2_compress(&value.0).map_err(|_| BLSError::G2PointCompressionError)?,
+            alt_bn128_g2_compress(&value.0)
+                .map_err(|_| NCNProgramError::G2PointCompressionError)?,
         ))
     }
 }
 
 impl TryFrom<G2CompressedPoint> for G2Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: G2CompressedPoint) -> Result<Self, Self::Error> {
         Ok(G2Point(
-            alt_bn128_g2_decompress(&value.0).map_err(|_| BLSError::G2PointDecompressionError)?,
+            alt_bn128_g2_decompress(&value.0)
+                .map_err(|_| NCNProgramError::G2PointDecompressionError)?,
         ))
     }
 }
@@ -253,11 +255,11 @@ impl From<[u8; 64]> for G2CompressedPoint {
 }
 
 impl TryFrom<&[u8]> for G2Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 128 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 128];
         array.copy_from_slice(bytes);
@@ -266,11 +268,11 @@ impl TryFrom<&[u8]> for G2Point {
 }
 
 impl TryFrom<&[u8]> for G2CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 64 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 64];
         array.copy_from_slice(bytes);
@@ -279,11 +281,11 @@ impl TryFrom<&[u8]> for G2CompressedPoint {
 }
 
 impl TryFrom<Vec<u8>> for G2Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         if bytes.len() != 128 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 128];
         array.copy_from_slice(&bytes);
@@ -292,11 +294,11 @@ impl TryFrom<Vec<u8>> for G2Point {
 }
 
 impl TryFrom<Vec<u8>> for G2CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         if bytes.len() != 64 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 64];
         array.copy_from_slice(&bytes);

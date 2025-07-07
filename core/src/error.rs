@@ -187,6 +187,33 @@ pub enum NCNProgramError {
     EpochIsClosingDown,
     #[error("Marker exists")]
     MarkerExists,
+
+    #[error("Secret key error")]
+    SecretKeyError,
+    #[error("AltBN128 add error")]
+    AltBN128AddError,
+    #[error("AltBN128 mul error")]
+    AltBN128MulError,
+    #[error("AltBN128 pairing error")]
+    AltBN128PairingError,
+    #[error("Hash to curve error")]
+    HashToCurveError,
+    #[error("BLSSigning error")]
+    BLSSigningError,
+    #[error("BLSVerification error")]
+    BLSVerificationError,
+    #[error("Serialization error")]
+    SerializationError,
+    #[error("G1 point compression error")]
+    G1PointCompressionError,
+    #[error("G1 point decompression error")]
+    G1PointDecompressionError,
+    #[error("G2 point compression error")]
+    G2PointCompressionError,
+    #[error("G2 point decompression error")]
+    G2PointDecompressionError,
+    #[error("Invalid input length")]
+    InvalidInputLength,
 }
 
 impl<T> DecodeError<T> for NCNProgramError {

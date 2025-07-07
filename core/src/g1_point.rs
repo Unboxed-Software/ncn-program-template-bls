@@ -12,7 +12,7 @@ use solana_program::msg;
 
 use crate::{
     constants::{G1_GENERATOR, G2_MINUS_ONE, MODULUS},
-    errors::BLSError,
+    error::NCNProgramError,
 };
 use crate::{g2_point::G2Point, privkey::PrivKey, schemes::BLSSignature};
 
@@ -36,11 +36,11 @@ impl From<[u8; 32]> for G1CompressedPoint {
 }
 
 impl TryFrom<&[u8]> for G1Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 64 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 64];
         array.copy_from_slice(bytes);
@@ -49,11 +49,11 @@ impl TryFrom<&[u8]> for G1Point {
 }
 
 impl TryFrom<&[u8]> for G1CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 32];
         array.copy_from_slice(bytes);
@@ -62,11 +62,11 @@ impl TryFrom<&[u8]> for G1CompressedPoint {
 }
 
 impl TryFrom<Vec<u8>> for G1Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         if bytes.len() != 64 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 64];
         array.copy_from_slice(&bytes);
@@ -75,11 +75,11 @@ impl TryFrom<Vec<u8>> for G1Point {
 }
 
 impl TryFrom<Vec<u8>> for G1CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err(BLSError::InvalidInputLength);
+            return Err(NCNProgramError::InvalidInputLength);
         }
         let mut array = [0u8; 32];
         array.copy_from_slice(&bytes);
@@ -88,13 +88,13 @@ impl TryFrom<Vec<u8>> for G1CompressedPoint {
 }
 
 impl BLSSignature for G1Point {
-    fn to_bytes(&self) -> Result<[u8; 64], BLSError> {
+    fn to_bytes(&self) -> Result<[u8; 64], NCNProgramError> {
         Ok(self.0)
     }
 }
 
 impl BLSSignature for G1CompressedPoint {
-    fn to_bytes(&self) -> Result<[u8; 64], BLSError> {
+    fn to_bytes(&self) -> Result<[u8; 64], NCNProgramError> {
         Ok(G1Point::try_from(self)?.0)
     }
 }
@@ -103,7 +103,7 @@ impl Add for G1Point {
     type Output = G1Point;
 
     fn add(self, rhs: Self) -> G1Point {
-        self.checked_add(&rhs).expect("G2Point addition failed")
+        self.checked_add(&rhs).expect("G1Point addition failed")
     }
 }
 
@@ -116,11 +116,13 @@ impl CheckedAdd for G1Point {
             *(combined_input.as_mut_ptr().add(64) as *mut [u8; 64]) = rhs.0;
         }
 
-        let result = (|| -> Result<Self, BLSError> {
-            let result =
-                alt_bn128_addition(&combined_input).map_err(|_| BLSError::AltBN128AddError)?;
+        let result = (|| -> Result<Self, NCNProgramError> {
+            let result = alt_bn128_addition(&combined_input)
+                .map_err(|_| NCNProgramError::AltBN128AddError)?;
             Ok(G1Point(
-                result.try_into().map_err(|_| BLSError::AltBN128AddError)?,
+                result
+                    .try_into()
+                    .map_err(|_| NCNProgramError::AltBN128AddError)?,
             ))
         })();
 
@@ -129,7 +131,7 @@ impl CheckedAdd for G1Point {
 }
 
 impl TryFrom<PrivKey> for G1CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: PrivKey) -> Result<Self, Self::Error> {
         let g1_generator = G1Point::from(G1_GENERATOR);
@@ -139,7 +141,7 @@ impl TryFrom<PrivKey> for G1CompressedPoint {
 }
 
 impl TryFrom<PrivKey> for G1Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: PrivKey) -> Result<Self, Self::Error> {
         let g1_generator = G1Point::from(G1_GENERATOR);
@@ -149,21 +151,23 @@ impl TryFrom<PrivKey> for G1Point {
 }
 
 impl TryFrom<G1Point> for G1CompressedPoint {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: G1Point) -> Result<Self, Self::Error> {
         Ok(G1CompressedPoint(
-            alt_bn128_g1_compress(&value.0).map_err(|_| BLSError::G1PointCompressionError)?,
+            alt_bn128_g1_compress(&value.0)
+                .map_err(|_| NCNProgramError::G1PointCompressionError)?,
         ))
     }
 }
 
 impl TryFrom<&G1CompressedPoint> for G1Point {
-    type Error = BLSError;
+    type Error = NCNProgramError;
 
     fn try_from(value: &G1CompressedPoint) -> Result<Self, Self::Error> {
         Ok(G1Point(
-            alt_bn128_g1_decompress(&value.0).map_err(|_| BLSError::G1PointDecompressionError)?,
+            alt_bn128_g1_decompress(&value.0)
+                .map_err(|_| NCNProgramError::G1PointDecompressionError)?,
         ))
     }
 }
@@ -172,7 +176,7 @@ impl G1Point {
     /// Verify G2 point using pairing check: e(self, G2) = e(G1_MINUS, g2)
     /// This is equivalent to checking: e(self, G2) * e(-G1_MINUS, g2) = 1
     /// Since G1_MINUS = (1, -2), then -G1_MINUS = (1, 2) = G1_generator
-    pub fn verify_g2(&self, g2: &G2Point) -> Result<bool, BLSError> {
+    pub fn verify_g2(&self, g2: &G2Point) -> Result<bool, NCNProgramError> {
         // Check for zero points first
         let self_is_zero = self.0.iter().all(|&x| x == 0);
         let g2_is_zero = g2.0.iter().all(|&x| x == 0);
@@ -214,7 +218,7 @@ impl G1Point {
             }
             Err(e) => {
                 msg!("Pairing check failed with error: {:?}", e);
-                Err(BLSError::AltBN128PairingError)
+                Err(NCNProgramError::AltBN128PairingError)
             }
         }
     }
@@ -247,13 +251,16 @@ impl G1Point {
     }
 
     /// Multiply this G1 point by a scalar (big-endian 32 bytes)
-    pub fn mul(&self, scalar: [u8; 32]) -> Result<G1Point, BLSError> {
+    pub fn mul(&self, scalar: [u8; 32]) -> Result<G1Point, NCNProgramError> {
         let mut input = [0u8; 96];
         input[..64].copy_from_slice(&self.0);
         input[64..].copy_from_slice(&scalar);
-        let result = alt_bn128_multiplication(&input).map_err(|_| BLSError::AltBN128MulError)?;
+        let result =
+            alt_bn128_multiplication(&input).map_err(|_| NCNProgramError::AltBN128MulError)?;
         Ok(G1Point(
-            result.try_into().map_err(|_| BLSError::AltBN128MulError)?,
+            result
+                .try_into()
+                .map_err(|_| NCNProgramError::AltBN128MulError)?,
         ))
     }
 }
@@ -270,7 +277,7 @@ impl Mul<[u8; 32]> for G1Point {
 
 impl G1CompressedPoint {
     /// Negate the G1 compressed point by decompressing, negating, and compressing back
-    pub fn negate(&self) -> Result<Self, BLSError> {
+    pub fn negate(&self) -> Result<Self, NCNProgramError> {
         let g1_point = G1Point::try_from(self)?;
         let negated_g1 = g1_point.negate();
         G1CompressedPoint::try_from(negated_g1)
@@ -279,9 +286,27 @@ impl G1CompressedPoint {
     /// Verify G2 point using pairing check: e(self, G2) = e(G1_MINUS, g2)
     /// This is equivalent to checking: e(self, G2) * e(-G1_MINUS, g2) = 1
     /// Since G1_MINUS = (1, -2), then -G1_MINUS = (1, 2) = G1_generator
-    pub fn verify_g2(&self, g2: &G2Point) -> Result<bool, BLSError> {
+    pub fn verify_g2(&self, g2: &G2Point) -> Result<bool, NCNProgramError> {
         // First decompress this point to G1Point, then call its verify_g2 method
         let g1_point = G1Point::try_from(self)?;
         g1_point.verify_g2(g2)
+    }
+}
+
+impl G1CompressedPoint {
+    #[cfg(not(target_os = "solana"))]
+    pub fn from_random() -> G1CompressedPoint {
+        let private_key = PrivKey::from_random();
+
+        G1CompressedPoint::try_from(private_key).expect("Invalid private key for G1")
+    }
+}
+
+impl G1Point {
+    #[cfg(not(target_os = "solana"))]
+    pub fn from_random() -> G1Point {
+        let private_key = PrivKey::from_random();
+
+        G1Point::try_from(private_key).expect("Invalid private key for G1")
     }
 }

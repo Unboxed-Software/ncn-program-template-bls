@@ -3,7 +3,7 @@ use rand::RngCore;
 
 use solana_bn254::prelude::alt_bn128_multiplication;
 
-use crate::{errors::BLSError, g1_point::G1Point, schemes::HashToCurve};
+use crate::{error::NCNProgramError, g1_point::G1Point, schemes::HashToCurve};
 
 #[derive(Debug, Clone, Copy)]
 pub struct PrivKey(pub [u8; 32]);
@@ -26,14 +26,17 @@ impl PrivKey {
         }
     }
 
-    pub fn sign<H: HashToCurve, T: AsRef<[u8]>>(&self, message: T) -> Result<G1Point, BLSError> {
+    pub fn sign<H: HashToCurve, T: AsRef<[u8]>>(
+        &self,
+        message: T,
+    ) -> Result<G1Point, NCNProgramError> {
         let point = H::try_hash_to_curve::<T>(message)?;
 
         let input = [&point.0[..], &self.0[..]].concat();
 
         let mut g1_sol_uncompressed = [0x00u8; 64];
         g1_sol_uncompressed.clone_from_slice(
-            &alt_bn128_multiplication(&input).map_err(|_| BLSError::BLSSigningError)?,
+            &alt_bn128_multiplication(&input).map_err(|_| NCNProgramError::BLSSigningError)?,
         );
 
         Ok(G1Point(g1_sol_uncompressed))

@@ -10,7 +10,6 @@ pub mod epoch_marker;
 pub mod epoch_snapshot;
 pub mod epoch_state;
 pub mod error;
-pub mod errors;
 pub mod fees;
 pub mod g1_point;
 pub mod g2_point;
