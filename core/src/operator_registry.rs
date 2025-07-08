@@ -28,6 +28,9 @@ pub struct OperatorEntry {
     operator_index: PodU64,
     /// The slot the operator was registered
     slot_registered: PodU64,
+
+    /// Reserved for future use
+    reserved: [u8; 200], // Reserved for future use, must be zeroed
 }
 
 impl OperatorEntry {
@@ -47,6 +50,7 @@ impl OperatorEntry {
             g2_pubkey: *g2_pubkey,
             operator_index: PodU64::from(operator_index),
             slot_registered: PodU64::from(slot_registered),
+            reserved: [0; 200],
         }
     }
 

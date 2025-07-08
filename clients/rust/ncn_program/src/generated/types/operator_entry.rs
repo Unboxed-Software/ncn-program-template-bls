@@ -22,4 +22,6 @@ pub struct OperatorEntry {
     pub g2_pubkey: [u8; 64],
     pub operator_index: u64,
     pub slot_registered: u64,
+    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
+    pub reserved: [u8; 200],
 }

@@ -12,12 +12,16 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
   getU64Encoder,
+  getU8Decoder,
+  getU8Encoder,
   type Address,
   type Codec,
   type Decoder,
@@ -31,6 +35,7 @@ export type OperatorEntry = {
   g2Pubkey: ReadonlyUint8Array;
   operatorIndex: bigint;
   slotRegistered: bigint;
+  reserved: Array<number>;
 };
 
 export type OperatorEntryArgs = {
@@ -39,6 +44,7 @@ export type OperatorEntryArgs = {
   g2Pubkey: ReadonlyUint8Array;
   operatorIndex: number | bigint;
   slotRegistered: number | bigint;
+  reserved: Array<number>;
 };
 
 export function getOperatorEntryEncoder(): Encoder<OperatorEntryArgs> {
@@ -48,6 +54,7 @@ export function getOperatorEntryEncoder(): Encoder<OperatorEntryArgs> {
     ['g2Pubkey', fixEncoderSize(getBytesEncoder(), 64)],
     ['operatorIndex', getU64Encoder()],
     ['slotRegistered', getU64Encoder()],
+    ['reserved', getArrayEncoder(getU8Encoder(), { size: 200 })],
   ]);
 }
 
@@ -58,6 +65,7 @@ export function getOperatorEntryDecoder(): Decoder<OperatorEntry> {
     ['g2Pubkey', fixDecoderSize(getBytesDecoder(), 64)],
     ['operatorIndex', getU64Decoder()],
     ['slotRegistered', getU64Decoder()],
+    ['reserved', getArrayDecoder(getU8Decoder(), { size: 200 })],
   ]);
 }
 
