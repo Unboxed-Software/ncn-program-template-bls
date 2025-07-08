@@ -31,11 +31,13 @@ mod tests {
             .await?;
 
         // Generate initial BLS keypair
-        let initial_private_key = PrivKey::from_random();
-        let initial_g1_compressed = G1CompressedPoint::try_from(initial_private_key).unwrap();
-        let initial_g2_compressed = G2CompressedPoint::try_from(&initial_private_key).unwrap();
+        let initial_g1_compressed =
+            G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
+        let initial_g2_compressed =
+            G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
 
-        let initial_signature = initial_private_key
+        let initial_signature = operator_root
+            .bn128_privkey
             .sign::<Sha256Normalized, &[u8; 32]>(&initial_g1_compressed.0)
             .unwrap();
 

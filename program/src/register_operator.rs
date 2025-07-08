@@ -22,7 +22,7 @@ use solana_program::{
 ///
 /// ### Parameters:
 /// - `g1_pubkey`: G1 public key in compressed format (32 bytes)
-/// - `g2_pubkey`: G2 public key in compressed format (64 bytes)  
+/// - `g2_pubkey`: G2 public key in compressed format (64 bytes)
 /// - `signature`: BLS signature of the G1 pubkey signed by the G2 private key (64 bytes uncompressed G1 point)
 ///
 /// ### Accounts:

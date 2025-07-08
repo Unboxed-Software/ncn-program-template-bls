@@ -17,9 +17,10 @@ use jito_restaking_sdk::{
         warmup_operator_vault_ticket,
     },
 };
+use ncn_program_core::{g1_point::G1Point, g2_point::G2Point, privkey::PrivKey};
 use solana_program::{
-    instruction::InstructionError, native_token::sol_to_lamports, pubkey::Pubkey,
-    system_instruction::transfer,
+    instruction::InstructionError, native_token::sol_to_lamports, program_error::ProgramError,
+    pubkey::Pubkey, system_instruction::transfer,
 };
 use solana_program_test::{BanksClient, ProgramTestBanksClientExt};
 use solana_sdk::{
@@ -51,6 +52,9 @@ impl Clone for NcnRoot {
 pub struct OperatorRoot {
     pub operator_pubkey: Pubkey,
     pub operator_admin: Keypair,
+    pub bn128_privkey: PrivKey,
+    pub bn128_g1_pubkey: G1Point,
+    pub bn128_g2_pubkey: G2Point,
 }
 
 impl Clone for OperatorRoot {
@@ -58,6 +62,9 @@ impl Clone for OperatorRoot {
         Self {
             operator_pubkey: self.operator_pubkey,
             operator_admin: self.operator_admin.insecure_clone(),
+            bn128_privkey: self.bn128_privkey,
+            bn128_g1_pubkey: self.bn128_g1_pubkey,
+            bn128_g2_pubkey: self.bn128_g2_pubkey,
         }
     }
 }
@@ -201,9 +208,20 @@ impl RestakingProgramClient {
             operator_fee_bps.unwrap_or(0),
         )
         .await?;
+
+        // Generate BN128 keypair
+        let bn128_privkey = PrivKey::from_random();
+        let bn128_g1_pubkey = G1Point::try_from(bn128_privkey)
+            .map_err(|e| TestError::ProgramError(ProgramError::from(e)))?;
+        let bn128_g2_pubkey = G2Point::try_from(&bn128_privkey)
+            .map_err(|e| TestError::ProgramError(ProgramError::from(e)))?;
+
         Ok(OperatorRoot {
             operator_pubkey,
             operator_admin,
+            bn128_privkey,
+            bn128_g1_pubkey,
+            bn128_g2_pubkey,
         })
     }
 

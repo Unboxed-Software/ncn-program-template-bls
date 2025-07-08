@@ -32,11 +32,11 @@ mod tests {
             .await?;
 
         // Generate BLS keypair
-        let private_key = PrivKey::from_random();
-        let g1_compressed = G1CompressedPoint::try_from(private_key).unwrap();
-        let g2_compressed = G2CompressedPoint::try_from(&private_key).unwrap();
+        let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
 
-        let signature = private_key
+        let signature = operator_root
+            .bn128_privkey
             .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
             .unwrap();
 
@@ -98,11 +98,11 @@ mod tests {
             .await?;
 
         // Generate BLS keypair
-        let private_key = PrivKey::from_random();
-        let g1_compressed = G1CompressedPoint::try_from(private_key).unwrap();
-        let g2_compressed = G2CompressedPoint::try_from(&private_key).unwrap();
+        let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
 
-        let signature = private_key
+        let signature = operator_root
+            .bn128_privkey
             .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
             .unwrap();
 
@@ -164,12 +164,12 @@ mod tests {
             .await?;
 
         // Generate mismatched BLS keypair
-        let private_key1 = PrivKey::from_random();
-        let private_key2 = PrivKey::from_random();
-        let g1_compressed = G1CompressedPoint::try_from(private_key1).unwrap();
-        let g2_compressed = G2CompressedPoint::try_from(&private_key2).unwrap(); // Different key!
+        let fake_privkey = PrivKey::from_random();
+        let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&fake_privkey).unwrap(); // Different key!
 
-        let signature = private_key1
+        let signature = operator_root
+            .bn128_privkey
             .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
             .unwrap();
 
@@ -211,11 +211,11 @@ mod tests {
             .await?;
 
         // Generate BLS keypair
-        let private_key = PrivKey::from_random();
-        let g1_compressed = G1CompressedPoint::try_from(private_key).unwrap();
-        let g2_compressed = G2CompressedPoint::try_from(&private_key).unwrap();
+        let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
 
-        let signature = private_key
+        let signature = operator_root
+            .bn128_privkey
             .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
             .unwrap();
 
