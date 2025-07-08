@@ -170,6 +170,139 @@
       }
     },
     {
+      "name": "InitializeOperatorRegistry",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operatorRegistry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ncn",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "accountPayer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
+      }
+    },
+    {
+      "name": "RegisterOperator",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operatorRegistry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ncn",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operator",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operatorAdmin",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "g1Pubkey",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "g2Pubkey",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 5
+      }
+    },
+    {
+      "name": "ReallocOperatorRegistry",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operatorRegistry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ncn",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "accountPayer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 6
+      }
+    },
+    {
       "name": "InitializeEpochState",
       "accounts": [
         {
@@ -211,7 +344,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 4
+        "value": 7
       }
     },
     {
@@ -261,7 +394,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 5
+        "value": 8
       }
     },
     {
@@ -296,7 +429,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 9
       }
     },
     {
@@ -346,7 +479,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 10
       }
     },
     {
@@ -401,7 +534,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 11
       }
     },
     {
@@ -471,7 +604,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 12
       }
     },
     {
@@ -546,7 +679,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 13
       }
     },
     {
@@ -601,7 +734,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
+        "value": 14
       }
     },
     {
@@ -646,7 +779,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 15
       }
     },
     {
@@ -710,7 +843,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 16
       }
     },
     {
@@ -760,7 +893,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 14
+        "value": 17
       }
     },
     {
@@ -805,7 +938,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 15
+        "value": 18
       }
     },
     {
@@ -859,7 +992,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 16
+        "value": 19
       }
     },
     {
@@ -909,7 +1042,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 17
+        "value": 20
       }
     },
     {
@@ -959,7 +1092,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 18
+        "value": 21
       }
     },
     {
@@ -1019,7 +1152,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 19
+        "value": 22
       }
     },
     {
@@ -1079,7 +1212,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 20
+        "value": 23
       }
     },
     {
@@ -1128,7 +1261,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 21
+        "value": 24
       }
     },
     {
@@ -1190,7 +1323,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 22
+        "value": 25
       }
     },
     {
@@ -1245,7 +1378,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 23
+        "value": 26
       }
     },
     {
@@ -1305,7 +1438,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 24
+        "value": 27
       }
     },
     {
@@ -1355,7 +1488,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 25
+        "value": 28
       }
     },
     {
@@ -1392,7 +1525,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 26
+        "value": 29
       }
     },
     {
@@ -1436,7 +1569,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 27
+        "value": 30
       }
     },
     {
@@ -1479,7 +1612,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 28
+        "value": 31
       }
     },
     {
@@ -1521,7 +1654,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 29
+        "value": 32
       }
     },
     {
@@ -1562,7 +1695,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 30
+        "value": 33
       }
     }
   ],
@@ -1821,6 +1954,15 @@
             }
           },
           {
+            "name": "totalAggG1Pubkey",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
             "name": "fees",
             "type": {
               "defined": "Fees"
@@ -1837,6 +1979,15 @@
           {
             "name": "operator",
             "type": "publicKey"
+          },
+          {
+            "name": "g1Pubkey",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "ncn",
@@ -2142,6 +2293,33 @@
               "array": [
                 {
                   "defined": "OperatorVaultRewardRoute"
+                },
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OperatorRegistry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ncn",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "operatorList",
+            "type": {
+              "array": [
+                {
+                  "defined": "OperatorEntry"
                 },
                 256
               ]
@@ -2602,6 +2780,48 @@
       }
     },
     {
+      "name": "OperatorEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operatorPubkey",
+            "type": "publicKey"
+          },
+          {
+            "name": "g1Pubkey",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "g2Pubkey",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "operatorIndex",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "slotRegistered",
+            "type": {
+              "defined": "PodU64"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "VaultRewardRoute",
       "type": {
         "kind": "struct",
@@ -2875,318 +3095,393 @@
     },
     {
       "code": 8722,
+      "name": "OperatorRegistryListFull",
+      "msg": "Operator Registry operators are at capacity"
+    },
+    {
+      "code": 8723,
       "name": "VaultRegistryVaultLocked",
       "msg": "Vault registry are locked for the epoch"
     },
     {
-      "code": 8723,
+      "code": 8724,
       "name": "VaultIndexAlreadyInUse",
       "msg": "Vault index already in use by a different mint"
     },
     {
-      "code": 8724,
+      "code": 8725,
       "name": "MintEntryNotFound",
       "msg": "Mint Entry not found"
     },
     {
-      "code": 8725,
+      "code": 8726,
+      "name": "OperatorEntryNotFound",
+      "msg": "Operator Entry not found"
+    },
+    {
+      "code": 8727,
       "name": "FeeCapExceeded",
       "msg": "Fee cap exceeded"
     },
     {
-      "code": 8726,
+      "code": 8728,
       "name": "TotalFeesCannotBeZero",
       "msg": "Total fees cannot be 0"
     },
     {
-      "code": 8727,
+      "code": 8729,
       "name": "DefaultProtocolWallet",
       "msg": "Protocol wallet cannot be default"
     },
     {
-      "code": 8728,
+      "code": 8730,
       "name": "DefaultNcnWallet",
       "msg": "NCN Fee wallet cannot be default"
     },
     {
-      "code": 8729,
+      "code": 8731,
       "name": "IncorrectNcnAdmin",
       "msg": "Incorrect NCN Admin"
     },
     {
-      "code": 8730,
+      "code": 8732,
       "name": "IncorrectNcn",
       "msg": "Incorrect NCN"
     },
     {
-      "code": 8731,
+      "code": 8733,
       "name": "IncorrectFeeAdmin",
       "msg": "Incorrect fee admin"
     },
     {
-      "code": 8732,
+      "code": 8734,
       "name": "WeightTableNotFinalized",
       "msg": "Weight table not finalized"
     },
     {
-      "code": 8733,
+      "code": 8735,
       "name": "WeightNotFound",
       "msg": "Weight not found"
     },
     {
-      "code": 8734,
+      "code": 8736,
       "name": "NoOperators",
       "msg": "No operators in ncn"
     },
     {
-      "code": 8735,
+      "code": 8737,
       "name": "VaultOperatorDelegationFinalized",
       "msg": "Vault operator delegation is already finalized - should not happen"
     },
     {
-      "code": 8736,
+      "code": 8738,
       "name": "OperatorFinalized",
       "msg": "Operator is already finalized - should not happen"
     },
     {
-      "code": 8737,
+      "code": 8739,
       "name": "TooManyVaultOperatorDelegations",
       "msg": "Too many vault operator delegations"
     },
     {
-      "code": 8738,
+      "code": 8740,
       "name": "DuplicateVaultOperatorDelegation",
       "msg": "Duplicate vault operator delegation"
     },
     {
-      "code": 8739,
+      "code": 8741,
       "name": "DuplicateVoteCast",
       "msg": "Duplicate Vote Cast"
     },
     {
-      "code": 8740,
+      "code": 8742,
       "name": "CannotVoteWithZeroStake",
       "msg": "Cannot Vote With Zero Delegation"
     },
     {
-      "code": 8741,
+      "code": 8743,
       "name": "OperatorAlreadyVoted",
       "msg": "Operator Already Voted"
     },
     {
-      "code": 8742,
+      "code": 8744,
       "name": "OperatorVotesFull",
       "msg": "Operator votes full"
     },
     {
-      "code": 8743,
+      "code": 8745,
       "name": "BallotTallyFull",
       "msg": "Merkle root tally full"
     },
     {
-      "code": 8744,
+      "code": 8746,
       "name": "BallotTallyNotFoundFull",
       "msg": "Ballot tally not found"
     },
     {
-      "code": 8745,
+      "code": 8747,
       "name": "BallotTallyNotEmpty",
       "msg": "Ballot tally not empty"
     },
     {
-      "code": 8746,
+      "code": 8748,
       "name": "ConsensusAlreadyReached",
       "msg": "Consensus already reached, cannot change vote"
     },
     {
-      "code": 8747,
+      "code": 8749,
       "name": "ConsensusNotReached",
       "msg": "Consensus not reached"
     },
     {
-      "code": 8748,
+      "code": 8750,
       "name": "EpochSnapshotNotFinalized",
       "msg": "Epoch snapshot not finalized"
     },
     {
-      "code": 8749,
+      "code": 8751,
       "name": "VotingNotValid",
       "msg": "Voting not valid, too many slots after consensus reached"
     },
     {
-      "code": 8750,
+      "code": 8752,
       "name": "TieBreakerAdminInvalid",
       "msg": "Tie breaker admin invalid"
     },
     {
-      "code": 8751,
+      "code": 8753,
       "name": "VotingNotFinalized",
       "msg": "Voting not finalized"
     },
     {
-      "code": 8752,
+      "code": 8754,
       "name": "TieBreakerNotInPriorVotes",
       "msg": "Tie breaking ballot must be one of the prior votes"
     },
     {
-      "code": 8753,
+      "code": 8755,
       "name": "InvalidMerkleProof",
       "msg": "Invalid merkle proof"
     },
     {
-      "code": 8754,
+      "code": 8756,
       "name": "InvalidOperatorVoter",
       "msg": "Operator voter needs to sign its vote"
     },
     {
-      "code": 8755,
+      "code": 8757,
       "name": "InvalidNcnFeeGroup",
       "msg": "Not a valid NCN fee group"
     },
     {
-      "code": 8756,
+      "code": 8758,
       "name": "InvalidBaseFeeGroup",
       "msg": "Not a valid base fee group"
     },
     {
-      "code": 8757,
+      "code": 8759,
       "name": "OperatorRewardListFull",
       "msg": "Operator reward list full"
     },
     {
-      "code": 8758,
+      "code": 8760,
       "name": "OperatorRewardNotFound",
       "msg": "Operator Reward not found"
     },
     {
-      "code": 8759,
+      "code": 8761,
       "name": "VaultRewardNotFound",
       "msg": "Vault Reward not found"
     },
     {
-      "code": 8760,
+      "code": 8762,
       "name": "DestinationMismatch",
       "msg": "Destination mismatch"
     },
     {
-      "code": 8761,
+      "code": 8763,
       "name": "NcnRewardRouteNotFound",
       "msg": "Ncn reward route not found"
     },
     {
-      "code": 8762,
+      "code": 8764,
       "name": "FeeNotActive",
       "msg": "Fee not active"
     },
     {
-      "code": 8763,
+      "code": 8765,
       "name": "NoRewards",
       "msg": "No rewards to distribute"
     },
     {
-      "code": 8764,
+      "code": 8766,
       "name": "WeightNotSet",
       "msg": "Weight not set"
     },
     {
-      "code": 8765,
+      "code": 8767,
       "name": "RouterStillRouting",
       "msg": "Router still routing"
     },
     {
-      "code": 8766,
+      "code": 8768,
       "name": "InvalidEpochsBeforeStall",
       "msg": "Invalid epochs before stall"
     },
     {
-      "code": 8767,
+      "code": 8769,
       "name": "InvalidEpochsBeforeClose",
       "msg": "Invalid epochs before accounts can close"
     },
     {
-      "code": 8768,
+      "code": 8770,
       "name": "InvalidSlotsAfterConsensus",
       "msg": "Invalid slots after consensus"
     },
     {
-      "code": 8769,
+      "code": 8771,
       "name": "VaultNeedsUpdate",
       "msg": "Vault needs to be updated"
     },
     {
-      "code": 8770,
+      "code": 8772,
       "name": "InvalidAccountStatus",
       "msg": "Invalid Account Status"
     },
     {
-      "code": 8771,
+      "code": 8773,
       "name": "AccountAlreadyInitialized",
       "msg": "Account already initialized"
     },
     {
-      "code": 8772,
+      "code": 8774,
       "name": "BadBallot",
       "msg": "Cannot vote with uninitialized account"
     },
     {
-      "code": 8773,
+      "code": 8775,
       "name": "VotingIsNotOver",
       "msg": "Cannot route until voting is over"
     },
     {
-      "code": 8774,
+      "code": 8776,
       "name": "OperatorIsNotInSnapshot",
       "msg": "Operator is not in snapshot"
     },
     {
-      "code": 8775,
+      "code": 8777,
       "name": "InvalidAccountToCloseDiscriminator",
       "msg": "Invalid account_to_close Discriminator"
     },
     {
-      "code": 8776,
+      "code": 8778,
       "name": "CannotCloseAccount",
       "msg": "Cannot close account"
     },
     {
-      "code": 8777,
+      "code": 8779,
       "name": "CannotCloseAccountAlreadyClosed",
       "msg": "Cannot close account - Already closed"
     },
     {
-      "code": 8778,
+      "code": 8780,
       "name": "CannotCloseAccountNotEnoughEpochs",
       "msg": "Cannot close account - Not enough epochs have passed since consensus reached"
     },
     {
-      "code": 8779,
+      "code": 8781,
       "name": "CannotCloseAccountNoReceiverProvided",
       "msg": "Cannot close account - No receiver provided"
     },
     {
-      "code": 8780,
+      "code": 8782,
       "name": "CannotCloseAccountNoEnoughAccounts",
       "msg": "Cannot close account - Not enough accounts"
     },
     {
-      "code": 8781,
+      "code": 8783,
       "name": "CannotCloseEpochStateAccount",
       "msg": "Cannot close epoch state account - Epoch state needs all other accounts to be closed first"
     },
     {
-      "code": 8782,
+      "code": 8784,
       "name": "InvalidNCNFeeWallet",
       "msg": "Invalid NCN Fee wallet"
     },
     {
-      "code": 8783,
+      "code": 8785,
       "name": "EpochIsClosingDown",
       "msg": "Epoch is closing down"
     },
     {
-      "code": 8784,
+      "code": 8786,
       "name": "MarkerExists",
       "msg": "Marker exists"
+    },
+    {
+      "code": 8787,
+      "name": "SecretKeyError",
+      "msg": "Secret key error"
+    },
+    {
+      "code": 8788,
+      "name": "AltBN128AddError",
+      "msg": "AltBN128 add error"
+    },
+    {
+      "code": 8789,
+      "name": "AltBN128MulError",
+      "msg": "AltBN128 mul error"
+    },
+    {
+      "code": 8790,
+      "name": "AltBN128PairingError",
+      "msg": "AltBN128 pairing error"
+    },
+    {
+      "code": 8791,
+      "name": "HashToCurveError",
+      "msg": "Hash to curve error"
+    },
+    {
+      "code": 8792,
+      "name": "BLSSigningError",
+      "msg": "BLSSigning error"
+    },
+    {
+      "code": 8793,
+      "name": "BLSVerificationError",
+      "msg": "BLSVerification error"
+    },
+    {
+      "code": 8794,
+      "name": "SerializationError",
+      "msg": "Serialization error"
+    },
+    {
+      "code": 8795,
+      "name": "G1PointCompressionError",
+      "msg": "G1 point compression error"
+    },
+    {
+      "code": 8796,
+      "name": "G1PointDecompressionError",
+      "msg": "G1 point decompression error"
+    },
+    {
+      "code": 8797,
+      "name": "G2PointCompressionError",
+      "msg": "G2 point compression error"
+    },
+    {
+      "code": 8798,
+      "name": "G2PointDecompressionError",
+      "msg": "G2 point decompression error"
+    },
+    {
+      "code": 8799,
+      "name": "InvalidInputLength",
+      "msg": "Invalid input length"
     }
   ],
   "metadata": {

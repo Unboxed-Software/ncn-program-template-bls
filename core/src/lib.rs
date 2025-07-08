@@ -16,6 +16,7 @@ pub mod g2_point;
 pub mod instruction;
 pub mod loaders;
 pub mod ncn_reward_router;
+pub mod operator_registry;
 pub mod operator_vault_reward_router;
 pub mod privkey;
 pub mod schemes;

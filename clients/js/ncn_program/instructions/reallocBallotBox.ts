@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REALLOC_BALLOT_BOX_DISCRIMINATOR = 12;
+export const REALLOC_BALLOT_BOX_DISCRIMINATOR = 15;
 
 export function getReallocBallotBoxDiscriminatorBytes() {
   return getU8Encoder().encode(REALLOC_BALLOT_BOX_DISCRIMINATOR);

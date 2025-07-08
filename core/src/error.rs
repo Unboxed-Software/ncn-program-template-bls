@@ -60,12 +60,16 @@ pub enum NCNProgramError {
     ConfigMintListFull,
     #[error("Vault Registry mints are at capacity")]
     VaultRegistryListFull,
+    #[error("Operator Registry operators are at capacity")]
+    OperatorRegistryListFull,
     #[error("Vault registry are locked for the epoch")]
     VaultRegistryVaultLocked,
     #[error("Vault index already in use by a different mint")]
     VaultIndexAlreadyInUse,
     #[error("Mint Entry not found")]
     MintEntryNotFound,
+    #[error("Operator Entry not found")]
+    OperatorEntryNotFound,
     #[error("Fee cap exceeded")]
     FeeCapExceeded,
     #[error("Total fees cannot be 0")]

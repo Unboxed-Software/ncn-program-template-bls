@@ -921,6 +921,7 @@ mod tests {
         let is_active = true;
         let ncn_operator_index = 0;
         let operator_index = 0;
+        let g1_pubkey = [0; 32];
 
         OperatorSnapshot::new(
             &operator,
@@ -933,6 +934,7 @@ mod tests {
             operator_index,
             operator_fee_bps,
             vault_operator_delegation_count,
+            g1_pubkey,
         )
         .unwrap()
     }

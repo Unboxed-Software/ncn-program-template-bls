@@ -12,8 +12,14 @@ use solana_program::{account_info::AccountInfo, program_error::ProgramError, pub
 use spl_math::precise_number::PreciseNumber;
 
 use crate::{
-    constants::MAX_VAULTS, discriminators::Discriminators, error::NCNProgramError, fees::Fees,
-    loaders::check_load, stake_weight::StakeWeights, weight_table::WeightTable,
+    constants::{G1_COMPRESSED_POINT_SIZE, MAX_VAULTS},
+    discriminators::Discriminators,
+    error::NCNProgramError,
+    fees::Fees,
+    g1_point::{G1CompressedPoint, G1Point},
+    loaders::check_load,
+    stake_weight::StakeWeights,
+    weight_table::WeightTable,
 };
 
 // PDA'd ["epoch_snapshot", NCN, NCN_EPOCH_SLOT]
@@ -40,6 +46,8 @@ pub struct EpochSnapshot {
     valid_operator_vault_delegations: PodU64,
     /// Tallies the total stake weights for all vault operator delegations
     stake_weights: StakeWeights,
+    /// total Operators G1 Pubkey aggregated stake weights
+    total_agg_g1_pubkey: [u8; 32],
     /// Snapshot of the fees configuration for this epoch
     fees: Fees,
 }
@@ -72,6 +80,7 @@ impl EpochSnapshot {
             operators_registered: PodU64::from(0),
             valid_operator_vault_delegations: PodU64::from(0),
             stake_weights: StakeWeights::default(),
+            total_agg_g1_pubkey: [0; G1_COMPRESSED_POINT_SIZE],
             fees,
         }
     }
@@ -149,6 +158,10 @@ impl EpochSnapshot {
         &self.stake_weights
     }
 
+    pub const fn total_agg_g1_pubkey(&self) -> &[u8; G1_COMPRESSED_POINT_SIZE] {
+        &self.total_agg_g1_pubkey
+    }
+
     pub fn slot_finalized(&self) -> u64 {
         self.slot_finalized.into()
     }
@@ -188,6 +201,29 @@ impl EpochSnapshot {
         Ok(())
     }
 
+    pub fn register_operator_g1_pubkey(
+        &mut self,
+        operator_g1_pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
+    ) -> Result<(), NCNProgramError> {
+        // If the current aggregated pubkey is all zeros, replace it with the operator's pubkey
+        if self.total_agg_g1_pubkey == [0u8; G1_COMPRESSED_POINT_SIZE] {
+            self.total_agg_g1_pubkey = *operator_g1_pubkey;
+        } else {
+            // Otherwise, add them together
+            let total_agg_g1_pubkey_point =
+                G1Point::try_from(&G1CompressedPoint(self.total_agg_g1_pubkey))?;
+            let operator_g1_pubkey_point =
+                G1Point::try_from(&G1CompressedPoint(*operator_g1_pubkey))?;
+            let new_total_agg_g1_pubkey_point =
+                total_agg_g1_pubkey_point + operator_g1_pubkey_point;
+            let compressed_point = G1CompressedPoint::try_from(new_total_agg_g1_pubkey_point)?;
+
+            self.total_agg_g1_pubkey = compressed_point.0;
+        }
+
+        Ok(())
+    }
+
     pub const fn fees(&self) -> &Fees {
         &self.fees
     }
@@ -198,6 +234,8 @@ impl EpochSnapshot {
 #[repr(C)]
 pub struct OperatorSnapshot {
     operator: Pubkey,
+    g1_pubkey: [u8; 32], // G1 compressed pubkey
+
     ncn: Pubkey,
     ncn_epoch: PodU64,
     bump: u8,
@@ -240,6 +278,7 @@ impl OperatorSnapshot {
         operator_index: u64,
         operator_fee_bps: u16,
         vault_operator_delegation_count: u64,
+        g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<Self, NCNProgramError> {
         if vault_operator_delegation_count > MAX_VAULTS as u64 {
             return Err(NCNProgramError::TooManyVaultOperatorDelegations);
@@ -261,6 +300,7 @@ impl OperatorSnapshot {
             valid_operator_vault_delegations: PodU64::from(0),
             stake_weights: StakeWeights::default(),
             vault_operator_stake_weight: [VaultOperatorStakeWeight::default(); MAX_VAULTS],
+            g1_pubkey,
         })
     }
 
@@ -277,6 +317,7 @@ impl OperatorSnapshot {
         operator_index: u64,
         operator_fee_bps: u16,
         vault_operator_delegation_count: u64,
+        g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<(), NCNProgramError> {
         if vault_operator_delegation_count > MAX_VAULTS as u64 {
             return Err(NCNProgramError::TooManyVaultOperatorDelegations);
@@ -305,6 +346,7 @@ impl OperatorSnapshot {
         self.valid_operator_vault_delegations = PodU64::from(0);
         self.stake_weights = StakeWeights::default();
         self.vault_operator_stake_weight = [VaultOperatorStakeWeight::default(); MAX_VAULTS];
+        self.g1_pubkey = g1_pubkey;
 
         Ok(())
     }
@@ -639,7 +681,8 @@ mod tests {
             + size_of::<PodU64>() // vault_operator_delegations_registered
             + size_of::<PodU64>() // valid_operator_vault_delegations
             + size_of::<StakeWeights>() // stake_weight
-            + size_of::<VaultOperatorStakeWeight>() * MAX_VAULTS; // vault_operator_stake_weight
+            + size_of::<VaultOperatorStakeWeight>() * MAX_VAULTS // vault_operator_stake_weight
+            + size_of::<[u8; G1_COMPRESSED_POINT_SIZE]>(); // g1_pubkey
 
         assert_eq!(size_of::<OperatorSnapshot>(), expected_total);
     }
@@ -658,6 +701,7 @@ mod tests {
 
     #[test]
     fn test_increment_vault_operator_delegation_registration_finalized() {
+        let g1_pubkey = G1CompressedPoint::from_random().0;
         let mut snapshot = OperatorSnapshot::new(
             &Pubkey::new_unique(),
             &Pubkey::new_unique(),
@@ -669,6 +713,7 @@ mod tests {
             0,
             100,
             1, // Set vault_operator_delegation_count to 1
+            g1_pubkey,
         )
         .unwrap();
 
@@ -693,6 +738,7 @@ mod tests {
     #[test]
     fn test_initialize_too_many_vault_operator_delegations() {
         // Create an operator snapshot
+        let g1_pubkey = G1CompressedPoint::from_random().0;
         let mut snapshot = OperatorSnapshot::new(
             &Pubkey::new_unique(),
             &Pubkey::new_unique(),
@@ -704,6 +750,7 @@ mod tests {
             0,
             100,
             1, // Set vault_operator_delegation_count to 1
+            g1_pubkey,
         )
         .unwrap();
 
@@ -719,6 +766,7 @@ mod tests {
             0,                       // operator_index
             100,                     // operator_fee_bps
             (MAX_VAULTS as u64) + 1, // vault_operator_delegation_count > MAX_VAULTS
+            g1_pubkey,
         );
 
         // Verify we get the expected error
@@ -730,7 +778,7 @@ mod tests {
 
     #[test]
     fn test_insert_vault_operator_stake_weight_too_many_delegations() {
-        // Create an operator snapshot
+        let g1_pubkey = G1CompressedPoint::from_random().0;
         let mut snapshot = OperatorSnapshot::new(
             &Pubkey::new_unique(),
             &Pubkey::new_unique(),
@@ -742,6 +790,7 @@ mod tests {
             0,
             100,
             1,
+            g1_pubkey,
         )
         .unwrap();
 
@@ -765,6 +814,7 @@ mod tests {
     #[test]
     fn test_insert_vault_operator_stake_weight_duplicate_delegation() {
         // Create an operator snapshot
+        let g1_pubkey = G1CompressedPoint::from_random().0;
         let mut snapshot = OperatorSnapshot::new(
             &Pubkey::new_unique(),
             &Pubkey::new_unique(),
@@ -776,6 +826,7 @@ mod tests {
             0,
             100,
             2, // Allow for 2 delegations
+            g1_pubkey,
         )
         .unwrap();
 
@@ -810,6 +861,7 @@ mod tests {
     #[test]
     fn test_operator_snapshot_new_too_many_delegations() {
         // Try to create a new OperatorSnapshot with vault_operator_delegation_count > MAX_VAULTS
+        let g1_pubkey = G1CompressedPoint::from_random().0;
         let result = OperatorSnapshot::new(
             &Pubkey::new_unique(),
             &Pubkey::new_unique(),
@@ -821,6 +873,7 @@ mod tests {
             0,                       // operator_index
             100,                     // operator_fee_bps
             (MAX_VAULTS as u64) + 1, // vault_operator_delegation_count exceeds MAX_VAULTS
+            g1_pubkey,
         );
 
         // Verify we get the expected error
@@ -862,6 +915,7 @@ mod tests {
         let current_slot = 100;
         let operator_fee_bps = 150;
         let vault_operator_delegation_count = 3;
+        let g1_pubkey = G1CompressedPoint::from_random().0;
 
         // Create two operator snapshots - one for active and one for inactive
         let mut active_snapshot = OperatorSnapshot::new(
@@ -875,6 +929,7 @@ mod tests {
             0,
             100,
             1,
+            g1_pubkey,
         )
         .unwrap();
 
@@ -889,6 +944,7 @@ mod tests {
             0,
             100,
             1,
+            g1_pubkey,
         )
         .unwrap();
 
@@ -905,6 +961,7 @@ mod tests {
                 0,
                 operator_fee_bps,
                 vault_operator_delegation_count,
+                g1_pubkey,
             )
             .unwrap();
 
@@ -921,6 +978,7 @@ mod tests {
                 0,
                 operator_fee_bps,
                 vault_operator_delegation_count,
+                g1_pubkey,
             )
             .unwrap();
 
@@ -937,5 +995,267 @@ mod tests {
         assert_eq!(inactive_snapshot.operator_fee_bps(), 0); // fee should be zeroed
         assert_eq!(inactive_snapshot.vault_operator_delegation_count(), 0);
         // count should be zeroed
+    }
+
+    #[test]
+    fn test_register_operator_g1_pubkey() {
+        // Create an epoch snapshot with default aggregated G1 pubkey (all zeros)
+        let mut epoch_snapshot = EpochSnapshot::new(
+            &Pubkey::new_unique(),
+            1,                          // ncn_epoch
+            1,                          // bump
+            100,                        // current_slot
+            3,                          // operator_count
+            1,                          // vault_count
+            Fees::new(100, 1).unwrap(), // fees
+        );
+
+        // Verify initial state - total_agg_g1_pubkey should be all zeros
+        assert_eq!(
+            epoch_snapshot.total_agg_g1_pubkey(),
+            &[0u8; G1_COMPRESSED_POINT_SIZE]
+        );
+
+        // Generate a random G1 pubkey
+        let operator_g1_pubkey = G1CompressedPoint::from_random().0;
+
+        // Register the operator's G1 pubkey
+        let result = epoch_snapshot.register_operator_g1_pubkey(&operator_g1_pubkey);
+        assert!(result.is_ok());
+
+        // Verify the aggregated G1 pubkey is no longer all zeros
+        assert_ne!(
+            epoch_snapshot.total_agg_g1_pubkey(),
+            &[0u8; G1_COMPRESSED_POINT_SIZE]
+        );
+
+        // The aggregated pubkey should now equal the first operator's pubkey
+        // since we started with zero point (identity element for addition)
+        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), &operator_g1_pubkey);
+    }
+
+    #[test]
+    fn test_register_multiple_operator_g1_pubkeys() {
+        // Create an epoch snapshot
+        let mut epoch_snapshot = EpochSnapshot::new(
+            &Pubkey::new_unique(),
+            1,                          // ncn_epoch
+            1,                          // bump
+            100,                        // current_slot
+            3,                          // operator_count
+            1,                          // vault_count
+            Fees::new(100, 1).unwrap(), // fees
+        );
+
+        // Generate multiple random G1 pubkeys
+        let operator1_g1_pubkey = G1CompressedPoint::from_random().0;
+        let operator2_g1_pubkey = G1CompressedPoint::from_random().0;
+        let operator3_g1_pubkey = G1CompressedPoint::from_random().0;
+
+        // Register first operator's G1 pubkey
+        epoch_snapshot
+            .register_operator_g1_pubkey(&operator1_g1_pubkey)
+            .unwrap();
+        let after_first = *epoch_snapshot.total_agg_g1_pubkey();
+
+        // Register second operator's G1 pubkey
+        epoch_snapshot
+            .register_operator_g1_pubkey(&operator2_g1_pubkey)
+            .unwrap();
+        let after_second = *epoch_snapshot.total_agg_g1_pubkey();
+
+        // Register third operator's G1 pubkey
+        epoch_snapshot
+            .register_operator_g1_pubkey(&operator3_g1_pubkey)
+            .unwrap();
+        let after_third = *epoch_snapshot.total_agg_g1_pubkey();
+
+        // Verify that each registration changes the aggregated pubkey
+        assert_ne!(after_first, [0u8; G1_COMPRESSED_POINT_SIZE]);
+        assert_ne!(after_second, after_first);
+        assert_ne!(after_third, after_second);
+
+        // Manually compute the expected aggregated result to verify correctness
+        let point1 = G1Point::try_from(&G1CompressedPoint(operator1_g1_pubkey)).unwrap();
+        let point2 = G1Point::try_from(&G1CompressedPoint(operator2_g1_pubkey)).unwrap();
+        let point3 = G1Point::try_from(&G1CompressedPoint(operator3_g1_pubkey)).unwrap();
+
+        let expected_aggregate = point1 + point2 + point3;
+        let expected_compressed = G1CompressedPoint::try_from(expected_aggregate).unwrap();
+
+        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), &expected_compressed.0);
+    }
+
+    // #[test]
+    // fn test_register_operator_g1_pubkey_invalid_point() {
+    //     // Create an epoch snapshot
+    //     let mut epoch_snapshot = EpochSnapshot::new(
+    //         &Pubkey::new_unique(),
+    //         1,                          // ncn_epoch
+    //         1,                          // bump
+    //         100,                        // current_slot
+    //         1,                          // operator_count
+    //         1,                          // vault_count
+    //         Fees::new(100, 1).unwrap(), // fees
+    //     );
+    //
+    //     // Try to register an invalid G1 pubkey (all 0xFF bytes)
+    //     let invalid_g1_pubkey = [0xFF; G1_COMPRESSED_POINT_SIZE];
+    //     let result = epoch_snapshot.register_operator_g1_pubkey(&invalid_g1_pubkey);
+    //
+    //     // This should fail with a decompression error
+    //     assert!(result.is_err());
+    //
+    //     // Verify the aggregated G1 pubkey remains unchanged (all zeros)
+    //     assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), &[0u8; G1_COMPRESSED_POINT_SIZE]);
+    // }
+
+    #[test]
+    fn test_operator_snapshot_g1_pubkey_storage() {
+        // Generate a random G1 pubkey
+        let g1_pubkey = G1CompressedPoint::from_random().0;
+
+        // Create an operator snapshot with the G1 pubkey
+        let operator_snapshot = OperatorSnapshot::new(
+            &Pubkey::new_unique(),
+            &Pubkey::new_unique(),
+            1,         // ncn_epoch
+            1,         // bump
+            100,       // current_slot
+            true,      // is_active
+            0,         // ncn_operator_index
+            0,         // operator_index
+            100,       // operator_fee_bps
+            1,         // vault_operator_delegation_count
+            g1_pubkey, // g1_pubkey
+        )
+        .unwrap();
+
+        // Verify the G1 pubkey is stored correctly
+        assert_eq!(operator_snapshot.g1_pubkey, g1_pubkey);
+    }
+
+    #[test]
+    fn test_operator_snapshot_initialize_g1_pubkey() {
+        // Generate two different G1 pubkeys
+        let original_g1_pubkey = G1CompressedPoint::from_random().0;
+        let new_g1_pubkey = G1CompressedPoint::from_random().0;
+
+        // Create an operator snapshot with the original G1 pubkey
+        let mut operator_snapshot = OperatorSnapshot::new(
+            &Pubkey::new_unique(),
+            &Pubkey::new_unique(),
+            1,                  // ncn_epoch
+            1,                  // bump
+            100,                // current_slot
+            true,               // is_active
+            0,                  // ncn_operator_index
+            0,                  // operator_index
+            100,                // operator_fee_bps
+            1,                  // vault_operator_delegation_count
+            original_g1_pubkey, // original g1_pubkey
+        )
+        .unwrap();
+
+        // Initialize with a new G1 pubkey
+        operator_snapshot
+            .initialize(
+                &Pubkey::new_unique(),
+                &Pubkey::new_unique(),
+                1,             // ncn_epoch
+                1,             // bump
+                100,           // current_slot
+                true,          // is_active
+                0,             // ncn_operator_index
+                0,             // operator_index
+                100,           // operator_fee_bps
+                1,             // vault_operator_delegation_count
+                new_g1_pubkey, // new g1_pubkey
+            )
+            .unwrap();
+
+        // Verify the G1 pubkey was updated during initialization
+        assert_eq!(operator_snapshot.g1_pubkey, new_g1_pubkey);
+        assert_ne!(operator_snapshot.g1_pubkey, original_g1_pubkey);
+    }
+
+    #[test]
+    fn test_epoch_snapshot_aggregation_order_independence() {
+        // Test that G1 pubkey aggregation is order-independent (commutative)
+        let operator1_g1_pubkey = G1CompressedPoint::from_random().0;
+        let operator2_g1_pubkey = G1CompressedPoint::from_random().0;
+
+        // Create two epoch snapshots
+        let mut snapshot1 = EpochSnapshot::new(
+            &Pubkey::new_unique(),
+            1,                          // ncn_epoch
+            1,                          // bump
+            100,                        // current_slot
+            2,                          // operator_count
+            1,                          // vault_count
+            Fees::new(100, 1).unwrap(), // fees
+        );
+
+        let mut snapshot2 = EpochSnapshot::new(
+            &Pubkey::new_unique(),
+            1,                          // ncn_epoch
+            1,                          // bump
+            100,                        // current_slot
+            2,                          // operator_count
+            1,                          // vault_count
+            Fees::new(100, 1).unwrap(), // fees
+        );
+
+        // Register operators in different orders
+        // Snapshot 1: operator1 first, then operator2
+        snapshot1
+            .register_operator_g1_pubkey(&operator1_g1_pubkey)
+            .unwrap();
+        snapshot1
+            .register_operator_g1_pubkey(&operator2_g1_pubkey)
+            .unwrap();
+
+        // Snapshot 2: operator2 first, then operator1
+        snapshot2
+            .register_operator_g1_pubkey(&operator2_g1_pubkey)
+            .unwrap();
+        snapshot2
+            .register_operator_g1_pubkey(&operator1_g1_pubkey)
+            .unwrap();
+
+        // Both should result in the same aggregated G1 pubkey
+        assert_eq!(
+            snapshot1.total_agg_g1_pubkey(),
+            snapshot2.total_agg_g1_pubkey()
+        );
+    }
+
+    #[test]
+    fn test_epoch_snapshot_g1_pubkey_getter() {
+        // Create an epoch snapshot
+        let mut epoch_snapshot = EpochSnapshot::new(
+            &Pubkey::new_unique(),
+            1,                          // ncn_epoch
+            1,                          // bump
+            100,                        // current_slot
+            1,                          // operator_count
+            1,                          // vault_count
+            Fees::new(100, 1).unwrap(), // fees
+        );
+
+        // Initially should be all zeros
+        assert_eq!(
+            epoch_snapshot.total_agg_g1_pubkey(),
+            &[0u8; G1_COMPRESSED_POINT_SIZE]
+        );
+
+        // Register an operator G1 pubkey
+        let g1_pubkey = G1CompressedPoint::from_random().0;
+        epoch_snapshot
+            .register_operator_g1_pubkey(&g1_pubkey)
+            .unwrap();
+
+        // Verify getter returns the updated value
+        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), &g1_pubkey);
     }
 }

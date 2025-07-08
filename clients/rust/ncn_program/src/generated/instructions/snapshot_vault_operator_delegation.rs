@@ -117,7 +117,7 @@ pub struct SnapshotVaultOperatorDelegationInstructionData {
 
 impl SnapshotVaultOperatorDelegationInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 10 }
+        Self { discriminator: 13 }
     }
 }
 

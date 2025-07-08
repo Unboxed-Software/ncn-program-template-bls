@@ -158,6 +158,9 @@ pub fn process_initialize_operator_snapshot(
     let operator_snapshot_account =
         OperatorSnapshot::try_from_slice_unchecked_mut(&mut operator_snapshot_data)?;
 
+    // TODO: get the real one
+    let g1_pubkey = [0; 32];
+
     operator_snapshot_account.initialize(
         operator.key,
         ncn.key,
@@ -169,14 +172,17 @@ pub fn process_initialize_operator_snapshot(
         operator_index,
         operator_fee_bps,
         vault_count,
+        g1_pubkey,
     )?;
 
-    // Increment operator registration for an inactive operator
-    if !is_active {
-        let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
-        let epoch_snapshot_account =
-            EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
+    let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
+    let epoch_snapshot_account =
+        EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
 
+    if is_active {
+        epoch_snapshot_account.register_operator_g1_pubkey(&g1_pubkey);
+    } else {
+        // Increment operator registration for an inactive operator
         epoch_snapshot_account.increment_operator_registration(
             current_slot,
             0,

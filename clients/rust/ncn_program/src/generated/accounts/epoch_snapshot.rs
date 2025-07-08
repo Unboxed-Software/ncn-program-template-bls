@@ -29,6 +29,7 @@ pub struct EpochSnapshot {
     pub operators_registered: u64,
     pub valid_operator_vault_delegations: u64,
     pub stake_weights: StakeWeights,
+    pub total_agg_g1_pubkey: [u8; 32],
     pub fees: Fees,
 }
 

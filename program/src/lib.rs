@@ -16,14 +16,17 @@ mod initialize_ballot_box;
 mod initialize_epoch_snapshot;
 mod initialize_epoch_state;
 mod initialize_ncn_reward_router;
+mod initialize_operator_registry;
 mod initialize_operator_snapshot;
 mod initialize_operator_vault_reward_router;
 mod initialize_vault_registry;
 mod initialize_weight_table;
 mod realloc_ballot_box;
 mod realloc_ncn_reward_router;
+mod realloc_operator_registry;
 mod realloc_vault_registry;
 mod realloc_weight_table;
+mod register_operator;
 mod register_vault;
 mod route_ncn_rewards;
 mod route_operator_vault_rewards;
@@ -57,14 +60,17 @@ use crate::{
     initialize_ballot_box::process_initialize_ballot_box,
     initialize_epoch_snapshot::process_initialize_epoch_snapshot,
     initialize_ncn_reward_router::process_initialize_ncn_reward_router,
+    initialize_operator_registry::process_initialize_operator_registry,
     initialize_operator_snapshot::process_initialize_operator_snapshot,
     initialize_operator_vault_reward_router::process_initialize_operator_vault_reward_router,
     initialize_vault_registry::process_initialize_vault_registry,
     initialize_weight_table::process_initialize_weight_table,
     realloc_ballot_box::process_realloc_ballot_box,
     realloc_ncn_reward_router::process_realloc_ncn_reward_router,
+    realloc_operator_registry::process_realloc_operator_registry,
     realloc_vault_registry::process_realloc_vault_registry,
-    realloc_weight_table::process_realloc_weight_table, register_vault::process_register_vault,
+    realloc_weight_table::process_realloc_weight_table,
+    register_operator::process_register_operator, register_vault::process_register_vault,
     route_ncn_rewards::process_route_ncn_rewards,
     route_operator_vault_rewards::process_route_operator_vault_rewards,
     set_epoch_weights::process_set_epoch_weights,
@@ -130,6 +136,22 @@ pub fn process_instruction(
         NCNProgramInstruction::RegisterVault => {
             msg!("Instruction: RegisterVault");
             process_register_vault(program_id, accounts)
+        }
+        NCNProgramInstruction::InitializeOperatorRegistry => {
+            msg!("Instruction: InitializeOperatorRegistry");
+            process_initialize_operator_registry(program_id, accounts)
+        }
+        NCNProgramInstruction::RegisterOperator {
+            g1_pubkey,
+            g2_pubkey,
+            signature,
+        } => {
+            msg!("Instruction: RegisterOperator");
+            process_register_operator(program_id, accounts, g1_pubkey, g2_pubkey, signature)
+        }
+        NCNProgramInstruction::ReallocOperatorRegistry => {
+            msg!("Instruction: ReallocOperatorRegistry");
+            process_realloc_operator_registry(program_id, accounts)
         }
 
         // ---------------------------------------------------- //

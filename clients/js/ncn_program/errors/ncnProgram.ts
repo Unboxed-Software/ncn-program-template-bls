@@ -70,135 +70,168 @@ export const NCN_PROGRAM_ERROR__CONFIG_MINTS_NOT_UPDATED = 0x220f; // 8719
 export const NCN_PROGRAM_ERROR__CONFIG_MINT_LIST_FULL = 0x2210; // 8720
 /** VaultRegistryListFull: Vault Registry mints are at capacity */
 export const NCN_PROGRAM_ERROR__VAULT_REGISTRY_LIST_FULL = 0x2211; // 8721
+/** OperatorRegistryListFull: Operator Registry operators are at capacity */
+export const NCN_PROGRAM_ERROR__OPERATOR_REGISTRY_LIST_FULL = 0x2212; // 8722
 /** VaultRegistryVaultLocked: Vault registry are locked for the epoch */
-export const NCN_PROGRAM_ERROR__VAULT_REGISTRY_VAULT_LOCKED = 0x2212; // 8722
+export const NCN_PROGRAM_ERROR__VAULT_REGISTRY_VAULT_LOCKED = 0x2213; // 8723
 /** VaultIndexAlreadyInUse: Vault index already in use by a different mint */
-export const NCN_PROGRAM_ERROR__VAULT_INDEX_ALREADY_IN_USE = 0x2213; // 8723
+export const NCN_PROGRAM_ERROR__VAULT_INDEX_ALREADY_IN_USE = 0x2214; // 8724
 /** MintEntryNotFound: Mint Entry not found */
-export const NCN_PROGRAM_ERROR__MINT_ENTRY_NOT_FOUND = 0x2214; // 8724
+export const NCN_PROGRAM_ERROR__MINT_ENTRY_NOT_FOUND = 0x2215; // 8725
+/** OperatorEntryNotFound: Operator Entry not found */
+export const NCN_PROGRAM_ERROR__OPERATOR_ENTRY_NOT_FOUND = 0x2216; // 8726
 /** FeeCapExceeded: Fee cap exceeded */
-export const NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED = 0x2215; // 8725
+export const NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED = 0x2217; // 8727
 /** TotalFeesCannotBeZero: Total fees cannot be 0 */
-export const NCN_PROGRAM_ERROR__TOTAL_FEES_CANNOT_BE_ZERO = 0x2216; // 8726
+export const NCN_PROGRAM_ERROR__TOTAL_FEES_CANNOT_BE_ZERO = 0x2218; // 8728
 /** DefaultProtocolWallet: Protocol wallet cannot be default */
-export const NCN_PROGRAM_ERROR__DEFAULT_PROTOCOL_WALLET = 0x2217; // 8727
+export const NCN_PROGRAM_ERROR__DEFAULT_PROTOCOL_WALLET = 0x2219; // 8729
 /** DefaultNcnWallet: NCN Fee wallet cannot be default */
-export const NCN_PROGRAM_ERROR__DEFAULT_NCN_WALLET = 0x2218; // 8728
+export const NCN_PROGRAM_ERROR__DEFAULT_NCN_WALLET = 0x221a; // 8730
 /** IncorrectNcnAdmin: Incorrect NCN Admin */
-export const NCN_PROGRAM_ERROR__INCORRECT_NCN_ADMIN = 0x2219; // 8729
+export const NCN_PROGRAM_ERROR__INCORRECT_NCN_ADMIN = 0x221b; // 8731
 /** IncorrectNcn: Incorrect NCN */
-export const NCN_PROGRAM_ERROR__INCORRECT_NCN = 0x221a; // 8730
+export const NCN_PROGRAM_ERROR__INCORRECT_NCN = 0x221c; // 8732
 /** IncorrectFeeAdmin: Incorrect fee admin */
-export const NCN_PROGRAM_ERROR__INCORRECT_FEE_ADMIN = 0x221b; // 8731
+export const NCN_PROGRAM_ERROR__INCORRECT_FEE_ADMIN = 0x221d; // 8733
 /** WeightTableNotFinalized: Weight table not finalized */
-export const NCN_PROGRAM_ERROR__WEIGHT_TABLE_NOT_FINALIZED = 0x221c; // 8732
+export const NCN_PROGRAM_ERROR__WEIGHT_TABLE_NOT_FINALIZED = 0x221e; // 8734
 /** WeightNotFound: Weight not found */
-export const NCN_PROGRAM_ERROR__WEIGHT_NOT_FOUND = 0x221d; // 8733
+export const NCN_PROGRAM_ERROR__WEIGHT_NOT_FOUND = 0x221f; // 8735
 /** NoOperators: No operators in ncn */
-export const NCN_PROGRAM_ERROR__NO_OPERATORS = 0x221e; // 8734
+export const NCN_PROGRAM_ERROR__NO_OPERATORS = 0x2220; // 8736
 /** VaultOperatorDelegationFinalized: Vault operator delegation is already finalized - should not happen */
-export const NCN_PROGRAM_ERROR__VAULT_OPERATOR_DELEGATION_FINALIZED = 0x221f; // 8735
+export const NCN_PROGRAM_ERROR__VAULT_OPERATOR_DELEGATION_FINALIZED = 0x2221; // 8737
 /** OperatorFinalized: Operator is already finalized - should not happen */
-export const NCN_PROGRAM_ERROR__OPERATOR_FINALIZED = 0x2220; // 8736
+export const NCN_PROGRAM_ERROR__OPERATOR_FINALIZED = 0x2222; // 8738
 /** TooManyVaultOperatorDelegations: Too many vault operator delegations */
-export const NCN_PROGRAM_ERROR__TOO_MANY_VAULT_OPERATOR_DELEGATIONS = 0x2221; // 8737
+export const NCN_PROGRAM_ERROR__TOO_MANY_VAULT_OPERATOR_DELEGATIONS = 0x2223; // 8739
 /** DuplicateVaultOperatorDelegation: Duplicate vault operator delegation */
-export const NCN_PROGRAM_ERROR__DUPLICATE_VAULT_OPERATOR_DELEGATION = 0x2222; // 8738
+export const NCN_PROGRAM_ERROR__DUPLICATE_VAULT_OPERATOR_DELEGATION = 0x2224; // 8740
 /** DuplicateVoteCast: Duplicate Vote Cast */
-export const NCN_PROGRAM_ERROR__DUPLICATE_VOTE_CAST = 0x2223; // 8739
+export const NCN_PROGRAM_ERROR__DUPLICATE_VOTE_CAST = 0x2225; // 8741
 /** CannotVoteWithZeroStake: Cannot Vote With Zero Delegation */
-export const NCN_PROGRAM_ERROR__CANNOT_VOTE_WITH_ZERO_STAKE = 0x2224; // 8740
+export const NCN_PROGRAM_ERROR__CANNOT_VOTE_WITH_ZERO_STAKE = 0x2226; // 8742
 /** OperatorAlreadyVoted: Operator Already Voted */
-export const NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED = 0x2225; // 8741
+export const NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED = 0x2227; // 8743
 /** OperatorVotesFull: Operator votes full */
-export const NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL = 0x2226; // 8742
+export const NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL = 0x2228; // 8744
 /** BallotTallyFull: Merkle root tally full */
-export const NCN_PROGRAM_ERROR__BALLOT_TALLY_FULL = 0x2227; // 8743
+export const NCN_PROGRAM_ERROR__BALLOT_TALLY_FULL = 0x2229; // 8745
 /** BallotTallyNotFoundFull: Ballot tally not found */
-export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_FOUND_FULL = 0x2228; // 8744
+export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_FOUND_FULL = 0x222a; // 8746
 /** BallotTallyNotEmpty: Ballot tally not empty */
-export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_EMPTY = 0x2229; // 8745
+export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_EMPTY = 0x222b; // 8747
 /** ConsensusAlreadyReached: Consensus already reached, cannot change vote */
-export const NCN_PROGRAM_ERROR__CONSENSUS_ALREADY_REACHED = 0x222a; // 8746
+export const NCN_PROGRAM_ERROR__CONSENSUS_ALREADY_REACHED = 0x222c; // 8748
 /** ConsensusNotReached: Consensus not reached */
-export const NCN_PROGRAM_ERROR__CONSENSUS_NOT_REACHED = 0x222b; // 8747
+export const NCN_PROGRAM_ERROR__CONSENSUS_NOT_REACHED = 0x222d; // 8749
 /** EpochSnapshotNotFinalized: Epoch snapshot not finalized */
-export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED = 0x222c; // 8748
+export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED = 0x222e; // 8750
 /** VotingNotValid: Voting not valid, too many slots after consensus reached */
-export const NCN_PROGRAM_ERROR__VOTING_NOT_VALID = 0x222d; // 8749
+export const NCN_PROGRAM_ERROR__VOTING_NOT_VALID = 0x222f; // 8751
 /** TieBreakerAdminInvalid: Tie breaker admin invalid */
-export const NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID = 0x222e; // 8750
+export const NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID = 0x2230; // 8752
 /** VotingNotFinalized: Voting not finalized */
-export const NCN_PROGRAM_ERROR__VOTING_NOT_FINALIZED = 0x222f; // 8751
+export const NCN_PROGRAM_ERROR__VOTING_NOT_FINALIZED = 0x2231; // 8753
 /** TieBreakerNotInPriorVotes: Tie breaking ballot must be one of the prior votes */
-export const NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES = 0x2230; // 8752
+export const NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES = 0x2232; // 8754
 /** InvalidMerkleProof: Invalid merkle proof */
-export const NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF = 0x2231; // 8753
+export const NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF = 0x2233; // 8755
 /** InvalidOperatorVoter: Operator voter needs to sign its vote */
-export const NCN_PROGRAM_ERROR__INVALID_OPERATOR_VOTER = 0x2232; // 8754
+export const NCN_PROGRAM_ERROR__INVALID_OPERATOR_VOTER = 0x2234; // 8756
 /** InvalidNcnFeeGroup: Not a valid NCN fee group */
-export const NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP = 0x2233; // 8755
+export const NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP = 0x2235; // 8757
 /** InvalidBaseFeeGroup: Not a valid base fee group */
-export const NCN_PROGRAM_ERROR__INVALID_BASE_FEE_GROUP = 0x2234; // 8756
+export const NCN_PROGRAM_ERROR__INVALID_BASE_FEE_GROUP = 0x2236; // 8758
 /** OperatorRewardListFull: Operator reward list full */
-export const NCN_PROGRAM_ERROR__OPERATOR_REWARD_LIST_FULL = 0x2235; // 8757
+export const NCN_PROGRAM_ERROR__OPERATOR_REWARD_LIST_FULL = 0x2237; // 8759
 /** OperatorRewardNotFound: Operator Reward not found */
-export const NCN_PROGRAM_ERROR__OPERATOR_REWARD_NOT_FOUND = 0x2236; // 8758
+export const NCN_PROGRAM_ERROR__OPERATOR_REWARD_NOT_FOUND = 0x2238; // 8760
 /** VaultRewardNotFound: Vault Reward not found */
-export const NCN_PROGRAM_ERROR__VAULT_REWARD_NOT_FOUND = 0x2237; // 8759
+export const NCN_PROGRAM_ERROR__VAULT_REWARD_NOT_FOUND = 0x2239; // 8761
 /** DestinationMismatch: Destination mismatch */
-export const NCN_PROGRAM_ERROR__DESTINATION_MISMATCH = 0x2238; // 8760
+export const NCN_PROGRAM_ERROR__DESTINATION_MISMATCH = 0x223a; // 8762
 /** NcnRewardRouteNotFound: Ncn reward route not found */
-export const NCN_PROGRAM_ERROR__NCN_REWARD_ROUTE_NOT_FOUND = 0x2239; // 8761
+export const NCN_PROGRAM_ERROR__NCN_REWARD_ROUTE_NOT_FOUND = 0x223b; // 8763
 /** FeeNotActive: Fee not active */
-export const NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE = 0x223a; // 8762
+export const NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE = 0x223c; // 8764
 /** NoRewards: No rewards to distribute */
-export const NCN_PROGRAM_ERROR__NO_REWARDS = 0x223b; // 8763
+export const NCN_PROGRAM_ERROR__NO_REWARDS = 0x223d; // 8765
 /** WeightNotSet: Weight not set */
-export const NCN_PROGRAM_ERROR__WEIGHT_NOT_SET = 0x223c; // 8764
+export const NCN_PROGRAM_ERROR__WEIGHT_NOT_SET = 0x223e; // 8766
 /** RouterStillRouting: Router still routing */
-export const NCN_PROGRAM_ERROR__ROUTER_STILL_ROUTING = 0x223d; // 8765
+export const NCN_PROGRAM_ERROR__ROUTER_STILL_ROUTING = 0x223f; // 8767
 /** InvalidEpochsBeforeStall: Invalid epochs before stall */
-export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_STALL = 0x223e; // 8766
+export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_STALL = 0x2240; // 8768
 /** InvalidEpochsBeforeClose: Invalid epochs before accounts can close */
-export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_CLOSE = 0x223f; // 8767
+export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_CLOSE = 0x2241; // 8769
 /** InvalidSlotsAfterConsensus: Invalid slots after consensus */
-export const NCN_PROGRAM_ERROR__INVALID_SLOTS_AFTER_CONSENSUS = 0x2240; // 8768
+export const NCN_PROGRAM_ERROR__INVALID_SLOTS_AFTER_CONSENSUS = 0x2242; // 8770
 /** VaultNeedsUpdate: Vault needs to be updated */
-export const NCN_PROGRAM_ERROR__VAULT_NEEDS_UPDATE = 0x2241; // 8769
+export const NCN_PROGRAM_ERROR__VAULT_NEEDS_UPDATE = 0x2243; // 8771
 /** InvalidAccountStatus: Invalid Account Status */
-export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_STATUS = 0x2242; // 8770
+export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_STATUS = 0x2244; // 8772
 /** AccountAlreadyInitialized: Account already initialized */
-export const NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x2243; // 8771
+export const NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x2245; // 8773
 /** BadBallot: Cannot vote with uninitialized account */
-export const NCN_PROGRAM_ERROR__BAD_BALLOT = 0x2244; // 8772
+export const NCN_PROGRAM_ERROR__BAD_BALLOT = 0x2246; // 8774
 /** VotingIsNotOver: Cannot route until voting is over */
-export const NCN_PROGRAM_ERROR__VOTING_IS_NOT_OVER = 0x2245; // 8773
+export const NCN_PROGRAM_ERROR__VOTING_IS_NOT_OVER = 0x2247; // 8775
 /** OperatorIsNotInSnapshot: Operator is not in snapshot */
-export const NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT = 0x2246; // 8774
+export const NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT = 0x2248; // 8776
 /** InvalidAccountToCloseDiscriminator: Invalid account_to_close Discriminator */
-export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_TO_CLOSE_DISCRIMINATOR = 0x2247; // 8775
+export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_TO_CLOSE_DISCRIMINATOR = 0x2249; // 8777
 /** CannotCloseAccount: Cannot close account */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT = 0x2248; // 8776
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT = 0x224a; // 8778
 /** CannotCloseAccountAlreadyClosed: Cannot close account - Already closed */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_ALREADY_CLOSED = 0x2249; // 8777
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_ALREADY_CLOSED = 0x224b; // 8779
 /** CannotCloseAccountNotEnoughEpochs: Cannot close account - Not enough epochs have passed since consensus reached */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NOT_ENOUGH_EPOCHS = 0x224a; // 8778
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NOT_ENOUGH_EPOCHS = 0x224c; // 8780
 /** CannotCloseAccountNoReceiverProvided: Cannot close account - No receiver provided */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_RECEIVER_PROVIDED = 0x224b; // 8779
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_RECEIVER_PROVIDED = 0x224d; // 8781
 /** CannotCloseAccountNoEnoughAccounts: Cannot close account - Not enough accounts */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_ENOUGH_ACCOUNTS = 0x224c; // 8780
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_ENOUGH_ACCOUNTS = 0x224e; // 8782
 /** CannotCloseEpochStateAccount: Cannot close epoch state account - Epoch state needs all other accounts to be closed first */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_EPOCH_STATE_ACCOUNT = 0x224d; // 8781
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_EPOCH_STATE_ACCOUNT = 0x224f; // 8783
 /** InvalidNCNFeeWallet: Invalid NCN Fee wallet */
-export const NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET = 0x224e; // 8782
+export const NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET = 0x2250; // 8784
 /** EpochIsClosingDown: Epoch is closing down */
-export const NCN_PROGRAM_ERROR__EPOCH_IS_CLOSING_DOWN = 0x224f; // 8783
+export const NCN_PROGRAM_ERROR__EPOCH_IS_CLOSING_DOWN = 0x2251; // 8785
 /** MarkerExists: Marker exists */
-export const NCN_PROGRAM_ERROR__MARKER_EXISTS = 0x2250; // 8784
+export const NCN_PROGRAM_ERROR__MARKER_EXISTS = 0x2252; // 8786
+/** SecretKeyError: Secret key error */
+export const NCN_PROGRAM_ERROR__SECRET_KEY_ERROR = 0x2253; // 8787
+/** AltBN128AddError: AltBN128 add error */
+export const NCN_PROGRAM_ERROR__ALT_B_N128_ADD_ERROR = 0x2254; // 8788
+/** AltBN128MulError: AltBN128 mul error */
+export const NCN_PROGRAM_ERROR__ALT_B_N128_MUL_ERROR = 0x2255; // 8789
+/** AltBN128PairingError: AltBN128 pairing error */
+export const NCN_PROGRAM_ERROR__ALT_B_N128_PAIRING_ERROR = 0x2256; // 8790
+/** HashToCurveError: Hash to curve error */
+export const NCN_PROGRAM_ERROR__HASH_TO_CURVE_ERROR = 0x2257; // 8791
+/** BLSSigningError: BLSSigning error */
+export const NCN_PROGRAM_ERROR__B_L_S_SIGNING_ERROR = 0x2258; // 8792
+/** BLSVerificationError: BLSVerification error */
+export const NCN_PROGRAM_ERROR__B_L_S_VERIFICATION_ERROR = 0x2259; // 8793
+/** SerializationError: Serialization error */
+export const NCN_PROGRAM_ERROR__SERIALIZATION_ERROR = 0x225a; // 8794
+/** G1PointCompressionError: G1 point compression error */
+export const NCN_PROGRAM_ERROR__G1_POINT_COMPRESSION_ERROR = 0x225b; // 8795
+/** G1PointDecompressionError: G1 point decompression error */
+export const NCN_PROGRAM_ERROR__G1_POINT_DECOMPRESSION_ERROR = 0x225c; // 8796
+/** G2PointCompressionError: G2 point compression error */
+export const NCN_PROGRAM_ERROR__G2_POINT_COMPRESSION_ERROR = 0x225d; // 8797
+/** G2PointDecompressionError: G2 point decompression error */
+export const NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR = 0x225e; // 8798
+/** InvalidInputLength: Invalid input length */
+export const NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH = 0x225f; // 8799
 
 export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED
+  | typeof NCN_PROGRAM_ERROR__ALT_B_N128_ADD_ERROR
+  | typeof NCN_PROGRAM_ERROR__ALT_B_N128_MUL_ERROR
+  | typeof NCN_PROGRAM_ERROR__ALT_B_N128_PAIRING_ERROR
   | typeof NCN_PROGRAM_ERROR__ARITHMETIC_FLOOR_ERROR
   | typeof NCN_PROGRAM_ERROR__ARITHMETIC_OVERFLOW
   | typeof NCN_PROGRAM_ERROR__ARITHMETIC_UNDERFLOW_ERROR
@@ -206,6 +239,8 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__BALLOT_TALLY_FULL
   | typeof NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_EMPTY
   | typeof NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_FOUND_FULL
+  | typeof NCN_PROGRAM_ERROR__B_L_S_SIGNING_ERROR
+  | typeof NCN_PROGRAM_ERROR__B_L_S_VERIFICATION_ERROR
   | typeof NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT
   | typeof NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_ALREADY_CLOSED
   | typeof NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_ENOUGH_ACCOUNTS
@@ -232,6 +267,11 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED
   | typeof NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED
   | typeof NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE
+  | typeof NCN_PROGRAM_ERROR__G1_POINT_COMPRESSION_ERROR
+  | typeof NCN_PROGRAM_ERROR__G1_POINT_DECOMPRESSION_ERROR
+  | typeof NCN_PROGRAM_ERROR__G2_POINT_COMPRESSION_ERROR
+  | typeof NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR
+  | typeof NCN_PROGRAM_ERROR__HASH_TO_CURVE_ERROR
   | typeof NCN_PROGRAM_ERROR__INCORRECT_FEE_ADMIN
   | typeof NCN_PROGRAM_ERROR__INCORRECT_NCN
   | typeof NCN_PROGRAM_ERROR__INCORRECT_NCN_ADMIN
@@ -241,6 +281,7 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__INVALID_BASE_FEE_GROUP
   | typeof NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_CLOSE
   | typeof NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_STALL
+  | typeof NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH
   | typeof NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF
   | typeof NCN_PROGRAM_ERROR__INVALID_MINT_FOR_WEIGHT_TABLE
   | typeof NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP
@@ -259,13 +300,17 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__NO_VALID_BALLOTS
   | typeof NCN_PROGRAM_ERROR__NO_VAULTS_IN_REGISTRY
   | typeof NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED
+  | typeof NCN_PROGRAM_ERROR__OPERATOR_ENTRY_NOT_FOUND
   | typeof NCN_PROGRAM_ERROR__OPERATOR_FINALIZED
   | typeof NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT
+  | typeof NCN_PROGRAM_ERROR__OPERATOR_REGISTRY_LIST_FULL
   | typeof NCN_PROGRAM_ERROR__OPERATOR_REWARD_LIST_FULL
   | typeof NCN_PROGRAM_ERROR__OPERATOR_REWARD_NOT_FOUND
   | typeof NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL
   | typeof NCN_PROGRAM_ERROR__REGISTRY_NOT_INITIALIZED
   | typeof NCN_PROGRAM_ERROR__ROUTER_STILL_ROUTING
+  | typeof NCN_PROGRAM_ERROR__SECRET_KEY_ERROR
+  | typeof NCN_PROGRAM_ERROR__SERIALIZATION_ERROR
   | typeof NCN_PROGRAM_ERROR__TABLE_NOT_INITIALIZED
   | typeof NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID
   | typeof NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES
@@ -294,6 +339,9 @@ let ncnProgramErrorMessages: Record<NcnProgramError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   ncnProgramErrorMessages = {
     [NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED]: `Account already initialized`,
+    [NCN_PROGRAM_ERROR__ALT_B_N128_ADD_ERROR]: `AltBN128 add error`,
+    [NCN_PROGRAM_ERROR__ALT_B_N128_MUL_ERROR]: `AltBN128 mul error`,
+    [NCN_PROGRAM_ERROR__ALT_B_N128_PAIRING_ERROR]: `AltBN128 pairing error`,
     [NCN_PROGRAM_ERROR__ARITHMETIC_FLOOR_ERROR]: `Floor Overflow`,
     [NCN_PROGRAM_ERROR__ARITHMETIC_OVERFLOW]: `Overflow`,
     [NCN_PROGRAM_ERROR__ARITHMETIC_UNDERFLOW_ERROR]: `Underflow`,
@@ -301,6 +349,8 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__BALLOT_TALLY_FULL]: `Merkle root tally full`,
     [NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_EMPTY]: `Ballot tally not empty`,
     [NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_FOUND_FULL]: `Ballot tally not found`,
+    [NCN_PROGRAM_ERROR__B_L_S_SIGNING_ERROR]: `BLSSigning error`,
+    [NCN_PROGRAM_ERROR__B_L_S_VERIFICATION_ERROR]: `BLSVerification error`,
     [NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT]: `Cannot close account`,
     [NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_ALREADY_CLOSED]: `Cannot close account - Already closed`,
     [NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_ENOUGH_ACCOUNTS]: `Cannot close account - Not enough accounts`,
@@ -327,6 +377,11 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED]: `Epoch snapshot not finalized`,
     [NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED]: `Fee cap exceeded`,
     [NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE]: `Fee not active`,
+    [NCN_PROGRAM_ERROR__G1_POINT_COMPRESSION_ERROR]: `G1 point compression error`,
+    [NCN_PROGRAM_ERROR__G1_POINT_DECOMPRESSION_ERROR]: `G1 point decompression error`,
+    [NCN_PROGRAM_ERROR__G2_POINT_COMPRESSION_ERROR]: `G2 point compression error`,
+    [NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR]: `G2 point decompression error`,
+    [NCN_PROGRAM_ERROR__HASH_TO_CURVE_ERROR]: `Hash to curve error`,
     [NCN_PROGRAM_ERROR__INCORRECT_FEE_ADMIN]: `Incorrect fee admin`,
     [NCN_PROGRAM_ERROR__INCORRECT_NCN]: `Incorrect NCN`,
     [NCN_PROGRAM_ERROR__INCORRECT_NCN_ADMIN]: `Incorrect NCN Admin`,
@@ -336,6 +391,7 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__INVALID_BASE_FEE_GROUP]: `Not a valid base fee group`,
     [NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_CLOSE]: `Invalid epochs before accounts can close`,
     [NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_STALL]: `Invalid epochs before stall`,
+    [NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH]: `Invalid input length`,
     [NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF]: `Invalid merkle proof`,
     [NCN_PROGRAM_ERROR__INVALID_MINT_FOR_WEIGHT_TABLE]: `Invalid mint for weight table`,
     [NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP]: `Not a valid NCN fee group`,
@@ -354,13 +410,17 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__NO_VALID_BALLOTS]: `No valid Ballot`,
     [NCN_PROGRAM_ERROR__NO_VAULTS_IN_REGISTRY]: `There are no vaults in the registry`,
     [NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED]: `Operator Already Voted`,
+    [NCN_PROGRAM_ERROR__OPERATOR_ENTRY_NOT_FOUND]: `Operator Entry not found`,
     [NCN_PROGRAM_ERROR__OPERATOR_FINALIZED]: `Operator is already finalized - should not happen`,
     [NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT]: `Operator is not in snapshot`,
+    [NCN_PROGRAM_ERROR__OPERATOR_REGISTRY_LIST_FULL]: `Operator Registry operators are at capacity`,
     [NCN_PROGRAM_ERROR__OPERATOR_REWARD_LIST_FULL]: `Operator reward list full`,
     [NCN_PROGRAM_ERROR__OPERATOR_REWARD_NOT_FOUND]: `Operator Reward not found`,
     [NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL]: `Operator votes full`,
     [NCN_PROGRAM_ERROR__REGISTRY_NOT_INITIALIZED]: `Registry not initialized`,
     [NCN_PROGRAM_ERROR__ROUTER_STILL_ROUTING]: `Router still routing`,
+    [NCN_PROGRAM_ERROR__SECRET_KEY_ERROR]: `Secret key error`,
+    [NCN_PROGRAM_ERROR__SERIALIZATION_ERROR]: `Serialization error`,
     [NCN_PROGRAM_ERROR__TABLE_NOT_INITIALIZED]: `Table not initialized`,
     [NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID]: `Tie breaker admin invalid`,
     [NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES]: `Tie breaking ballot must be one of the prior votes`,

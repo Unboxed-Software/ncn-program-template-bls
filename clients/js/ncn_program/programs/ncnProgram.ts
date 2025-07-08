@@ -31,14 +31,17 @@ import {
   type ParsedInitializeEpochSnapshotInstruction,
   type ParsedInitializeEpochStateInstruction,
   type ParsedInitializeNCNRewardRouterInstruction,
+  type ParsedInitializeOperatorRegistryInstruction,
   type ParsedInitializeOperatorSnapshotInstruction,
   type ParsedInitializeOperatorVaultRewardRouterInstruction,
   type ParsedInitializeVaultRegistryInstruction,
   type ParsedInitializeWeightTableInstruction,
   type ParsedReallocBallotBoxInstruction,
   type ParsedReallocNCNRewardRouterInstruction,
+  type ParsedReallocOperatorRegistryInstruction,
   type ParsedReallocVaultRegistryInstruction,
   type ParsedReallocWeightTableInstruction,
+  type ParsedRegisterOperatorInstruction,
   type ParsedRegisterVaultInstruction,
   type ParsedRouteNCNRewardsInstruction,
   type ParsedRouteOperatorVaultRewardsInstruction,
@@ -58,6 +61,7 @@ export enum NcnProgramAccount {
   OperatorSnapshot,
   EpochState,
   NCNRewardRouter,
+  OperatorRegistry,
   OperatorVaultRewardRouter,
   VaultRegistry,
   WeightTable,
@@ -68,6 +72,9 @@ export enum NcnProgramInstruction {
   InitializeVaultRegistry,
   ReallocVaultRegistry,
   RegisterVault,
+  InitializeOperatorRegistry,
+  RegisterOperator,
+  ReallocOperatorRegistry,
   InitializeEpochState,
   InitializeWeightTable,
   SetEpochWeights,
@@ -114,84 +121,93 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.RegisterVault;
   }
   if (containsBytes(data, getU8Encoder().encode(4), 0)) {
-    return NcnProgramInstruction.InitializeEpochState;
+    return NcnProgramInstruction.InitializeOperatorRegistry;
   }
   if (containsBytes(data, getU8Encoder().encode(5), 0)) {
-    return NcnProgramInstruction.InitializeWeightTable;
+    return NcnProgramInstruction.RegisterOperator;
   }
   if (containsBytes(data, getU8Encoder().encode(6), 0)) {
-    return NcnProgramInstruction.SetEpochWeights;
+    return NcnProgramInstruction.ReallocOperatorRegistry;
   }
   if (containsBytes(data, getU8Encoder().encode(7), 0)) {
-    return NcnProgramInstruction.ReallocWeightTable;
+    return NcnProgramInstruction.InitializeEpochState;
   }
   if (containsBytes(data, getU8Encoder().encode(8), 0)) {
-    return NcnProgramInstruction.InitializeEpochSnapshot;
+    return NcnProgramInstruction.InitializeWeightTable;
   }
   if (containsBytes(data, getU8Encoder().encode(9), 0)) {
-    return NcnProgramInstruction.InitializeOperatorSnapshot;
+    return NcnProgramInstruction.SetEpochWeights;
   }
   if (containsBytes(data, getU8Encoder().encode(10), 0)) {
-    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
+    return NcnProgramInstruction.ReallocWeightTable;
   }
   if (containsBytes(data, getU8Encoder().encode(11), 0)) {
-    return NcnProgramInstruction.InitializeBallotBox;
+    return NcnProgramInstruction.InitializeEpochSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(12), 0)) {
-    return NcnProgramInstruction.ReallocBallotBox;
+    return NcnProgramInstruction.InitializeOperatorSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(13), 0)) {
-    return NcnProgramInstruction.CastVote;
+    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
   if (containsBytes(data, getU8Encoder().encode(14), 0)) {
-    return NcnProgramInstruction.InitializeNCNRewardRouter;
+    return NcnProgramInstruction.InitializeBallotBox;
   }
   if (containsBytes(data, getU8Encoder().encode(15), 0)) {
-    return NcnProgramInstruction.ReallocNCNRewardRouter;
+    return NcnProgramInstruction.ReallocBallotBox;
   }
   if (containsBytes(data, getU8Encoder().encode(16), 0)) {
-    return NcnProgramInstruction.RouteNCNRewards;
+    return NcnProgramInstruction.CastVote;
   }
   if (containsBytes(data, getU8Encoder().encode(17), 0)) {
-    return NcnProgramInstruction.DistributeProtocolRewards;
+    return NcnProgramInstruction.InitializeNCNRewardRouter;
   }
   if (containsBytes(data, getU8Encoder().encode(18), 0)) {
-    return NcnProgramInstruction.DistributeNCNRewards;
+    return NcnProgramInstruction.ReallocNCNRewardRouter;
   }
   if (containsBytes(data, getU8Encoder().encode(19), 0)) {
-    return NcnProgramInstruction.InitializeOperatorVaultRewardRouter;
+    return NcnProgramInstruction.RouteNCNRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(20), 0)) {
-    return NcnProgramInstruction.DistributeOperatorVaultRewardRoute;
+    return NcnProgramInstruction.DistributeProtocolRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(21), 0)) {
-    return NcnProgramInstruction.RouteOperatorVaultRewards;
+    return NcnProgramInstruction.DistributeNCNRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(22), 0)) {
-    return NcnProgramInstruction.CloseEpochAccount;
+    return NcnProgramInstruction.InitializeOperatorVaultRewardRouter;
   }
   if (containsBytes(data, getU8Encoder().encode(23), 0)) {
-    return NcnProgramInstruction.DistributeOperatorRewards;
+    return NcnProgramInstruction.DistributeOperatorVaultRewardRoute;
   }
   if (containsBytes(data, getU8Encoder().encode(24), 0)) {
-    return NcnProgramInstruction.DistributeVaultRewards;
+    return NcnProgramInstruction.RouteOperatorVaultRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(25), 0)) {
-    return NcnProgramInstruction.AdminSetParameters;
+    return NcnProgramInstruction.CloseEpochAccount;
   }
   if (containsBytes(data, getU8Encoder().encode(26), 0)) {
-    return NcnProgramInstruction.AdminSetNewAdmin;
+    return NcnProgramInstruction.DistributeOperatorRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(27), 0)) {
-    return NcnProgramInstruction.AdminSetTieBreaker;
+    return NcnProgramInstruction.DistributeVaultRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(28), 0)) {
-    return NcnProgramInstruction.AdminSetWeight;
+    return NcnProgramInstruction.AdminSetParameters;
   }
   if (containsBytes(data, getU8Encoder().encode(29), 0)) {
-    return NcnProgramInstruction.AdminRegisterStMint;
+    return NcnProgramInstruction.AdminSetNewAdmin;
   }
   if (containsBytes(data, getU8Encoder().encode(30), 0)) {
+    return NcnProgramInstruction.AdminSetTieBreaker;
+  }
+  if (containsBytes(data, getU8Encoder().encode(31), 0)) {
+    return NcnProgramInstruction.AdminSetWeight;
+  }
+  if (containsBytes(data, getU8Encoder().encode(32), 0)) {
+    return NcnProgramInstruction.AdminRegisterStMint;
+  }
+  if (containsBytes(data, getU8Encoder().encode(33), 0)) {
     return NcnProgramInstruction.AdminSetStMint;
   }
   throw new Error(
@@ -214,6 +230,15 @@ export type ParsedNcnProgramInstruction<
   | ({
       instructionType: NcnProgramInstruction.RegisterVault;
     } & ParsedRegisterVaultInstruction<TProgram>)
+  | ({
+      instructionType: NcnProgramInstruction.InitializeOperatorRegistry;
+    } & ParsedInitializeOperatorRegistryInstruction<TProgram>)
+  | ({
+      instructionType: NcnProgramInstruction.RegisterOperator;
+    } & ParsedRegisterOperatorInstruction<TProgram>)
+  | ({
+      instructionType: NcnProgramInstruction.ReallocOperatorRegistry;
+    } & ParsedReallocOperatorRegistryInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.InitializeEpochState;
     } & ParsedInitializeEpochStateInstruction<TProgram>)

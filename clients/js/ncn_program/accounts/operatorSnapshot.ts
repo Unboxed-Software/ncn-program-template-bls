@@ -13,12 +13,16 @@ import {
   decodeAccount,
   fetchEncodedAccount,
   fetchEncodedAccounts,
+  fixDecoderSize,
+  fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
   getArrayDecoder,
   getArrayEncoder,
   getBoolDecoder,
   getBoolEncoder,
+  getBytesDecoder,
+  getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
@@ -37,6 +41,7 @@ import {
   type FetchAccountsConfig,
   type MaybeAccount,
   type MaybeEncodedAccount,
+  type ReadonlyUint8Array,
 } from '@solana/web3.js';
 import {
   getStakeWeightsDecoder,
@@ -52,6 +57,7 @@ import {
 export type OperatorSnapshot = {
   discriminator: bigint;
   operator: Address;
+  g1Pubkey: ReadonlyUint8Array;
   ncn: Address;
   ncnEpoch: bigint;
   bump: number;
@@ -71,6 +77,7 @@ export type OperatorSnapshot = {
 export type OperatorSnapshotArgs = {
   discriminator: number | bigint;
   operator: Address;
+  g1Pubkey: ReadonlyUint8Array;
   ncn: Address;
   ncnEpoch: number | bigint;
   bump: number;
@@ -91,6 +98,7 @@ export function getOperatorSnapshotEncoder(): Encoder<OperatorSnapshotArgs> {
   return getStructEncoder([
     ['discriminator', getU64Encoder()],
     ['operator', getAddressEncoder()],
+    ['g1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
     ['ncn', getAddressEncoder()],
     ['ncnEpoch', getU64Encoder()],
     ['bump', getU8Encoder()],
@@ -115,6 +123,7 @@ export function getOperatorSnapshotDecoder(): Decoder<OperatorSnapshot> {
   return getStructDecoder([
     ['discriminator', getU64Decoder()],
     ['operator', getAddressDecoder()],
+    ['g1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],
     ['ncn', getAddressDecoder()],
     ['ncnEpoch', getU64Decoder()],
     ['bump', getU8Decoder()],

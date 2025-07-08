@@ -13,6 +13,7 @@ export * from './epochMarker';
 export * from './epochSnapshot';
 export * from './epochState';
 export * from './nCNRewardRouter';
+export * from './operatorRegistry';
 export * from './operatorSnapshot';
 export * from './operatorVaultRewardRouter';
 export * from './vaultRegistry';

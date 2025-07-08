@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_EPOCH_STATE_DISCRIMINATOR = 4;
+export const INITIALIZE_EPOCH_STATE_DISCRIMINATOR = 7;
 
 export function getInitializeEpochStateDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_EPOCH_STATE_DISCRIMINATOR);

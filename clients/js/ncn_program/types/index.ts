@@ -14,6 +14,7 @@ export * from './fee';
 export * from './feeConfig';
 export * from './fees';
 export * from './nCNRewardRouterRewards';
+export * from './operatorEntry';
 export * from './operatorVaultRewardRoute';
 export * from './operatorVote';
 export * from './progress';

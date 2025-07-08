@@ -63,6 +63,37 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "ncn_vault_ticket")]
     RegisterVault,
 
+    /// Initializes the operator registry account to track operators
+    #[account(0, name = "config")]
+    #[account(1, writable, name = "operator_registry")]
+    #[account(2, name = "ncn")]
+    #[account(3, writable, name = "account_payer")]
+    #[account(4, name = "system_program")]
+    InitializeOperatorRegistry,
+
+    /// Registers an operator to the operator registry
+    #[account(0, name = "config")]
+    #[account(1, writable, name = "operator_registry")]
+    #[account(2, name = "ncn")]
+    #[account(3, name = "operator")]
+    #[account(4, signer, name = "operator_admin")]
+    RegisterOperator {
+        /// G1 public key (compressed, 32 bytes)
+        g1_pubkey: [u8; 32],
+        /// G2 public key (compressed, 64 bytes)  
+        g2_pubkey: [u8; 64],
+        /// BLS signature of G1 pubkey by G2 private key (compressed G1 point, 32 bytes)
+        signature: [u8; 64],
+    },
+
+    /// Resizes the operator registry account
+    #[account(0, name = "config")]
+    #[account(1, writable, name = "operator_registry")]
+    #[account(2, name = "ncn")]
+    #[account(3, writable, name = "account_payer")]
+    #[account(4, name = "system_program")]
+    ReallocOperatorRegistry,
+
     // ---------------------------------------------------- //
     //                       SNAPSHOT                       //
     // ---------------------------------------------------- //

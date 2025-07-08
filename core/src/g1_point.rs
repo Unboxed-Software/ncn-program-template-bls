@@ -1,3 +1,7 @@
+// =============================================================================
+// IMPORTS
+// =============================================================================
+
 use core::ops::Add;
 use core::ops::Mul;
 use dashu::integer::UBig;
@@ -16,13 +20,21 @@ use crate::{
 };
 use crate::{g2_point::G2Point, privkey::PrivKey, schemes::BLSSignature};
 
+// =============================================================================
+// STRUCT DEFINITIONS
+// =============================================================================
+
 #[derive(Clone, Debug, Copy)]
 pub struct G1Point(pub [u8; 64]);
 
 #[derive(Clone, Debug, Copy)]
 pub struct G1CompressedPoint(pub [u8; 32]);
 
-// Constructors from byte arrays
+// =============================================================================
+// BASIC CONSTRUCTORS AND CONVERSIONS
+// =============================================================================
+
+// From byte arrays
 impl From<[u8; 64]> for G1Point {
     fn from(bytes: [u8; 64]) -> Self {
         G1Point(bytes)
@@ -35,6 +47,7 @@ impl From<[u8; 32]> for G1CompressedPoint {
     }
 }
 
+// From byte slices
 impl TryFrom<&[u8]> for G1Point {
     type Error = NCNProgramError;
 
@@ -61,6 +74,7 @@ impl TryFrom<&[u8]> for G1CompressedPoint {
     }
 }
 
+// From Vec<u8>
 impl TryFrom<Vec<u8>> for G1Point {
     type Error = NCNProgramError;
 
@@ -87,6 +101,54 @@ impl TryFrom<Vec<u8>> for G1CompressedPoint {
     }
 }
 
+// From PrivKey
+impl TryFrom<PrivKey> for G1Point {
+    type Error = NCNProgramError;
+
+    fn try_from(value: PrivKey) -> Result<Self, Self::Error> {
+        let g1_generator = G1Point::from(G1_GENERATOR);
+        Ok(g1_generator.mul(value.0))
+    }
+}
+
+impl TryFrom<PrivKey> for G1CompressedPoint {
+    type Error = NCNProgramError;
+
+    fn try_from(value: PrivKey) -> Result<Self, Self::Error> {
+        let g1_generator = G1Point::from(G1_GENERATOR);
+        let pubkey = g1_generator.mul(value.0);
+        Ok(G1CompressedPoint::try_from(pubkey)?)
+    }
+}
+
+// Between compressed and uncompressed points
+impl TryFrom<G1Point> for G1CompressedPoint {
+    type Error = NCNProgramError;
+
+    fn try_from(value: G1Point) -> Result<Self, Self::Error> {
+        Ok(G1CompressedPoint(
+            alt_bn128_g1_compress(&value.0)
+                .map_err(|_| NCNProgramError::G1PointCompressionError)?,
+        ))
+    }
+}
+
+impl TryFrom<&G1CompressedPoint> for G1Point {
+    type Error = NCNProgramError;
+
+    fn try_from(value: &G1CompressedPoint) -> Result<Self, Self::Error> {
+        Ok(G1Point(
+            alt_bn128_g1_decompress(&value.0)
+                .map_err(|_| NCNProgramError::G1PointDecompressionError)?,
+        ))
+    }
+}
+
+// =============================================================================
+// TRAIT IMPLEMENTATIONS
+// =============================================================================
+
+// BLSSignature trait
 impl BLSSignature for G1Point {
     fn to_bytes(&self) -> Result<[u8; 64], NCNProgramError> {
         Ok(self.0)
@@ -99,6 +161,7 @@ impl BLSSignature for G1CompressedPoint {
     }
 }
 
+// Addition operations
 impl Add for G1Point {
     type Output = G1Point;
 
@@ -130,49 +193,63 @@ impl CheckedAdd for G1Point {
     }
 }
 
-impl TryFrom<PrivKey> for G1CompressedPoint {
-    type Error = NCNProgramError;
-
-    fn try_from(value: PrivKey) -> Result<Self, Self::Error> {
-        let g1_generator = G1Point::from(G1_GENERATOR);
-        let pubkey = g1_generator.mul(value.0);
-        Ok(G1CompressedPoint::try_from(pubkey)?)
+// Multiplication operations
+impl Mul<[u8; 32]> for G1Point {
+    type Output = G1Point;
+    fn mul(self, rhs: [u8; 32]) -> G1Point {
+        match G1Point::mul(&self, rhs) {
+            Ok(point) => point,
+            Err(_) => panic!("G1Point multiplication failed"),
+        }
     }
 }
 
-impl TryFrom<PrivKey> for G1Point {
-    type Error = NCNProgramError;
-
-    fn try_from(value: PrivKey) -> Result<Self, Self::Error> {
-        let g1_generator = G1Point::from(G1_GENERATOR);
-
-        Ok(g1_generator.mul(value.0))
-    }
-}
-
-impl TryFrom<G1Point> for G1CompressedPoint {
-    type Error = NCNProgramError;
-
-    fn try_from(value: G1Point) -> Result<Self, Self::Error> {
-        Ok(G1CompressedPoint(
-            alt_bn128_g1_compress(&value.0)
-                .map_err(|_| NCNProgramError::G1PointCompressionError)?,
-        ))
-    }
-}
-
-impl TryFrom<&G1CompressedPoint> for G1Point {
-    type Error = NCNProgramError;
-
-    fn try_from(value: &G1CompressedPoint) -> Result<Self, Self::Error> {
-        Ok(G1Point(
-            alt_bn128_g1_decompress(&value.0)
-                .map_err(|_| NCNProgramError::G1PointDecompressionError)?,
-        ))
-    }
-}
+// =============================================================================
+// CORE FUNCTIONALITY
+// =============================================================================
 
 impl G1Point {
+    /// Multiply this G1 point by a scalar (big-endian 32 bytes)
+    pub fn mul(&self, scalar: [u8; 32]) -> Result<G1Point, NCNProgramError> {
+        let mut input = [0u8; 96];
+        input[..64].copy_from_slice(&self.0);
+        input[64..].copy_from_slice(&scalar);
+        let result =
+            alt_bn128_multiplication(&input).map_err(|_| NCNProgramError::AltBN128MulError)?;
+        Ok(G1Point(
+            result
+                .try_into()
+                .map_err(|_| NCNProgramError::AltBN128MulError)?,
+        ))
+    }
+
+    /// Returns the negation of the point: (x, -y mod p)
+    pub fn negate(&self) -> Self {
+        // x: first 32 bytes, y: last 32 bytes
+        let x_bytes = &self.0[0..32];
+        let y_bytes = &self.0[32..64];
+        let y = UBig::from_be_bytes(y_bytes);
+        let neg_y = if y == UBig::ZERO {
+            UBig::ZERO
+        } else {
+            (MODULUS.clone() - y) % MODULUS.clone()
+        };
+        let mut neg_point = [0u8; 64];
+        neg_point[0..32].copy_from_slice(x_bytes);
+        let neg_y_bytes = neg_y.to_be_bytes();
+        // pad to 32 bytes if needed
+        let pad = 32 - neg_y_bytes.len();
+        if pad > 0 {
+            for i in 0..pad {
+                neg_point[32 + i] = 0;
+            }
+            neg_point[32 + pad..64].copy_from_slice(&neg_y_bytes);
+        } else {
+            neg_point[32..64].copy_from_slice(&neg_y_bytes);
+        }
+        G1Point(neg_point)
+    }
+
     /// Verify G2 point using pairing check: e(self, G2) = e(G1_MINUS, g2)
     /// This is equivalent to checking: e(self, G2) * e(-G1_MINUS, g2) = 1
     /// Since G1_MINUS = (1, -2), then -G1_MINUS = (1, 2) = G1_generator
@@ -222,57 +299,6 @@ impl G1Point {
             }
         }
     }
-
-    /// Returns the negation of the point: (x, -y mod p)
-    pub fn negate(&self) -> Self {
-        // x: first 32 bytes, y: last 32 bytes
-        let x_bytes = &self.0[0..32];
-        let y_bytes = &self.0[32..64];
-        let y = UBig::from_be_bytes(y_bytes);
-        let neg_y = if y == UBig::ZERO {
-            UBig::ZERO
-        } else {
-            (MODULUS.clone() - y) % MODULUS.clone()
-        };
-        let mut neg_point = [0u8; 64];
-        neg_point[0..32].copy_from_slice(x_bytes);
-        let neg_y_bytes = neg_y.to_be_bytes();
-        // pad to 32 bytes if needed
-        let pad = 32 - neg_y_bytes.len();
-        if pad > 0 {
-            for i in 0..pad {
-                neg_point[32 + i] = 0;
-            }
-            neg_point[32 + pad..64].copy_from_slice(&neg_y_bytes);
-        } else {
-            neg_point[32..64].copy_from_slice(&neg_y_bytes);
-        }
-        G1Point(neg_point)
-    }
-
-    /// Multiply this G1 point by a scalar (big-endian 32 bytes)
-    pub fn mul(&self, scalar: [u8; 32]) -> Result<G1Point, NCNProgramError> {
-        let mut input = [0u8; 96];
-        input[..64].copy_from_slice(&self.0);
-        input[64..].copy_from_slice(&scalar);
-        let result =
-            alt_bn128_multiplication(&input).map_err(|_| NCNProgramError::AltBN128MulError)?;
-        Ok(G1Point(
-            result
-                .try_into()
-                .map_err(|_| NCNProgramError::AltBN128MulError)?,
-        ))
-    }
-}
-
-impl Mul<[u8; 32]> for G1Point {
-    type Output = G1Point;
-    fn mul(self, rhs: [u8; 32]) -> G1Point {
-        match G1Point::mul(&self, rhs) {
-            Ok(point) => point,
-            Err(_) => panic!("G1Point multiplication failed"),
-        }
-    }
 }
 
 impl G1CompressedPoint {
@@ -293,20 +319,22 @@ impl G1CompressedPoint {
     }
 }
 
-impl G1CompressedPoint {
-    #[cfg(not(target_os = "solana"))]
-    pub fn from_random() -> G1CompressedPoint {
-        let private_key = PrivKey::from_random();
+// =============================================================================
+// UTILITY METHODS
+// =============================================================================
 
-        G1CompressedPoint::try_from(private_key).expect("Invalid private key for G1")
+#[cfg(not(target_os = "solana"))]
+impl G1Point {
+    pub fn from_random() -> G1Point {
+        let private_key = PrivKey::from_random();
+        G1Point::try_from(private_key).expect("Invalid private key for G1")
     }
 }
 
-impl G1Point {
-    #[cfg(not(target_os = "solana"))]
-    pub fn from_random() -> G1Point {
+#[cfg(not(target_os = "solana"))]
+impl G1CompressedPoint {
+    pub fn from_random() -> G1CompressedPoint {
         let private_key = PrivKey::from_random();
-
-        G1Point::try_from(private_key).expect("Invalid private key for G1")
+        G1CompressedPoint::try_from(private_key).expect("Invalid private key for G1")
     }
 }

@@ -88,7 +88,7 @@ pub struct DistributeNCNRewardsInstructionData {
 
 impl DistributeNCNRewardsInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 18 }
+        Self { discriminator: 21 }
     }
 }
 

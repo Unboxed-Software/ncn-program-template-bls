@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_BALLOT_BOX_DISCRIMINATOR = 11;
+export const INITIALIZE_BALLOT_BOX_DISCRIMINATOR = 14;
 
 export function getInitializeBallotBoxDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_BALLOT_BOX_DISCRIMINATOR);

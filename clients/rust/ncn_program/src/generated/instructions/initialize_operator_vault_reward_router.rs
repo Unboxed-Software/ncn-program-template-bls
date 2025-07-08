@@ -100,7 +100,7 @@ pub struct InitializeOperatorVaultRewardRouterInstructionData {
 
 impl InitializeOperatorVaultRewardRouterInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 19 }
+        Self { discriminator: 22 }
     }
 }
 

@@ -1,6 +1,7 @@
 use jito_bytemuck::AccountDeserialize;
 use jito_restaking_core::{
     config::Config, ncn_operator_state::NcnOperatorState, ncn_vault_ticket::NcnVaultTicket,
+    operator::Operator,
 };
 use jito_vault_core::{
     vault_ncn_ticket::VaultNcnTicket, vault_operator_delegation::VaultOperatorDelegation,
@@ -13,10 +14,11 @@ use ncn_program_client::{
         DistributeOperatorVaultRewardRouteBuilder, DistributeProtocolRewardsBuilder,
         DistributeVaultRewardsBuilder, InitializeBallotBoxBuilder, InitializeConfigBuilder,
         InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
-        InitializeNCNRewardRouterBuilder, InitializeOperatorSnapshotBuilder,
-        InitializeOperatorVaultRewardRouterBuilder, InitializeVaultRegistryBuilder,
-        InitializeWeightTableBuilder, ReallocBallotBoxBuilder, ReallocNCNRewardRouterBuilder,
-        ReallocVaultRegistryBuilder, ReallocWeightTableBuilder, RegisterVaultBuilder,
+        InitializeNCNRewardRouterBuilder, InitializeOperatorRegistryBuilder,
+        InitializeOperatorSnapshotBuilder, InitializeOperatorVaultRewardRouterBuilder,
+        InitializeVaultRegistryBuilder, InitializeWeightTableBuilder, ReallocBallotBoxBuilder,
+        ReallocNCNRewardRouterBuilder, ReallocOperatorRegistryBuilder, ReallocVaultRegistryBuilder,
+        ReallocWeightTableBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
         RouteNCNRewardsBuilder, RouteOperatorVaultRewardsBuilder, SetEpochWeightsBuilder,
         SnapshotVaultOperatorDelegationBuilder,
     },
@@ -27,20 +29,21 @@ use ncn_program_core::{
     ballot_box::BallotBox,
     config::Config as NcnConfig,
     consensus_result::ConsensusResult,
-    constants::MAX_REALLOC_BYTES,
+    constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE, MAX_REALLOC_BYTES},
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
     ncn_reward_router::{NCNRewardReceiver, NCNRewardRouter},
+    operator_registry::OperatorRegistry,
     operator_vault_reward_router::{OperatorVaultRewardReceiver, OperatorVaultRewardRouter},
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
 use solana_program::{
-    instruction::InstructionError, native_token::sol_to_lamports, pubkey::Pubkey,
-    system_instruction::transfer,
+    instruction::InstructionError, native_token::sol_to_lamports, program_error::ProgramError,
+    pubkey::Pubkey, system_instruction::transfer,
 };
 use solana_program_test::{BanksClient, ProgramTestBanksClientExt};
 use solana_sdk::{
@@ -2046,6 +2049,169 @@ impl NCNProgramClient {
             &[ix],
             Some(&self.payer.pubkey()),
             &[&self.payer],
+            blockhash,
+        ))
+        .await
+    }
+
+    pub async fn get_operator_registry(
+        &mut self,
+        ncn_pubkey: Pubkey,
+    ) -> TestResult<OperatorRegistry> {
+        let operator_registry_pda =
+            OperatorRegistry::find_program_address(&ncn_program::id(), &ncn_pubkey).0;
+
+        let account = self
+            .banks_client
+            .get_account(operator_registry_pda)
+            .await?
+            .ok_or(TestError::ProgramError(ProgramError::InvalidAccountData))?;
+
+        Ok(*OperatorRegistry::try_from_slice_unchecked(account.data.as_slice()).unwrap())
+    }
+
+    pub async fn do_full_initialize_operator_registry(&mut self, ncn: Pubkey) -> TestResult<()> {
+        self.do_initialize_operator_registry(ncn).await?;
+        let num_reallocs =
+            (OperatorRegistry::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
+        if num_reallocs > 0 {
+            self.do_realloc_operator_registry(ncn, num_reallocs).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn do_initialize_operator_registry(&mut self, ncn: Pubkey) -> TestResult<()> {
+        let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
+        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
+
+        self.initialize_operator_registry(&config, &operator_registry, &ncn)
+            .await
+    }
+
+    /// Sends a transaction to initialize the operator registry account.
+    pub async fn initialize_operator_registry(
+        &mut self,
+        ncn_config: &Pubkey,
+        operator_registry: &Pubkey,
+        ncn: &Pubkey,
+    ) -> TestResult<()> {
+        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
+
+        let ix = InitializeOperatorRegistryBuilder::new()
+            .config(*ncn_config)
+            .operator_registry(*operator_registry)
+            .ncn(*ncn)
+            .account_payer(account_payer)
+            .system_program(system_program::id())
+            .instruction();
+
+        let blockhash = self.banks_client.get_latest_blockhash().await?;
+        self.process_transaction(&Transaction::new_signed_with_payer(
+            &[ix],
+            Some(&self.payer.pubkey()),
+            &[&self.payer],
+            blockhash,
+        ))
+        .await
+    }
+
+    /// Reallocates the operator registry account multiple times.
+    pub async fn do_realloc_operator_registry(
+        &mut self,
+        ncn: Pubkey,
+        num_reallocations: u64,
+    ) -> TestResult<()> {
+        let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
+        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
+        self.realloc_operator_registry(&ncn, &ncn_config, &operator_registry, num_reallocations)
+            .await
+    }
+
+    /// Sends transactions to reallocate the operator registry account.
+    pub async fn realloc_operator_registry(
+        &mut self,
+        ncn: &Pubkey,
+        config: &Pubkey,
+        operator_registry: &Pubkey,
+        num_reallocations: u64,
+    ) -> TestResult<()> {
+        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
+
+        let ix = ReallocOperatorRegistryBuilder::new()
+            .config(*config)
+            .operator_registry(*operator_registry)
+            .ncn(*ncn)
+            .account_payer(account_payer)
+            .system_program(system_program::id())
+            .instruction();
+
+        let ixs = vec![ix; num_reallocations as usize];
+
+        let blockhash = self.banks_client.get_latest_blockhash().await?;
+        self.process_transaction(&Transaction::new_signed_with_payer(
+            &ixs,
+            Some(&self.payer.pubkey()),
+            &[&self.payer],
+            blockhash,
+        ))
+        .await
+    }
+
+    pub async fn do_register_operator(
+        &mut self,
+        ncn: Pubkey,
+        operator_pubkey: Pubkey,
+        operator_admin: &Keypair,
+        g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
+        g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
+        signature: [u8; 64],
+    ) -> TestResult<()> {
+        let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
+        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
+
+        self.register_operator(
+            config,
+            operator_registry,
+            ncn,
+            operator_pubkey,
+            operator_admin,
+            g1_pubkey,
+            g2_pubkey,
+            signature,
+        )
+        .await
+    }
+
+    /// Sends a transaction to register an operator with BLS keys.
+    pub async fn register_operator(
+        &mut self,
+        config: Pubkey,
+        operator_registry: Pubkey,
+        ncn: Pubkey,
+        operator_pubkey: Pubkey,
+        operator_admin: &Keypair,
+        g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
+        g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
+        signature: [u8; 64],
+    ) -> TestResult<()> {
+        let ix = RegisterOperatorBuilder::new()
+            .config(config)
+            .operator_registry(operator_registry)
+            .ncn(ncn)
+            .operator(operator_pubkey)
+            .operator_admin(operator_admin.pubkey())
+            .g1_pubkey(g1_pubkey)
+            .g2_pubkey(g2_pubkey)
+            .signature(signature)
+            .instruction();
+
+        let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);
+
+        let blockhash = self.banks_client.get_latest_blockhash().await?;
+        self.process_transaction(&Transaction::new_signed_with_payer(
+            &[ix, compute_budget_ix],
+            Some(&self.payer.pubkey()),
+            &[&self.payer, operator_admin],
             blockhash,
         ))
         .await

@@ -20,6 +20,7 @@ pub struct OperatorSnapshot {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub operator: Pubkey,
+    pub g1_pubkey: [u8; 32],
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")

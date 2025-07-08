@@ -14,6 +14,10 @@ pub const MIN_EPOCHS_AFTER_CONSENSUS_BEFORE_CLOSE: u64 = 10;
 pub const MAX_EPOCHS_AFTER_CONSENSUS_BEFORE_CLOSE: u64 = 100;
 pub const MIN_VALID_SLOTS_AFTER_CONSENSUS: u64 = 1000;
 pub const MAX_VALID_SLOTS_AFTER_CONSENSUS: u64 = 50 * DEFAULT_SLOTS_PER_EPOCH;
+pub const G1_POINT_SIZE: usize = 64;
+pub const G2_POINT_SIZE: usize = 128;
+pub const G1_COMPRESSED_POINT_SIZE: usize = 32;
+pub const G2_COMPRESSED_POINT_SIZE: usize = 64;
 const PRECISE_CONSENSUS_NUMERATOR: u128 = 2;
 const PRECISE_CONSENSUS_DENOMINATOR: u128 = 3;
 pub fn precise_consensus() -> Result<PreciseNumber, NCNProgramError> {
