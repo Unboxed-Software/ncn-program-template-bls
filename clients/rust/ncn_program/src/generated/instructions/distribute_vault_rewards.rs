@@ -99,7 +99,7 @@ pub struct DistributeVaultRewardsInstructionData {
 
 impl DistributeVaultRewardsInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 27 }
+        Self { discriminator: 28 }
     }
 }
 

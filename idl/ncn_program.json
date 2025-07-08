@@ -268,6 +268,69 @@
       }
     },
     {
+      "name": "UpdateOperatorBN128Keys",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operatorRegistry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ncn",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operator",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operatorAdmin",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "g1Pubkey",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "g2Pubkey",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 6
+      }
+    },
+    {
       "name": "ReallocOperatorRegistry",
       "accounts": [
         {
@@ -299,7 +362,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 7
       }
     },
     {
@@ -344,7 +407,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 8
       }
     },
     {
@@ -394,7 +457,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 9
       }
     },
     {
@@ -429,7 +492,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 10
       }
     },
     {
@@ -479,7 +542,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 11
       }
     },
     {
@@ -534,7 +597,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
+        "value": 12
       }
     },
     {
@@ -604,7 +667,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 13
       }
     },
     {
@@ -679,7 +742,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 14
       }
     },
     {
@@ -734,7 +797,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 14
+        "value": 15
       }
     },
     {
@@ -779,7 +842,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 15
+        "value": 16
       }
     },
     {
@@ -843,7 +906,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 16
+        "value": 17
       }
     },
     {
@@ -893,7 +956,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 17
+        "value": 18
       }
     },
     {
@@ -938,7 +1001,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 18
+        "value": 19
       }
     },
     {
@@ -992,7 +1055,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 19
+        "value": 20
       }
     },
     {
@@ -1042,7 +1105,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 20
+        "value": 21
       }
     },
     {
@@ -1092,7 +1155,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 21
+        "value": 22
       }
     },
     {
@@ -1152,7 +1215,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 22
+        "value": 23
       }
     },
     {
@@ -1212,7 +1275,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 23
+        "value": 24
       }
     },
     {
@@ -1261,7 +1324,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 24
+        "value": 25
       }
     },
     {
@@ -1323,7 +1386,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 25
+        "value": 26
       }
     },
     {
@@ -1378,7 +1441,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 26
+        "value": 27
       }
     },
     {
@@ -1438,7 +1501,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 27
+        "value": 28
       }
     },
     {
@@ -1488,7 +1551,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 28
+        "value": 29
       }
     },
     {
@@ -1525,7 +1588,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 29
+        "value": 30
       }
     },
     {
@@ -1569,7 +1632,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 30
+        "value": 31
       }
     },
     {
@@ -1612,7 +1675,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 31
+        "value": 32
       }
     },
     {
@@ -1654,7 +1717,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 32
+        "value": 33
       }
     },
     {
@@ -1695,7 +1758,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 33
+        "value": 34
       }
     }
   ],

@@ -70,7 +70,7 @@ pub struct ReallocOperatorRegistryInstructionData {
 
 impl ReallocOperatorRegistryInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 6 }
+        Self { discriminator: 7 }
     }
 }
 

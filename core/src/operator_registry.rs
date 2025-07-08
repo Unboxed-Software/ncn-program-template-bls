@@ -251,6 +251,40 @@ impl OperatorRegistry {
 
         Ok(*operator_entry)
     }
+
+    pub fn update_operator_keys(
+        &mut self,
+        operator_pubkey: &Pubkey,
+        new_g1_pubkey: &[u8; 32],
+        new_g2_pubkey: &[u8; 64],
+        current_slot: u64,
+    ) -> Result<(), ProgramError> {
+        // Find the operator entry
+        let operator_entry = self
+            .operator_list
+            .iter_mut()
+            .find(|op| op.operator_pubkey().eq(operator_pubkey))
+            .ok_or(NCNProgramError::OperatorEntryNotFound)?;
+
+        // Create a temporary entry with new keys to verify them
+        let temp_entry = OperatorEntry::new(
+            operator_pubkey,
+            new_g1_pubkey,
+            new_g2_pubkey,
+            operator_entry.operator_index(),
+            current_slot,
+        );
+
+        // Verify the new keypair before updating
+        temp_entry.verify_keypair()?;
+
+        // Update the keys
+        operator_entry.g1_pubkey = *new_g1_pubkey;
+        operator_entry.g2_pubkey = *new_g2_pubkey;
+        operator_entry.slot_registered = PodU64::from(current_slot);
+
+        Ok(())
+    }
 }
 
 #[rustfmt::skip]

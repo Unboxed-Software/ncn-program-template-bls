@@ -5,52 +5,59 @@
 //! <https://github.com/kinobi-so/kinobi>
 //!
 
-use crate::generated::types::ConfigAdminRole;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct AdminSetNewAdmin {
+pub struct UpdateOperatorBN128Keys {
     pub config: solana_program::pubkey::Pubkey,
+
+    pub operator_registry: solana_program::pubkey::Pubkey,
 
     pub ncn: solana_program::pubkey::Pubkey,
 
-    pub ncn_admin: solana_program::pubkey::Pubkey,
+    pub operator: solana_program::pubkey::Pubkey,
 
-    pub new_admin: solana_program::pubkey::Pubkey,
+    pub operator_admin: solana_program::pubkey::Pubkey,
 }
 
-impl AdminSetNewAdmin {
+impl UpdateOperatorBN128Keys {
     pub fn instruction(
         &self,
-        args: AdminSetNewAdminInstructionArgs,
+        args: UpdateOperatorBN128KeysInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: AdminSetNewAdminInstructionArgs,
+        args: UpdateOperatorBN128KeysInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.config,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.operator_registry,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.ncn, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.ncn_admin,
-            true,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.new_admin,
+            self.operator,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.operator_admin,
+            true,
+        ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = AdminSetNewAdminInstructionData::new().try_to_vec().unwrap();
+        let mut data = UpdateOperatorBN128KeysInstructionData::new()
+            .try_to_vec()
+            .unwrap();
         let mut args = args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -63,17 +70,17 @@ impl AdminSetNewAdmin {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct AdminSetNewAdminInstructionData {
+pub struct UpdateOperatorBN128KeysInstructionData {
     discriminator: u8,
 }
 
-impl AdminSetNewAdminInstructionData {
+impl UpdateOperatorBN128KeysInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 30 }
+        Self { discriminator: 6 }
     }
 }
 
-impl Default for AdminSetNewAdminInstructionData {
+impl Default for UpdateOperatorBN128KeysInstructionData {
     fn default() -> Self {
         Self::new()
     }
@@ -81,29 +88,35 @@ impl Default for AdminSetNewAdminInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct AdminSetNewAdminInstructionArgs {
-    pub role: ConfigAdminRole,
+pub struct UpdateOperatorBN128KeysInstructionArgs {
+    pub g1_pubkey: [u8; 32],
+    pub g2_pubkey: [u8; 64],
+    pub signature: [u8; 64],
 }
 
-/// Instruction builder for `AdminSetNewAdmin`.
+/// Instruction builder for `UpdateOperatorBN128Keys`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` config
-///   1. `[]` ncn
-///   2. `[signer]` ncn_admin
-///   3. `[]` new_admin
+///   0. `[]` config
+///   1. `[writable]` operator_registry
+///   2. `[]` ncn
+///   3. `[]` operator
+///   4. `[signer]` operator_admin
 #[derive(Clone, Debug, Default)]
-pub struct AdminSetNewAdminBuilder {
+pub struct UpdateOperatorBN128KeysBuilder {
     config: Option<solana_program::pubkey::Pubkey>,
+    operator_registry: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
-    ncn_admin: Option<solana_program::pubkey::Pubkey>,
-    new_admin: Option<solana_program::pubkey::Pubkey>,
-    role: Option<ConfigAdminRole>,
+    operator: Option<solana_program::pubkey::Pubkey>,
+    operator_admin: Option<solana_program::pubkey::Pubkey>,
+    g1_pubkey: Option<[u8; 32]>,
+    g2_pubkey: Option<[u8; 64]>,
+    signature: Option<[u8; 64]>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl AdminSetNewAdminBuilder {
+impl UpdateOperatorBN128KeysBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -113,23 +126,41 @@ impl AdminSetNewAdminBuilder {
         self
     }
     #[inline(always)]
+    pub fn operator_registry(
+        &mut self,
+        operator_registry: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.operator_registry = Some(operator_registry);
+        self
+    }
+    #[inline(always)]
     pub fn ncn(&mut self, ncn: solana_program::pubkey::Pubkey) -> &mut Self {
         self.ncn = Some(ncn);
         self
     }
     #[inline(always)]
-    pub fn ncn_admin(&mut self, ncn_admin: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.ncn_admin = Some(ncn_admin);
+    pub fn operator(&mut self, operator: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.operator = Some(operator);
         self
     }
     #[inline(always)]
-    pub fn new_admin(&mut self, new_admin: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.new_admin = Some(new_admin);
+    pub fn operator_admin(&mut self, operator_admin: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.operator_admin = Some(operator_admin);
         self
     }
     #[inline(always)]
-    pub fn role(&mut self, role: ConfigAdminRole) -> &mut Self {
-        self.role = Some(role);
+    pub fn g1_pubkey(&mut self, g1_pubkey: [u8; 32]) -> &mut Self {
+        self.g1_pubkey = Some(g1_pubkey);
+        self
+    }
+    #[inline(always)]
+    pub fn g2_pubkey(&mut self, g2_pubkey: [u8; 64]) -> &mut Self {
+        self.g2_pubkey = Some(g2_pubkey);
+        self
+    }
+    #[inline(always)]
+    pub fn signature(&mut self, signature: [u8; 64]) -> &mut Self {
+        self.signature = Some(signature);
         self
     }
     /// Add an additional account to the instruction.
@@ -152,59 +183,69 @@ impl AdminSetNewAdminBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = AdminSetNewAdmin {
+        let accounts = UpdateOperatorBN128Keys {
             config: self.config.expect("config is not set"),
+            operator_registry: self
+                .operator_registry
+                .expect("operator_registry is not set"),
             ncn: self.ncn.expect("ncn is not set"),
-            ncn_admin: self.ncn_admin.expect("ncn_admin is not set"),
-            new_admin: self.new_admin.expect("new_admin is not set"),
+            operator: self.operator.expect("operator is not set"),
+            operator_admin: self.operator_admin.expect("operator_admin is not set"),
         };
-        let args = AdminSetNewAdminInstructionArgs {
-            role: self.role.clone().expect("role is not set"),
+        let args = UpdateOperatorBN128KeysInstructionArgs {
+            g1_pubkey: self.g1_pubkey.clone().expect("g1_pubkey is not set"),
+            g2_pubkey: self.g2_pubkey.clone().expect("g2_pubkey is not set"),
+            signature: self.signature.clone().expect("signature is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
-/// `admin_set_new_admin` CPI accounts.
-pub struct AdminSetNewAdminCpiAccounts<'a, 'b> {
+/// `update_operator_b_n128_keys` CPI accounts.
+pub struct UpdateOperatorBN128KeysCpiAccounts<'a, 'b> {
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub operator_registry: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_admin: &'b solana_program::account_info::AccountInfo<'a>,
+    pub operator: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub new_admin: &'b solana_program::account_info::AccountInfo<'a>,
+    pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `admin_set_new_admin` CPI instruction.
-pub struct AdminSetNewAdminCpi<'a, 'b> {
+/// `update_operator_b_n128_keys` CPI instruction.
+pub struct UpdateOperatorBN128KeysCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub operator_registry: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_admin: &'b solana_program::account_info::AccountInfo<'a>,
+    pub operator: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub new_admin: &'b solana_program::account_info::AccountInfo<'a>,
+    pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: AdminSetNewAdminInstructionArgs,
+    pub __args: UpdateOperatorBN128KeysInstructionArgs,
 }
 
-impl<'a, 'b> AdminSetNewAdminCpi<'a, 'b> {
+impl<'a, 'b> UpdateOperatorBN128KeysCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: AdminSetNewAdminCpiAccounts<'a, 'b>,
-        args: AdminSetNewAdminInstructionArgs,
+        accounts: UpdateOperatorBN128KeysCpiAccounts<'a, 'b>,
+        args: UpdateOperatorBN128KeysInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
             config: accounts.config,
+            operator_registry: accounts.operator_registry,
             ncn: accounts.ncn,
-            ncn_admin: accounts.ncn_admin,
-            new_admin: accounts.new_admin,
+            operator: accounts.operator,
+            operator_admin: accounts.operator_admin,
             __args: args,
         }
     }
@@ -241,9 +282,13 @@ impl<'a, 'b> AdminSetNewAdminCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.operator_registry.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -251,12 +296,12 @@ impl<'a, 'b> AdminSetNewAdminCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.ncn_admin.key,
-            true,
+            *self.operator.key,
+            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.new_admin.key,
-            false,
+            *self.operator_admin.key,
+            true,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
@@ -265,7 +310,9 @@ impl<'a, 'b> AdminSetNewAdminCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = AdminSetNewAdminInstructionData::new().try_to_vec().unwrap();
+        let mut data = UpdateOperatorBN128KeysInstructionData::new()
+            .try_to_vec()
+            .unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -274,12 +321,13 @@ impl<'a, 'b> AdminSetNewAdminCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.config.clone());
+        account_infos.push(self.operator_registry.clone());
         account_infos.push(self.ncn.clone());
-        account_infos.push(self.ncn_admin.clone());
-        account_infos.push(self.new_admin.clone());
+        account_infos.push(self.operator.clone());
+        account_infos.push(self.operator_admin.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -292,28 +340,32 @@ impl<'a, 'b> AdminSetNewAdminCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `AdminSetNewAdmin` via CPI.
+/// Instruction builder for `UpdateOperatorBN128Keys` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` config
-///   1. `[]` ncn
-///   2. `[signer]` ncn_admin
-///   3. `[]` new_admin
+///   0. `[]` config
+///   1. `[writable]` operator_registry
+///   2. `[]` ncn
+///   3. `[]` operator
+///   4. `[signer]` operator_admin
 #[derive(Clone, Debug)]
-pub struct AdminSetNewAdminCpiBuilder<'a, 'b> {
-    instruction: Box<AdminSetNewAdminCpiBuilderInstruction<'a, 'b>>,
+pub struct UpdateOperatorBN128KeysCpiBuilder<'a, 'b> {
+    instruction: Box<UpdateOperatorBN128KeysCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> AdminSetNewAdminCpiBuilder<'a, 'b> {
+impl<'a, 'b> UpdateOperatorBN128KeysCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(AdminSetNewAdminCpiBuilderInstruction {
+        let instruction = Box::new(UpdateOperatorBN128KeysCpiBuilderInstruction {
             __program: program,
             config: None,
+            operator_registry: None,
             ncn: None,
-            ncn_admin: None,
-            new_admin: None,
-            role: None,
+            operator: None,
+            operator_admin: None,
+            g1_pubkey: None,
+            g2_pubkey: None,
+            signature: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -327,29 +379,47 @@ impl<'a, 'b> AdminSetNewAdminCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn operator_registry(
+        &mut self,
+        operator_registry: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.operator_registry = Some(operator_registry);
+        self
+    }
+    #[inline(always)]
     pub fn ncn(&mut self, ncn: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.ncn = Some(ncn);
         self
     }
     #[inline(always)]
-    pub fn ncn_admin(
+    pub fn operator(
         &mut self,
-        ncn_admin: &'b solana_program::account_info::AccountInfo<'a>,
+        operator: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.ncn_admin = Some(ncn_admin);
+        self.instruction.operator = Some(operator);
         self
     }
     #[inline(always)]
-    pub fn new_admin(
+    pub fn operator_admin(
         &mut self,
-        new_admin: &'b solana_program::account_info::AccountInfo<'a>,
+        operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.new_admin = Some(new_admin);
+        self.instruction.operator_admin = Some(operator_admin);
         self
     }
     #[inline(always)]
-    pub fn role(&mut self, role: ConfigAdminRole) -> &mut Self {
-        self.instruction.role = Some(role);
+    pub fn g1_pubkey(&mut self, g1_pubkey: [u8; 32]) -> &mut Self {
+        self.instruction.g1_pubkey = Some(g1_pubkey);
+        self
+    }
+    #[inline(always)]
+    pub fn g2_pubkey(&mut self, g2_pubkey: [u8; 64]) -> &mut Self {
+        self.instruction.g2_pubkey = Some(g2_pubkey);
+        self
+    }
+    #[inline(always)]
+    pub fn signature(&mut self, signature: [u8; 64]) -> &mut Self {
+        self.instruction.signature = Some(signature);
         self
     }
     /// Add an additional account to the instruction.
@@ -393,19 +463,41 @@ impl<'a, 'b> AdminSetNewAdminCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = AdminSetNewAdminInstructionArgs {
-            role: self.instruction.role.clone().expect("role is not set"),
+        let args = UpdateOperatorBN128KeysInstructionArgs {
+            g1_pubkey: self
+                .instruction
+                .g1_pubkey
+                .clone()
+                .expect("g1_pubkey is not set"),
+            g2_pubkey: self
+                .instruction
+                .g2_pubkey
+                .clone()
+                .expect("g2_pubkey is not set"),
+            signature: self
+                .instruction
+                .signature
+                .clone()
+                .expect("signature is not set"),
         };
-        let instruction = AdminSetNewAdminCpi {
+        let instruction = UpdateOperatorBN128KeysCpi {
             __program: self.instruction.__program,
 
             config: self.instruction.config.expect("config is not set"),
 
+            operator_registry: self
+                .instruction
+                .operator_registry
+                .expect("operator_registry is not set"),
+
             ncn: self.instruction.ncn.expect("ncn is not set"),
 
-            ncn_admin: self.instruction.ncn_admin.expect("ncn_admin is not set"),
+            operator: self.instruction.operator.expect("operator is not set"),
 
-            new_admin: self.instruction.new_admin.expect("new_admin is not set"),
+            operator_admin: self
+                .instruction
+                .operator_admin
+                .expect("operator_admin is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -416,13 +508,16 @@ impl<'a, 'b> AdminSetNewAdminCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct AdminSetNewAdminCpiBuilderInstruction<'a, 'b> {
+struct UpdateOperatorBN128KeysCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    operator_registry: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ncn_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    new_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    role: Option<ConfigAdminRole>,
+    operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    operator_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    g1_pubkey: Option<[u8; 32]>,
+    g2_pubkey: Option<[u8; 64]>,
+    signature: Option<[u8; 64]>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

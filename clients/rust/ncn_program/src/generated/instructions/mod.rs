@@ -39,6 +39,7 @@ pub(crate) mod r#route_n_c_n_rewards;
 pub(crate) mod r#route_operator_vault_rewards;
 pub(crate) mod r#set_epoch_weights;
 pub(crate) mod r#snapshot_vault_operator_delegation;
+pub(crate) mod r#update_operator_b_n128_keys;
 
 pub use self::r#admin_register_st_mint::*;
 pub use self::r#admin_set_new_admin::*;
@@ -74,3 +75,4 @@ pub use self::r#route_n_c_n_rewards::*;
 pub use self::r#route_operator_vault_rewards::*;
 pub use self::r#set_epoch_weights::*;
 pub use self::r#snapshot_vault_operator_delegation::*;
+pub use self::r#update_operator_b_n128_keys::*;

@@ -8,6 +8,10 @@
 
 import {
   combineCodec,
+  fixDecoderSize,
+  fixEncoderSize,
+  getBytesDecoder,
+  getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
   getU8Decoder,
@@ -18,30 +22,32 @@ import {
   type Decoder,
   type Encoder,
   type IAccountMeta,
+  type IAccountSignerMeta,
   type IInstruction,
   type IInstructionWithAccounts,
   type IInstructionWithData,
   type ReadonlyAccount,
+  type ReadonlySignerAccount,
+  type ReadonlyUint8Array,
+  type TransactionSigner,
   type WritableAccount,
 } from '@solana/web3.js';
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REALLOC_OPERATOR_REGISTRY_DISCRIMINATOR = 7;
+export const UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR = 6;
 
-export function getReallocOperatorRegistryDiscriminatorBytes() {
-  return getU8Encoder().encode(REALLOC_OPERATOR_REGISTRY_DISCRIMINATOR);
+export function getUpdateOperatorBN128KeysDiscriminatorBytes() {
+  return getU8Encoder().encode(UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR);
 }
 
-export type ReallocOperatorRegistryInstruction<
+export type UpdateOperatorBN128KeysInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountConfig extends string | IAccountMeta<string> = string,
   TAccountOperatorRegistry extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
-  TAccountAccountPayer extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
+  TAccountOperator extends string | IAccountMeta<string> = string,
+  TAccountOperatorAdmin extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -54,81 +60,104 @@ export type ReallocOperatorRegistryInstruction<
         ? WritableAccount<TAccountOperatorRegistry>
         : TAccountOperatorRegistry,
       TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
-      TAccountAccountPayer extends string
-        ? WritableAccount<TAccountAccountPayer>
-        : TAccountAccountPayer,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
+      TAccountOperator extends string
+        ? ReadonlyAccount<TAccountOperator>
+        : TAccountOperator,
+      TAccountOperatorAdmin extends string
+        ? ReadonlySignerAccount<TAccountOperatorAdmin> &
+            IAccountSignerMeta<TAccountOperatorAdmin>
+        : TAccountOperatorAdmin,
       ...TRemainingAccounts,
     ]
   >;
 
-export type ReallocOperatorRegistryInstructionData = { discriminator: number };
+export type UpdateOperatorBN128KeysInstructionData = {
+  discriminator: number;
+  g1Pubkey: ReadonlyUint8Array;
+  g2Pubkey: ReadonlyUint8Array;
+  signature: ReadonlyUint8Array;
+};
 
-export type ReallocOperatorRegistryInstructionDataArgs = {};
+export type UpdateOperatorBN128KeysInstructionDataArgs = {
+  g1Pubkey: ReadonlyUint8Array;
+  g2Pubkey: ReadonlyUint8Array;
+  signature: ReadonlyUint8Array;
+};
 
-export function getReallocOperatorRegistryInstructionDataEncoder(): Encoder<ReallocOperatorRegistryInstructionDataArgs> {
+export function getUpdateOperatorBN128KeysInstructionDataEncoder(): Encoder<UpdateOperatorBN128KeysInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', getU8Encoder()]]),
+    getStructEncoder([
+      ['discriminator', getU8Encoder()],
+      ['g1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
+      ['g2Pubkey', fixEncoderSize(getBytesEncoder(), 64)],
+      ['signature', fixEncoderSize(getBytesEncoder(), 64)],
+    ]),
     (value) => ({
       ...value,
-      discriminator: REALLOC_OPERATOR_REGISTRY_DISCRIMINATOR,
+      discriminator: UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR,
     })
   );
 }
 
-export function getReallocOperatorRegistryInstructionDataDecoder(): Decoder<ReallocOperatorRegistryInstructionData> {
-  return getStructDecoder([['discriminator', getU8Decoder()]]);
+export function getUpdateOperatorBN128KeysInstructionDataDecoder(): Decoder<UpdateOperatorBN128KeysInstructionData> {
+  return getStructDecoder([
+    ['discriminator', getU8Decoder()],
+    ['g1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],
+    ['g2Pubkey', fixDecoderSize(getBytesDecoder(), 64)],
+    ['signature', fixDecoderSize(getBytesDecoder(), 64)],
+  ]);
 }
 
-export function getReallocOperatorRegistryInstructionDataCodec(): Codec<
-  ReallocOperatorRegistryInstructionDataArgs,
-  ReallocOperatorRegistryInstructionData
+export function getUpdateOperatorBN128KeysInstructionDataCodec(): Codec<
+  UpdateOperatorBN128KeysInstructionDataArgs,
+  UpdateOperatorBN128KeysInstructionData
 > {
   return combineCodec(
-    getReallocOperatorRegistryInstructionDataEncoder(),
-    getReallocOperatorRegistryInstructionDataDecoder()
+    getUpdateOperatorBN128KeysInstructionDataEncoder(),
+    getUpdateOperatorBN128KeysInstructionDataDecoder()
   );
 }
 
-export type ReallocOperatorRegistryInput<
+export type UpdateOperatorBN128KeysInput<
   TAccountConfig extends string = string,
   TAccountOperatorRegistry extends string = string,
   TAccountNcn extends string = string,
-  TAccountAccountPayer extends string = string,
-  TAccountSystemProgram extends string = string,
+  TAccountOperator extends string = string,
+  TAccountOperatorAdmin extends string = string,
 > = {
   config: Address<TAccountConfig>;
   operatorRegistry: Address<TAccountOperatorRegistry>;
   ncn: Address<TAccountNcn>;
-  accountPayer: Address<TAccountAccountPayer>;
-  systemProgram?: Address<TAccountSystemProgram>;
+  operator: Address<TAccountOperator>;
+  operatorAdmin: TransactionSigner<TAccountOperatorAdmin>;
+  g1Pubkey: UpdateOperatorBN128KeysInstructionDataArgs['g1Pubkey'];
+  g2Pubkey: UpdateOperatorBN128KeysInstructionDataArgs['g2Pubkey'];
+  signature: UpdateOperatorBN128KeysInstructionDataArgs['signature'];
 };
 
-export function getReallocOperatorRegistryInstruction<
+export function getUpdateOperatorBN128KeysInstruction<
   TAccountConfig extends string,
   TAccountOperatorRegistry extends string,
   TAccountNcn extends string,
-  TAccountAccountPayer extends string,
-  TAccountSystemProgram extends string,
+  TAccountOperator extends string,
+  TAccountOperatorAdmin extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
-  input: ReallocOperatorRegistryInput<
+  input: UpdateOperatorBN128KeysInput<
     TAccountConfig,
     TAccountOperatorRegistry,
     TAccountNcn,
-    TAccountAccountPayer,
-    TAccountSystemProgram
+    TAccountOperator,
+    TAccountOperatorAdmin
   >,
   config?: { programAddress?: TProgramAddress }
-): ReallocOperatorRegistryInstruction<
+): UpdateOperatorBN128KeysInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountOperatorRegistry,
   TAccountNcn,
-  TAccountAccountPayer,
-  TAccountSystemProgram
+  TAccountOperator,
+  TAccountOperatorAdmin
 > {
   // Program address.
   const programAddress = config?.programAddress ?? NCN_PROGRAM_PROGRAM_ADDRESS;
@@ -141,19 +170,16 @@ export function getReallocOperatorRegistryInstruction<
       isWritable: true,
     },
     ncn: { value: input.ncn ?? null, isWritable: false },
-    accountPayer: { value: input.accountPayer ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+    operator: { value: input.operator ?? null, isWritable: false },
+    operatorAdmin: { value: input.operatorAdmin ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
+  // Original args.
+  const args = { ...input };
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -161,24 +187,26 @@ export function getReallocOperatorRegistryInstruction<
       getAccountMeta(accounts.config),
       getAccountMeta(accounts.operatorRegistry),
       getAccountMeta(accounts.ncn),
-      getAccountMeta(accounts.accountPayer),
-      getAccountMeta(accounts.systemProgram),
+      getAccountMeta(accounts.operator),
+      getAccountMeta(accounts.operatorAdmin),
     ],
     programAddress,
-    data: getReallocOperatorRegistryInstructionDataEncoder().encode({}),
-  } as ReallocOperatorRegistryInstruction<
+    data: getUpdateOperatorBN128KeysInstructionDataEncoder().encode(
+      args as UpdateOperatorBN128KeysInstructionDataArgs
+    ),
+  } as UpdateOperatorBN128KeysInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountOperatorRegistry,
     TAccountNcn,
-    TAccountAccountPayer,
-    TAccountSystemProgram
+    TAccountOperator,
+    TAccountOperatorAdmin
   >;
 
   return instruction;
 }
 
-export type ParsedReallocOperatorRegistryInstruction<
+export type ParsedUpdateOperatorBN128KeysInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
@@ -187,20 +215,20 @@ export type ParsedReallocOperatorRegistryInstruction<
     config: TAccountMetas[0];
     operatorRegistry: TAccountMetas[1];
     ncn: TAccountMetas[2];
-    accountPayer: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    operator: TAccountMetas[3];
+    operatorAdmin: TAccountMetas[4];
   };
-  data: ReallocOperatorRegistryInstructionData;
+  data: UpdateOperatorBN128KeysInstructionData;
 };
 
-export function parseReallocOperatorRegistryInstruction<
+export function parseUpdateOperatorBN128KeysInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedReallocOperatorRegistryInstruction<TProgram, TAccountMetas> {
+): ParsedUpdateOperatorBN128KeysInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -217,10 +245,10 @@ export function parseReallocOperatorRegistryInstruction<
       config: getNextAccount(),
       operatorRegistry: getNextAccount(),
       ncn: getNextAccount(),
-      accountPayer: getNextAccount(),
-      systemProgram: getNextAccount(),
+      operator: getNextAccount(),
+      operatorAdmin: getNextAccount(),
     },
-    data: getReallocOperatorRegistryInstructionDataDecoder().decode(
+    data: getUpdateOperatorBN128KeysInstructionDataDecoder().decode(
       instruction.data
     ),
   };

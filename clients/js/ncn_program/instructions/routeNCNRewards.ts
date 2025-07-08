@@ -31,7 +31,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const ROUTE_N_C_N_REWARDS_DISCRIMINATOR = 19;
+export const ROUTE_N_C_N_REWARDS_DISCRIMINATOR = 20;
 
 export function getRouteNCNRewardsDiscriminatorBytes() {
   return getU8Encoder().encode(ROUTE_N_C_N_REWARDS_DISCRIMINATOR);

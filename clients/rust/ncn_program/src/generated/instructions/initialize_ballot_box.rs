@@ -94,7 +94,7 @@ pub struct InitializeBallotBoxInstructionData {
 
 impl InitializeBallotBoxInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 14 }
+        Self { discriminator: 15 }
     }
 }
 

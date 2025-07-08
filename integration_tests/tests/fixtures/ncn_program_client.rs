@@ -20,7 +20,7 @@ use ncn_program_client::{
         ReallocNCNRewardRouterBuilder, ReallocOperatorRegistryBuilder, ReallocVaultRegistryBuilder,
         ReallocWeightTableBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
         RouteNCNRewardsBuilder, RouteOperatorVaultRewardsBuilder, SetEpochWeightsBuilder,
-        SnapshotVaultOperatorDelegationBuilder,
+        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -2195,6 +2195,67 @@ impl NCNProgramClient {
         signature: [u8; 64],
     ) -> TestResult<()> {
         let ix = RegisterOperatorBuilder::new()
+            .config(config)
+            .operator_registry(operator_registry)
+            .ncn(ncn)
+            .operator(operator_pubkey)
+            .operator_admin(operator_admin.pubkey())
+            .g1_pubkey(g1_pubkey)
+            .g2_pubkey(g2_pubkey)
+            .signature(signature)
+            .instruction();
+
+        let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);
+
+        let blockhash = self.banks_client.get_latest_blockhash().await?;
+        self.process_transaction(&Transaction::new_signed_with_payer(
+            &[ix, compute_budget_ix],
+            Some(&self.payer.pubkey()),
+            &[&self.payer, operator_admin],
+            blockhash,
+        ))
+        .await
+    }
+
+    /// Updates an operator's BLS keys with simplified parameters
+    pub async fn do_update_operator_bn128_keys(
+        &mut self,
+        ncn: Pubkey,
+        operator_pubkey: Pubkey,
+        operator_admin: &Keypair,
+        g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
+        g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
+        signature: [u8; 64],
+    ) -> TestResult<()> {
+        let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
+        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
+
+        self.update_operator_bn128_keys(
+            config,
+            operator_registry,
+            ncn,
+            operator_pubkey,
+            operator_admin,
+            g1_pubkey,
+            g2_pubkey,
+            signature,
+        )
+        .await
+    }
+
+    /// Updates an operator's BLS keys in the operator registry with full parameter control
+    pub async fn update_operator_bn128_keys(
+        &mut self,
+        config: Pubkey,
+        operator_registry: Pubkey,
+        ncn: Pubkey,
+        operator_pubkey: Pubkey,
+        operator_admin: &Keypair,
+        g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
+        g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
+        signature: [u8; 64],
+    ) -> TestResult<()> {
+        let ix = UpdateOperatorBN128KeysBuilder::new()
             .config(config)
             .operator_registry(operator_registry)
             .ncn(ncn)

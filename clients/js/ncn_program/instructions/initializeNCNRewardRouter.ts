@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_N_C_N_REWARD_ROUTER_DISCRIMINATOR = 17;
+export const INITIALIZE_N_C_N_REWARD_ROUTER_DISCRIMINATOR = 18;
 
 export function getInitializeNCNRewardRouterDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_N_C_N_REWARD_ROUTER_DISCRIMINATOR);

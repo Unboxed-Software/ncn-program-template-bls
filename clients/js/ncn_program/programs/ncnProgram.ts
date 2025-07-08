@@ -47,6 +47,7 @@ import {
   type ParsedRouteOperatorVaultRewardsInstruction,
   type ParsedSetEpochWeightsInstruction,
   type ParsedSnapshotVaultOperatorDelegationInstruction,
+  type ParsedUpdateOperatorBN128KeysInstruction,
 } from '../instructions';
 
 export const NCN_PROGRAM_PROGRAM_ADDRESS =
@@ -74,6 +75,7 @@ export enum NcnProgramInstruction {
   RegisterVault,
   InitializeOperatorRegistry,
   RegisterOperator,
+  UpdateOperatorBN128Keys,
   ReallocOperatorRegistry,
   InitializeEpochState,
   InitializeWeightTable,
@@ -127,87 +129,90 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.RegisterOperator;
   }
   if (containsBytes(data, getU8Encoder().encode(6), 0)) {
-    return NcnProgramInstruction.ReallocOperatorRegistry;
+    return NcnProgramInstruction.UpdateOperatorBN128Keys;
   }
   if (containsBytes(data, getU8Encoder().encode(7), 0)) {
-    return NcnProgramInstruction.InitializeEpochState;
+    return NcnProgramInstruction.ReallocOperatorRegistry;
   }
   if (containsBytes(data, getU8Encoder().encode(8), 0)) {
-    return NcnProgramInstruction.InitializeWeightTable;
+    return NcnProgramInstruction.InitializeEpochState;
   }
   if (containsBytes(data, getU8Encoder().encode(9), 0)) {
-    return NcnProgramInstruction.SetEpochWeights;
+    return NcnProgramInstruction.InitializeWeightTable;
   }
   if (containsBytes(data, getU8Encoder().encode(10), 0)) {
-    return NcnProgramInstruction.ReallocWeightTable;
+    return NcnProgramInstruction.SetEpochWeights;
   }
   if (containsBytes(data, getU8Encoder().encode(11), 0)) {
-    return NcnProgramInstruction.InitializeEpochSnapshot;
+    return NcnProgramInstruction.ReallocWeightTable;
   }
   if (containsBytes(data, getU8Encoder().encode(12), 0)) {
-    return NcnProgramInstruction.InitializeOperatorSnapshot;
+    return NcnProgramInstruction.InitializeEpochSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(13), 0)) {
-    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
+    return NcnProgramInstruction.InitializeOperatorSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(14), 0)) {
-    return NcnProgramInstruction.InitializeBallotBox;
+    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
   if (containsBytes(data, getU8Encoder().encode(15), 0)) {
-    return NcnProgramInstruction.ReallocBallotBox;
+    return NcnProgramInstruction.InitializeBallotBox;
   }
   if (containsBytes(data, getU8Encoder().encode(16), 0)) {
-    return NcnProgramInstruction.CastVote;
+    return NcnProgramInstruction.ReallocBallotBox;
   }
   if (containsBytes(data, getU8Encoder().encode(17), 0)) {
-    return NcnProgramInstruction.InitializeNCNRewardRouter;
+    return NcnProgramInstruction.CastVote;
   }
   if (containsBytes(data, getU8Encoder().encode(18), 0)) {
-    return NcnProgramInstruction.ReallocNCNRewardRouter;
+    return NcnProgramInstruction.InitializeNCNRewardRouter;
   }
   if (containsBytes(data, getU8Encoder().encode(19), 0)) {
-    return NcnProgramInstruction.RouteNCNRewards;
+    return NcnProgramInstruction.ReallocNCNRewardRouter;
   }
   if (containsBytes(data, getU8Encoder().encode(20), 0)) {
-    return NcnProgramInstruction.DistributeProtocolRewards;
+    return NcnProgramInstruction.RouteNCNRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(21), 0)) {
-    return NcnProgramInstruction.DistributeNCNRewards;
+    return NcnProgramInstruction.DistributeProtocolRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(22), 0)) {
-    return NcnProgramInstruction.InitializeOperatorVaultRewardRouter;
+    return NcnProgramInstruction.DistributeNCNRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(23), 0)) {
-    return NcnProgramInstruction.DistributeOperatorVaultRewardRoute;
+    return NcnProgramInstruction.InitializeOperatorVaultRewardRouter;
   }
   if (containsBytes(data, getU8Encoder().encode(24), 0)) {
-    return NcnProgramInstruction.RouteOperatorVaultRewards;
+    return NcnProgramInstruction.DistributeOperatorVaultRewardRoute;
   }
   if (containsBytes(data, getU8Encoder().encode(25), 0)) {
-    return NcnProgramInstruction.CloseEpochAccount;
+    return NcnProgramInstruction.RouteOperatorVaultRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(26), 0)) {
-    return NcnProgramInstruction.DistributeOperatorRewards;
+    return NcnProgramInstruction.CloseEpochAccount;
   }
   if (containsBytes(data, getU8Encoder().encode(27), 0)) {
-    return NcnProgramInstruction.DistributeVaultRewards;
+    return NcnProgramInstruction.DistributeOperatorRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(28), 0)) {
-    return NcnProgramInstruction.AdminSetParameters;
+    return NcnProgramInstruction.DistributeVaultRewards;
   }
   if (containsBytes(data, getU8Encoder().encode(29), 0)) {
-    return NcnProgramInstruction.AdminSetNewAdmin;
+    return NcnProgramInstruction.AdminSetParameters;
   }
   if (containsBytes(data, getU8Encoder().encode(30), 0)) {
-    return NcnProgramInstruction.AdminSetTieBreaker;
+    return NcnProgramInstruction.AdminSetNewAdmin;
   }
   if (containsBytes(data, getU8Encoder().encode(31), 0)) {
-    return NcnProgramInstruction.AdminSetWeight;
+    return NcnProgramInstruction.AdminSetTieBreaker;
   }
   if (containsBytes(data, getU8Encoder().encode(32), 0)) {
-    return NcnProgramInstruction.AdminRegisterStMint;
+    return NcnProgramInstruction.AdminSetWeight;
   }
   if (containsBytes(data, getU8Encoder().encode(33), 0)) {
+    return NcnProgramInstruction.AdminRegisterStMint;
+  }
+  if (containsBytes(data, getU8Encoder().encode(34), 0)) {
     return NcnProgramInstruction.AdminSetStMint;
   }
   throw new Error(
@@ -236,6 +241,9 @@ export type ParsedNcnProgramInstruction<
   | ({
       instructionType: NcnProgramInstruction.RegisterOperator;
     } & ParsedRegisterOperatorInstruction<TProgram>)
+  | ({
+      instructionType: NcnProgramInstruction.UpdateOperatorBN128Keys;
+    } & ParsedUpdateOperatorBN128KeysInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.ReallocOperatorRegistry;
     } & ParsedReallocOperatorRegistryInstruction<TProgram>)

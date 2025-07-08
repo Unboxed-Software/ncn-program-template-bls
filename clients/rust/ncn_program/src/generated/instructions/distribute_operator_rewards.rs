@@ -94,7 +94,7 @@ pub struct DistributeOperatorRewardsInstructionData {
 
 impl DistributeOperatorRewardsInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 26 }
+        Self { discriminator: 27 }
     }
 }
 

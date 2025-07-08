@@ -88,7 +88,7 @@ pub struct ReallocWeightTableInstructionData {
 
 impl ReallocWeightTableInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 10 }
+        Self { discriminator: 11 }
     }
 }
 

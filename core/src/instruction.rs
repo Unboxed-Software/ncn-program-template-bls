@@ -82,7 +82,22 @@ pub enum NCNProgramInstruction {
         g1_pubkey: [u8; 32],
         /// G2 public key (compressed, 64 bytes)  
         g2_pubkey: [u8; 64],
-        /// BLS signature of G1 pubkey by G2 private key (compressed G1 point, 32 bytes)
+        /// BLS signature of G1 pubkey by G2 private key (uncompressed G1 point, 64 bytes)
+        signature: [u8; 64],
+    },
+
+    /// Updates an operator's BLS keys in the operator registry
+    #[account(0, name = "config")]
+    #[account(1, writable, name = "operator_registry")]
+    #[account(2, name = "ncn")]
+    #[account(3, name = "operator")]
+    #[account(4, signer, name = "operator_admin")]
+    UpdateOperatorBN128Keys {
+        /// New G1 public key (compressed, 32 bytes)
+        g1_pubkey: [u8; 32],
+        /// New G2 public key (compressed, 64 bytes)  
+        g2_pubkey: [u8; 64],
+        /// BLS signature of the new G1 pubkey signed by the new G2 private key (uncompressed G1 point, 64 bytes)
         signature: [u8; 64],
     },
 

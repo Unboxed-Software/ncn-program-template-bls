@@ -20,3 +20,4 @@ mod set_new_admin;
 mod set_tie_breaker;
 mod simulation_test;
 mod snapshot_vault_operator_delegation;
+mod update_operator_bn128_keys;

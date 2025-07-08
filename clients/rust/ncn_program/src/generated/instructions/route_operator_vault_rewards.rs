@@ -82,7 +82,7 @@ pub struct RouteOperatorVaultRewardsInstructionData {
 
 impl RouteOperatorVaultRewardsInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 24 }
+        Self { discriminator: 25 }
     }
 }
 

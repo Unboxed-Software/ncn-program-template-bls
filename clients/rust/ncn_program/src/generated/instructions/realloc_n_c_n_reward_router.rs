@@ -82,7 +82,7 @@ pub struct ReallocNCNRewardRouterInstructionData {
 
 impl ReallocNCNRewardRouterInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 18 }
+        Self { discriminator: 19 }
     }
 }
 

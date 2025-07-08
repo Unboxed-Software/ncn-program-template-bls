@@ -32,6 +32,7 @@ mod route_ncn_rewards;
 mod route_operator_vault_rewards;
 mod set_epoch_weights;
 mod snapshot_vault_operator_delegation;
+mod update_operator_bn128_keys;
 
 use admin_set_new_admin::process_admin_set_new_admin;
 use borsh::BorshDeserialize;
@@ -75,6 +76,7 @@ use crate::{
     route_operator_vault_rewards::process_route_operator_vault_rewards,
     set_epoch_weights::process_set_epoch_weights,
     snapshot_vault_operator_delegation::process_snapshot_vault_operator_delegation,
+    update_operator_bn128_keys::process_update_operator_bn128_keys,
 };
 
 declare_id!("5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf");
@@ -148,6 +150,16 @@ pub fn process_instruction(
         } => {
             msg!("Instruction: RegisterOperator");
             process_register_operator(program_id, accounts, g1_pubkey, g2_pubkey, signature)
+        }
+        NCNProgramInstruction::UpdateOperatorBN128Keys {
+            g1_pubkey,
+            g2_pubkey,
+            signature,
+        } => {
+            msg!("Instruction: UpdateOperatorBN128Keys");
+            process_update_operator_bn128_keys(
+                program_id, accounts, g1_pubkey, g2_pubkey, signature,
+            )
         }
         NCNProgramInstruction::ReallocOperatorRegistry => {
             msg!("Instruction: ReallocOperatorRegistry");

@@ -88,7 +88,7 @@ pub struct DistributeProtocolRewardsInstructionData {
 
 impl DistributeProtocolRewardsInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 20 }
+        Self { discriminator: 21 }
     }
 }
 

@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REALLOC_WEIGHT_TABLE_DISCRIMINATOR = 10;
+export const REALLOC_WEIGHT_TABLE_DISCRIMINATOR = 11;
 
 export function getReallocWeightTableDiscriminatorBytes() {
   return getU8Encoder().encode(REALLOC_WEIGHT_TABLE_DISCRIMINATOR);
