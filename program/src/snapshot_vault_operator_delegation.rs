@@ -113,7 +113,13 @@ pub fn process_snapshot_vault_operator_delegation(
         (vault_account.vault_index(), vault_account.supported_mint)
     };
 
-    let is_active: bool = {
+    let mut operator_snapshot_data = operator_snapshot.try_borrow_mut_data()?;
+    let operator_snapshot_account =
+        OperatorSnapshot::try_from_slice_unchecked_mut(&mut operator_snapshot_data)?;
+
+    let is_active = if !operator_snapshot_account.have_valid_bn128_g1_pubkey() {
+        false
+    } else {
         let ncn_vault_okay = {
             let ncn_vault_ticket_data = ncn_vault_ticket.data.borrow();
             let ncn_vault_ticket_account =
@@ -146,7 +152,8 @@ pub fn process_snapshot_vault_operator_delegation(
 
         vault_ncn_okay && ncn_vault_okay && !delegation_dne
     };
-    msg!("Vault active status: {}", is_active);
+
+    msg!("Vault operator delegation active status: {}", is_active);
 
     let total_stake_weight = {
         let weight_table_data = weight_table.data.borrow();
@@ -172,10 +179,6 @@ pub fn process_snapshot_vault_operator_delegation(
     };
 
     // Increment vault operator delegation
-    let mut operator_snapshot_data = operator_snapshot.try_borrow_mut_data()?;
-    let operator_snapshot_account =
-        OperatorSnapshot::try_from_slice_unchecked_mut(&mut operator_snapshot_data)?;
-
     let stake_weights = StakeWeights::snapshot(total_stake_weight)?;
 
     operator_snapshot_account.increment_vault_operator_delegation_registration(

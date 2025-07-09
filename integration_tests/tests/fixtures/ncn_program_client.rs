@@ -1,7 +1,6 @@
 use jito_bytemuck::AccountDeserialize;
 use jito_restaking_core::{
     config::Config, ncn_operator_state::NcnOperatorState, ncn_vault_ticket::NcnVaultTicket,
-    operator::Operator,
 };
 use jito_vault_core::{
     vault_ncn_ticket::VaultNcnTicket, vault_operator_delegation::VaultOperatorDelegation,
@@ -807,6 +806,7 @@ impl NCNProgramClient {
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
+        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
 
         let ix = InitializeOperatorSnapshotBuilder::new()
             .epoch_marker(epoch_marker)
@@ -816,6 +816,7 @@ impl NCNProgramClient {
             .ncn(ncn)
             .operator(operator)
             .ncn_operator_state(ncn_operator_state)
+            .operator_registry(operator_registry)
             .epoch_snapshot(epoch_snapshot)
             .operator_snapshot(operator_snapshot)
             .account_payer(account_payer)
@@ -2183,6 +2184,7 @@ impl NCNProgramClient {
     }
 
     /// Sends a transaction to register an operator with BLS keys.
+    #[allow(clippy::too_many_arguments)]
     pub async fn register_operator(
         &mut self,
         config: Pubkey,

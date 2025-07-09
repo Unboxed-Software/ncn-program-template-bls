@@ -88,6 +88,18 @@ impl TryFrom<Vec<u8>> for G1Point {
     }
 }
 
+impl Default for G1Point {
+    fn default() -> Self {
+        G1Point([0u8; 64])
+    }
+}
+
+impl Default for G1CompressedPoint {
+    fn default() -> Self {
+        G1CompressedPoint([0u8; 32])
+    }
+}
+
 impl TryFrom<Vec<u8>> for G1CompressedPoint {
     type Error = NCNProgramError;
 

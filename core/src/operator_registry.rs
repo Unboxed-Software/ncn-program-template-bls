@@ -256,6 +256,13 @@ impl OperatorRegistry {
         Ok(*operator_entry)
     }
 
+    pub fn try_get_operator_entry(&self, operator_pubkey: &Pubkey) -> Option<OperatorEntry> {
+        self.operator_list
+            .iter()
+            .find(|op| op.operator_pubkey().eq(operator_pubkey))
+            .map(|op| *op)
+    }
+
     pub fn update_operator_keys(
         &mut self,
         operator_pubkey: &Pubkey,

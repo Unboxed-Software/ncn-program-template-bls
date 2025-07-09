@@ -427,6 +427,15 @@ impl OperatorSnapshot {
         self.is_active.into()
     }
 
+    pub fn g1_pubkey(&self) -> [u8; G1_COMPRESSED_POINT_SIZE] {
+        self.g1_pubkey
+    }
+
+    pub fn have_valid_bn128_g1_pubkey(&self) -> bool {
+        G1CompressedPoint::try_from(self.g1_pubkey).is_ok()
+            && self.g1_pubkey != G1CompressedPoint::default().0
+    }
+
     pub const fn operator(&self) -> &Pubkey {
         &self.operator
     }
@@ -619,6 +628,7 @@ impl fmt::Display for EpochSnapshot {
        writeln!(f, "  Protocol Fee BPS:             {}", self.fees().protocol_fee_bps().unwrap_or(0))?;
        writeln!(f, "  NCN Fee BPS:                  {}", self.fees().ncn_fee_bps().unwrap_or(0))?;
        writeln!(f, "  Total Fee BPS:                {}", self.fees().total_fees_bps().unwrap_or(0))?;
+       writeln!(f, "  Total Agg G1 Pubkey:         {:?}", self.total_agg_g1_pubkey())?;
 
        writeln!(f, "\n")?;
        Ok(())
@@ -1085,30 +1095,6 @@ mod tests {
 
         assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), &expected_compressed.0);
     }
-
-    // #[test]
-    // fn test_register_operator_g1_pubkey_invalid_point() {
-    //     // Create an epoch snapshot
-    //     let mut epoch_snapshot = EpochSnapshot::new(
-    //         &Pubkey::new_unique(),
-    //         1,                          // ncn_epoch
-    //         1,                          // bump
-    //         100,                        // current_slot
-    //         1,                          // operator_count
-    //         1,                          // vault_count
-    //         Fees::new(100, 1).unwrap(), // fees
-    //     );
-    //
-    //     // Try to register an invalid G1 pubkey (all 0xFF bytes)
-    //     let invalid_g1_pubkey = [0xFF; G1_COMPRESSED_POINT_SIZE];
-    //     let result = epoch_snapshot.register_operator_g1_pubkey(&invalid_g1_pubkey);
-    //
-    //     // This should fail with a decompression error
-    //     assert!(result.is_err());
-    //
-    //     // Verify the aggregated G1 pubkey remains unchanged (all zeros)
-    //     assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), &[0u8; G1_COMPRESSED_POINT_SIZE]);
-    // }
 
     #[test]
     fn test_operator_snapshot_g1_pubkey_storage() {

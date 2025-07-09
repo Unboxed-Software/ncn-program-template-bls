@@ -184,10 +184,11 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "ncn")]
     #[account(5, name = "operator")]
     #[account(6, name = "ncn_operator_state")]
-    #[account(7, writable, name = "epoch_snapshot")]
-    #[account(8, writable, name = "operator_snapshot")]
-    #[account(9, writable, name = "account_payer")]
-    #[account(10, name = "system_program")]
+    #[account(7, name = "operator_registry")]
+    #[account(8, writable, name = "epoch_snapshot")]
+    #[account(9, writable, name = "operator_snapshot")]
+    #[account(10, writable, name = "account_payer")]
+    #[account(11, name = "system_program")]
     InitializeOperatorSnapshot{
         epoch: u64,
     },

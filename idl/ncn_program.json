@@ -639,6 +639,11 @@
           "isSigner": false
         },
         {
+          "name": "operatorRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "epochSnapshot",
           "isMut": true,
           "isSigner": false

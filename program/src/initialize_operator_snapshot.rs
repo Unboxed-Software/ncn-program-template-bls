@@ -8,7 +8,9 @@ use ncn_program_core::{
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     error::NCNProgramError,
+    g1_point::G1CompressedPoint,
     loaders::load_ncn_epoch,
+    operator_registry::OperatorRegistry,
     stake_weight::StakeWeights,
 };
 use solana_program::{
@@ -36,7 +38,7 @@ pub fn process_initialize_operator_snapshot(
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_marker, epoch_state, config, restaking_config, ncn, operator, ncn_operator_state, epoch_snapshot, operator_snapshot, account_payer, system_program] =
+    let [epoch_marker, epoch_state, config, restaking_config, ncn, operator, ncn_operator_state, operator_registry, epoch_snapshot, operator_snapshot, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -55,6 +57,7 @@ pub fn process_initialize_operator_snapshot(
         false,
     )?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, false)?;
+    OperatorRegistry::load(program_id, operator_registry, ncn.key, false)?;
     load_system_account(operator_snapshot, true)?;
     load_system_program(system_program)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
@@ -158,8 +161,20 @@ pub fn process_initialize_operator_snapshot(
     let operator_snapshot_account =
         OperatorSnapshot::try_from_slice_unchecked_mut(&mut operator_snapshot_data)?;
 
-    // TODO: get the real one
-    let g1_pubkey = [0; 32];
+    // Get the G1 pubkey from the operator registry
+    let g1_pubkey: Option<[u8; 32]> = {
+        let operator_registry_data = operator_registry.try_borrow_data()?;
+        let operator_registry_account =
+            OperatorRegistry::try_from_slice_unchecked(&operator_registry_data)?;
+        let operator_entry = operator_registry_account.try_get_operator_entry(operator.key);
+
+        if let Some(operator_entry) = operator_entry {
+            Some(*operator_entry.g1_pubkey())
+        } else {
+            None
+        }
+    };
+    msg!("G1 pubkey: {:?}", g1_pubkey);
 
     operator_snapshot_account.initialize(
         operator.key,
@@ -172,16 +187,18 @@ pub fn process_initialize_operator_snapshot(
         operator_index,
         operator_fee_bps,
         vault_count,
-        g1_pubkey,
+        g1_pubkey.unwrap_or(G1CompressedPoint::default().0),
     )?;
 
     let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
     let epoch_snapshot_account =
         EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
 
-    if is_active {
-        epoch_snapshot_account.register_operator_g1_pubkey(&g1_pubkey);
-    } else {
+    if is_active && g1_pubkey.is_some() {
+        epoch_snapshot_account.register_operator_g1_pubkey(&g1_pubkey.unwrap());
+    }
+
+    if !is_active {
         // Increment operator registration for an inactive operator
         epoch_snapshot_account.increment_operator_registration(
             current_slot,
@@ -194,8 +211,10 @@ pub fn process_initialize_operator_snapshot(
     {
         let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
         let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
-        epoch_state_account
-            .update_realloc_operator_snapshot(ncn_operator_index as usize, is_active)?;
+        epoch_state_account.update_realloc_operator_snapshot(
+            ncn_operator_index as usize,
+            is_active && g1_pubkey.is_some(),
+        )?;
     }
 
     Ok(())
