@@ -143,7 +143,12 @@ mod fuzz_tests {
                 .do_full_initialize_vault_registry(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
 
-            // 3.c. Register all the Supported Token (ST) mints in the NCN program
+            // 3.c. Initialize the operator_registry - creates accounts to track operators
+            ncn_program_client
+                .do_full_initialize_operator_registry(test_ncn.ncn_root.ncn_pubkey)
+                .await?;
+
+            // 3.d. Register all the Supported Token (ST) mints in the NCN program
             // This assigns weights to each mint for voting power calculations
             for mint_config in config.mints.iter() {
                 ncn_program_client
@@ -155,7 +160,7 @@ mod fuzz_tests {
                     .await?;
             }
 
-            // 3.d Register all the vaults in the NCN program
+            // 3.e Register all the vaults in the NCN program
             // This is permissionless because the admin already approved it by initiating
             // the handshake before
             for vault in test_ncn.vaults.iter() {
@@ -171,6 +176,9 @@ mod fuzz_tests {
                     .await?;
             }
         }
+
+        // 4. Register all operators in the NCN program
+        fixture.register_operators_to_test_ncn(&test_ncn).await?;
 
         // 4. Prepare the epoch consensus cycle
         // In a real system, these steps would run each epoch to prepare for voting on weather status

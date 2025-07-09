@@ -499,6 +499,9 @@ mod tests {
         fixture
             .add_vault_registry_to_test_ncn(&bad_test_ncn)
             .await?;
+        fixture
+            .register_operators_to_test_ncn(&bad_test_ncn)
+            .await?;
         fixture.snapshot_test_ncn(&bad_test_ncn).await?;
         fixture.vote_test_ncn(&bad_test_ncn).await?;
         fixture.reward_test_ncn(&bad_test_ncn, 10_000).await?;

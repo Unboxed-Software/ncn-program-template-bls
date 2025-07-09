@@ -7,8 +7,11 @@ use ncn_program_core::{
     constants::WEIGHT,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
+    g1_point::{G1CompressedPoint, G1Point},
+    g2_point::G2CompressedPoint,
     ncn_reward_router::{NCNRewardReceiver, NCNRewardRouter},
     operator_vault_reward_router::{OperatorVaultRewardReceiver, OperatorVaultRewardRouter},
+    schemes::Sha256Normalized,
     weight_table::WeightTable,
 };
 use solana_program::{clock::Clock, native_token::sol_to_lamports, pubkey::Pubkey};
@@ -454,6 +457,8 @@ impl TestBuilder {
         self.add_delegation_in_test_ncn(&test_ncn, 100).await?;
         self.add_vault_registry_to_test_ncn(&test_ncn).await?;
 
+        self.register_operators_to_test_ncn(&test_ncn).await?;
+
         Ok(test_ncn)
     }
 
@@ -613,6 +618,34 @@ impl TestBuilder {
                     .do_snapshot_vault_operator_delegation(vault, operator, ncn, epoch)
                     .await?;
             }
+        }
+
+        Ok(())
+    }
+
+    /// Registers all operators in the TestNcn with the NCN program.
+    pub async fn register_operators_to_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
+        let mut ncn_program_client = self.ncn_program_client();
+        for operator_root in test_ncn.operators.iter() {
+            let g1_pubkey = G1Point::try_from(operator_root.bn128_privkey).unwrap();
+            let g1_compressed = G1CompressedPoint::try_from(g1_pubkey).unwrap();
+            let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
+
+            let signature = operator_root
+                .bn128_privkey
+                .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
+                .unwrap();
+
+            ncn_program_client
+                .do_register_operator(
+                    test_ncn.ncn_root.ncn_pubkey,
+                    operator_root.operator_pubkey,
+                    &operator_root.operator_admin,
+                    g1_compressed.0,
+                    g2_compressed.0,
+                    signature.0,
+                )
+                .await?;
         }
 
         Ok(())

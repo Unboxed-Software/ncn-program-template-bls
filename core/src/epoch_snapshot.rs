@@ -628,7 +628,7 @@ impl fmt::Display for EpochSnapshot {
        writeln!(f, "  Protocol Fee BPS:             {}", self.fees().protocol_fee_bps().unwrap_or(0))?;
        writeln!(f, "  NCN Fee BPS:                  {}", self.fees().ncn_fee_bps().unwrap_or(0))?;
        writeln!(f, "  Total Fee BPS:                {}", self.fees().total_fees_bps().unwrap_or(0))?;
-       writeln!(f, "  Total Agg G1 Pubkey:         {:?}", self.total_agg_g1_pubkey())?;
+       writeln!(f, "  Total Agg G1 Pubkey:          {:?}", self.total_agg_g1_pubkey())?;
 
        writeln!(f, "\n")?;
        Ok(())
@@ -651,6 +651,7 @@ impl fmt::Display for OperatorSnapshot {
        writeln!(f, "  Delegations Registered:       {}", self.vault_operator_delegations_registered())?;
        writeln!(f, "  Valid Delegations:            {}", self.valid_operator_vault_delegations())?;
        writeln!(f, "  Finalized:                    {}", self.finalized())?;
+       writeln!(f, "  G1 Pubkey:                    {:?}", self.g1_pubkey())?;
 
        let stake_weights = self.stake_weights();
        writeln!(f, "\nTotal Stake Weight: {}", stake_weights.stake_weight())?;

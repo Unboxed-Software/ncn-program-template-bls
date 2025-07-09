@@ -2,7 +2,12 @@
 mod tests {
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
     use ncn_program_core::{
-        ballot_box::WeatherStatus, constants::WEIGHT, ncn_reward_router::NCNRewardReceiver,
+        ballot_box::WeatherStatus,
+        constants::WEIGHT,
+        g1_point::{G1CompressedPoint, G1Point},
+        g2_point::G2CompressedPoint,
+        ncn_reward_router::NCNRewardReceiver,
+        schemes::Sha256Normalized,
     };
 
     use solana_sdk::{msg, signature::Keypair, signer::Signer};
@@ -151,8 +156,12 @@ mod tests {
             ncn_program_client
                 .do_full_initialize_vault_registry(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
+            // 4.c Initialize the operator_registry - creates accounts to track operators
+            ncn_program_client
+                .do_full_initialize_operator_registry(ncn_pubkey)
+                .await?;
 
-            // 4.c. Register all the Supported Token (ST) mints in the NCN program
+            // 4.d. Register all the Supported Token (ST) mints in the NCN program
             // This assigns weights to each mint for voting power calculations
             for (mint, weight) in mints.iter() {
                 ncn_program_client
@@ -160,7 +169,7 @@ mod tests {
                     .await?;
             }
 
-            // 4.d Register all the vaults in the NCN program
+            // 4.c Register all the vaults in the NCN program
             // This is permissionless because the admin already approved it by initiating
             // the handshake before
             for vault in test_ncn.vaults.iter() {
@@ -177,7 +186,33 @@ mod tests {
             }
         }
 
-        // 5. Prepare the epoch consensus cycle
+        // 5. Register all the operators in the NCN program
+        {
+            for operator_root in test_ncn.operators.iter() {
+                let g1_pubkey = G1Point::try_from(operator_root.bn128_privkey).unwrap();
+                let g1_compressed = G1CompressedPoint::try_from(g1_pubkey).unwrap();
+                let g2_compressed =
+                    G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
+
+                let signature = operator_root
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
+                    .unwrap();
+
+                ncn_program_client
+                    .do_register_operator(
+                        ncn_pubkey,
+                        operator_root.operator_pubkey,
+                        &operator_root.operator_admin,
+                        g1_compressed.0,
+                        g2_compressed.0,
+                        signature.0,
+                    )
+                    .await?;
+            }
+        }
+
+        // 6. Prepare the epoch consensus cycle
         // In a real system, these steps would run each epoch to prepare for voting on weather status
         {
             // 5.a. Initialize the epoch state - creates a new state for the current epoch
@@ -224,6 +259,22 @@ mod tests {
             let first_operator = &test_ncn.operators[0];
             let second_operator = &test_ncn.operators[1];
             let third_operator = &test_ncn.operators[2];
+
+            let epoch_snapshot = ncn_program_client
+                .get_epoch_snapshot(ncn_pubkey, epoch)
+                .await?;
+
+            msg!("Epoch snapshot: {}", epoch_snapshot);
+
+            for (i, op) in test_ncn.operators.iter().enumerate() {
+                msg!(
+                    "Operator index  {} ===================================================================", i
+                );
+                let first_operator_snapshot = ncn_program_client
+                    .get_operator_snapshot(op.operator_pubkey, ncn_pubkey, epoch)
+                    .await?;
+                msg!("snapshot: {}", first_operator_snapshot);
+            }
 
             // First operator votes for Cloudy (minority vote)
             ncn_program_client

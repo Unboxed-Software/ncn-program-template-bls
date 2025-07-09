@@ -239,6 +239,10 @@ mod tests {
                 .do_full_initialize_vault_registry(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
 
+            ncn_program_client
+                .do_full_initialize_operator_registry(ncn_pubkey)
+                .await?;
+
             for (mint, weight) in mints.iter() {
                 ncn_program_client
                     .do_admin_register_st_mint(ncn_pubkey, mint.pubkey(), *weight)
@@ -257,6 +261,8 @@ mod tests {
                     .do_register_vault(ncn_pubkey, vault, ncn_vault_ticket)
                     .await?;
             }
+
+            fixture.register_operators_to_test_ncn(&test_ncn).await?;
         }
 
         // Prepare the voting environment

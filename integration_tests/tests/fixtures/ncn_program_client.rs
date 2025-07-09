@@ -115,6 +115,9 @@ impl NCNProgramClient {
         self.do_full_initialize_vault_registry(ncn_root.ncn_pubkey)
             .await?;
 
+        self.do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
+            .await?;
+
         Ok(())
     }
 
