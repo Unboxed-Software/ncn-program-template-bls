@@ -249,22 +249,6 @@ mod fuzz_tests {
             );
         }
 
-        // 7. Reward Distribution
-        // Simulate rewards flowing through the system after consensus
-        {
-            const REWARD_AMOUNT: u64 = 1_000_000;
-            // Setup reward routers for NCN and operators
-            fixture.add_routers_for_test_ncn(&test_ncn).await?;
-            // Route rewards into the NCN reward system
-            fixture
-                .route_in_ncn_rewards_for_test_ncn(&test_ncn, REWARD_AMOUNT)
-                .await?;
-            // Route rewards to operators and their delegated vaults
-            fixture
-                .route_in_operator_vault_rewards_for_test_ncn(&test_ncn)
-                .await?;
-        }
-
         // 8. Fetch and verify the consensus result account
         {
             let epoch = fixture.clock().await.epoch;

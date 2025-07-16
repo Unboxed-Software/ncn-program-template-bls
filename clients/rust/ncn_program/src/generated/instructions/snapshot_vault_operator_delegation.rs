@@ -31,8 +31,6 @@ pub struct SnapshotVaultOperatorDelegation {
     pub weight_table: solana_program::pubkey::Pubkey,
 
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
-
-    pub operator_snapshot: solana_program::pubkey::Pubkey,
 }
 
 impl SnapshotVaultOperatorDelegation {
@@ -48,7 +46,7 @@ impl SnapshotVaultOperatorDelegation {
         args: SnapshotVaultOperatorDelegationInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_state,
             false,
@@ -91,10 +89,6 @@ impl SnapshotVaultOperatorDelegation {
             self.epoch_snapshot,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.operator_snapshot,
-            false,
-        ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = SnapshotVaultOperatorDelegationInstructionData::new()
             .try_to_vec()
@@ -117,7 +111,7 @@ pub struct SnapshotVaultOperatorDelegationInstructionData {
 
 impl SnapshotVaultOperatorDelegationInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 14 }
+        Self { discriminator: 15 }
     }
 }
 
@@ -148,7 +142,6 @@ pub struct SnapshotVaultOperatorDelegationInstructionArgs {
 ///   8. `[]` vault_operator_delegation
 ///   9. `[]` weight_table
 ///   10. `[writable]` epoch_snapshot
-///   11. `[writable]` operator_snapshot
 #[derive(Clone, Debug, Default)]
 pub struct SnapshotVaultOperatorDelegationBuilder {
     epoch_state: Option<solana_program::pubkey::Pubkey>,
@@ -162,7 +155,6 @@ pub struct SnapshotVaultOperatorDelegationBuilder {
     vault_operator_delegation: Option<solana_program::pubkey::Pubkey>,
     weight_table: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
-    operator_snapshot: Option<solana_program::pubkey::Pubkey>,
     epoch: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -239,14 +231,6 @@ impl SnapshotVaultOperatorDelegationBuilder {
         self
     }
     #[inline(always)]
-    pub fn operator_snapshot(
-        &mut self,
-        operator_snapshot: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.operator_snapshot = Some(operator_snapshot);
-        self
-    }
-    #[inline(always)]
     pub fn epoch(&mut self, epoch: u64) -> &mut Self {
         self.epoch = Some(epoch);
         self
@@ -285,9 +269,6 @@ impl SnapshotVaultOperatorDelegationBuilder {
                 .expect("vault_operator_delegation is not set"),
             weight_table: self.weight_table.expect("weight_table is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
-            operator_snapshot: self
-                .operator_snapshot
-                .expect("operator_snapshot is not set"),
         };
         let args = SnapshotVaultOperatorDelegationInstructionArgs {
             epoch: self.epoch.clone().expect("epoch is not set"),
@@ -320,8 +301,6 @@ pub struct SnapshotVaultOperatorDelegationCpiAccounts<'a, 'b> {
     pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `snapshot_vault_operator_delegation` CPI instruction.
@@ -350,8 +329,6 @@ pub struct SnapshotVaultOperatorDelegationCpi<'a, 'b> {
     pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: SnapshotVaultOperatorDelegationInstructionArgs,
 }
@@ -375,7 +352,6 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpi<'a, 'b> {
             vault_operator_delegation: accounts.vault_operator_delegation,
             weight_table: accounts.weight_table,
             epoch_snapshot: accounts.epoch_snapshot,
-            operator_snapshot: accounts.operator_snapshot,
             __args: args,
         }
     }
@@ -412,7 +388,7 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.epoch_state.key,
             false,
@@ -457,10 +433,6 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpi<'a, 'b> {
             *self.epoch_snapshot.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.operator_snapshot.key,
-            false,
-        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -479,7 +451,7 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(12 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(11 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.epoch_state.clone());
         account_infos.push(self.config.clone());
@@ -492,7 +464,6 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpi<'a, 'b> {
         account_infos.push(self.vault_operator_delegation.clone());
         account_infos.push(self.weight_table.clone());
         account_infos.push(self.epoch_snapshot.clone());
-        account_infos.push(self.operator_snapshot.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -520,7 +491,6 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpi<'a, 'b> {
 ///   8. `[]` vault_operator_delegation
 ///   9. `[]` weight_table
 ///   10. `[writable]` epoch_snapshot
-///   11. `[writable]` operator_snapshot
 #[derive(Clone, Debug)]
 pub struct SnapshotVaultOperatorDelegationCpiBuilder<'a, 'b> {
     instruction: Box<SnapshotVaultOperatorDelegationCpiBuilderInstruction<'a, 'b>>,
@@ -541,7 +511,6 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpiBuilder<'a, 'b> {
             vault_operator_delegation: None,
             weight_table: None,
             epoch_snapshot: None,
-            operator_snapshot: None,
             epoch: None,
             __remaining_accounts: Vec::new(),
         });
@@ -627,14 +596,6 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpiBuilder<'a, 'b> {
         epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.epoch_snapshot = Some(epoch_snapshot);
-        self
-    }
-    #[inline(always)]
-    pub fn operator_snapshot(
-        &mut self,
-        operator_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.operator_snapshot = Some(operator_snapshot);
         self
     }
     #[inline(always)]
@@ -731,11 +692,6 @@ impl<'a, 'b> SnapshotVaultOperatorDelegationCpiBuilder<'a, 'b> {
                 .instruction
                 .epoch_snapshot
                 .expect("epoch_snapshot is not set"),
-
-            operator_snapshot: self
-                .instruction
-                .operator_snapshot
-                .expect("operator_snapshot is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -759,7 +715,6 @@ struct SnapshotVaultOperatorDelegationCpiBuilderInstruction<'a, 'b> {
     vault_operator_delegation: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     weight_table: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    operator_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

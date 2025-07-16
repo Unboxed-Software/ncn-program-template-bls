@@ -6,7 +6,6 @@ mod tests {
         constants::WEIGHT,
         g1_point::{G1CompressedPoint, G1Point},
         g2_point::G2CompressedPoint,
-        ncn_reward_router::NCNRewardReceiver,
         schemes::Sha256Normalized,
     };
 
@@ -29,19 +28,14 @@ mod tests {
         let mut restaking_client = fixture.restaking_program_client();
 
         // 2. Define test parameters
-        const OPERATOR_COUNT: usize = 13; // Number of operators to create for testing
+        const OPERATOR_COUNT: usize = 10; // Number of operators to create for testing
         let mints = vec![
             (Keypair::new(), WEIGHT),     // Alice with base weight
             (Keypair::new(), WEIGHT * 2), // Bob with double weight
-            (Keypair::new(), WEIGHT * 3), // Charlie with triple weight
-            (Keypair::new(), WEIGHT * 4), // Dave with quadruple weight
         ];
         let delegations = [
-            1,                  // minimum delegation amount
-            10_000_000_000,     // 10 tokens
-            100_000_000_000,    // 100 tokens
-            1_000_000_000_000,  // 1k tokens
-            10_000_000_000_000, // 10k tokens
+            1000,   // minimum delegation amount
+            100000, // 100 tokens
         ];
 
         // 3. Initialize system accounts and establish relationships
@@ -91,19 +85,11 @@ mod tests {
         {
             // Create 3 vaults for Alice
             fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 3, Some(mints[0].0.insecure_clone()))
+                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[0].0.insecure_clone()))
                 .await?;
             // Create 2 vaults for Bob
             fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 2, Some(mints[1].0.insecure_clone()))
-                .await?;
-            // Create 1 vault for Charlie
-            fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[2].0.insecure_clone()))
-                .await?;
-            // Create 1 vault for Dave
-            fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[3].0.insecure_clone()))
+                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[1].0.insecure_clone()))
                 .await?;
         }
 
@@ -234,10 +220,13 @@ mod tests {
             // 5.d. Take the epoch snapshot - records the current state for this epoch
             fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
 
-            // 5.e. Take a snapshot for each operator - records their current stakes
-            fixture
-                .add_operator_snapshots_to_test_ncn(&test_ncn)
-                .await?;
+            for operator_root in test_ncn.operators.iter() {
+                let operator = operator_root.operator_pubkey;
+
+                ncn_program_client
+                    .initialize_operator_snapshot(operator, ncn_pubkey, epoch)
+                    .await?;
+            }
 
             // 5.f. Take a snapshot for each vault and its delegation - records delegations
             fixture
@@ -265,16 +254,6 @@ mod tests {
                 .await?;
 
             msg!("Epoch snapshot: {}", epoch_snapshot);
-
-            for (i, op) in test_ncn.operators.iter().enumerate() {
-                msg!(
-                    "Operator index  {} ===================================================================", i
-                );
-                let first_operator_snapshot = ncn_program_client
-                    .get_operator_snapshot(op.operator_pubkey, ncn_pubkey, epoch)
-                    .await?;
-                msg!("snapshot: {}", first_operator_snapshot);
-            }
 
             // First operator votes for Cloudy (minority vote)
             ncn_program_client
@@ -330,238 +309,6 @@ mod tests {
                 ballot_box.get_winning_ballot().unwrap().weather_status(),
                 winning_weather_status
             );
-        }
-
-        // 8. Reward Distribution
-        // This section simulates the flow of rewards through the system after a successful
-        // consensus vote. It covers setting up reward-related accounts, funding the reward pool,
-        // and distributing rewards to various stakeholders: the protocol, the NCN, operators, and vaults.
-        {
-            const REWARD_AMOUNT: u64 = 1_000_000;
-
-            // 8.1. Setup reward routers for NCN and operators
-            // Before rewards can be distributed, specialized accounts called "reward routers"
-            // must be initialized for the current epoch. These accounts manage the splitting
-            // and distribution of funds.
-            {
-                let mut ncn_program_client = fixture.ncn_program_client();
-                let ncn = test_ncn.ncn_root.ncn_pubkey;
-                let clock = fixture.clock().await;
-                let epoch = clock.epoch;
-
-                // Initialize the main reward router for the NCN. This account acts as the
-                // primary hub for incoming rewards for the epoch.
-                ncn_program_client
-                    .do_full_initialize_ncn_reward_router(ncn, epoch)
-                    .await?;
-
-                // For each operator, initialize an operator-specific reward router. This router
-                // will handle the distribution of rewards between the operator (as a fee)
-                // and the vaults that have delegated to it.
-                for operator_root in test_ncn.operators.iter() {
-                    let operator = operator_root.operator_pubkey;
-
-                    ncn_program_client
-                        .do_initialize_operator_vault_reward_router(ncn, operator, epoch)
-                        .await?;
-                }
-            }
-
-            // 8.2. Route rewards into the NCN reward system
-            // This block handles the initial injection of rewards and the first level of distribution.
-            {
-                let mut ncn_program_client = fixture.ncn_program_client();
-                let ncn = test_ncn.ncn_root.ncn_pubkey;
-                let epoch = fixture.clock().await.epoch;
-
-                // Advance the clock to ensure we are in a valid time window for reward distribution.
-                let valid_slots_after_consensus = {
-                    let config = ncn_program_client.get_ncn_config(ncn).await?;
-                    config.valid_slots_after_consensus()
-                };
-
-                fixture
-                    .warp_slot_incremental(valid_slots_after_consensus + 1)
-                    .await?;
-
-                // The NCNRewardReceiver is a Program Derived Address (PDA) that serves as the
-                // entry point for all rewards for a given NCN and epoch.
-                let ncn_reward_receiver =
-                    NCNRewardReceiver::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-                fn lamports_to_sol(lamports: u64) -> f64 {
-                    lamports as f64 / 1_000_000_000.0
-                }
-
-                let sol_rewards = lamports_to_sol(REWARD_AMOUNT);
-
-                // Simulate rewards being sent to the system by airdropping SOL to the receiver account.
-                ncn_program_client
-                    .airdrop(&ncn_reward_receiver, sol_rewards)
-                    .await?;
-
-                // Trigger the initial routing of rewards from the main receiver. This instruction
-                // splits the total rewards into sub-pools for the protocol, the NCN, and the
-                // collective of operators/vaults. Calling it twice demonstrates idempotency.
-                ncn_program_client.do_route_ncn_rewards(ncn, epoch).await?;
-                // Should be able to route twice
-                ncn_program_client.do_route_ncn_rewards(ncn, epoch).await?;
-
-                // Fetch the state of the NCN reward router to verify the distribution.
-                let ncn_reward_router =
-                    ncn_program_client.get_ncn_reward_router(ncn, epoch).await?;
-
-                // 8.2.1. Protocol Rewards Distribution
-                // Distribute the portion of rewards allocated to the protocol.
-                {
-                    let rewards = ncn_reward_router.protocol_rewards();
-
-                    if rewards > 0 {
-                        let mut ncn_program_client = fixture.ncn_program_client();
-                        let config = ncn_program_client.get_ncn_config(ncn).await?;
-                        let protocol_fee_wallet = config.fee_config.protocol_fee_wallet();
-
-                        let balance_before = {
-                            let account = fixture.get_account(protocol_fee_wallet).await?;
-                            account.unwrap().lamports
-                        };
-
-                        println!("Distributing {} of Protocol Rewards", rewards);
-                        ncn_program_client
-                            .do_distribute_protocol_rewards(ncn, epoch)
-                            .await?;
-
-                        let balance_after = {
-                            let account = fixture.get_account(protocol_fee_wallet).await?;
-                            account.unwrap().lamports
-                        };
-
-                        // Verify that the protocol's fee wallet balance increased by the exact reward amount.
-                        assert_eq!(
-                            balance_after,
-                            balance_before + rewards,
-                            "Protocol fee wallet balance should increase by the rewards amount"
-                        );
-                    }
-                }
-
-                // 8.2.2. NCN Rewards Distribution
-                // Distribute the portion of rewards allocated to the NCN itself.
-                {
-                    let rewards = ncn_reward_router.ncn_rewards();
-
-                    if rewards > 0 {
-                        let mut ncn_program_client = fixture.ncn_program_client();
-                        let config = ncn_program_client.get_ncn_config(ncn).await?;
-                        let ncn_fee_wallet = config.fee_config.ncn_fee_wallet();
-
-                        let balance_before = {
-                            let account = fixture.get_account(ncn_fee_wallet).await?;
-                            account.unwrap().lamports
-                        };
-
-                        println!("Distributing {} of NCN Rewards", rewards);
-                        ncn_program_client
-                            .do_distribute_ncn_rewards(ncn, epoch)
-                            .await?;
-
-                        let balance_after = {
-                            let account = fixture.get_account(ncn_fee_wallet).await?;
-                            account.unwrap().lamports
-                        };
-
-                        // Verify that the NCN's fee wallet balance increased by the exact reward amount.
-                        assert_eq!(
-                            balance_after,
-                            balance_before + rewards,
-                            "NCN fee wallet balance should increase by the rewards amount"
-                        );
-                    }
-                }
-
-                // 8.2.3. Operator Vault Rewards Distribution
-                // Distribute rewards from the main NCN router to each operator's individual
-                // reward router. This is a transfer between program-controlled accounts.
-                {
-                    for operator_root in test_ncn.operators.iter() {
-                        let operator = operator_root.operator_pubkey;
-
-                        let operator_route =
-                            ncn_reward_router.operator_vault_reward_route(&operator);
-
-                        let rewards = operator_route.rewards().unwrap_or(0);
-
-                        if rewards == 0 {
-                            continue;
-                        }
-
-                        println!("Distribute Ncn Reward {}", rewards);
-                        // This instruction moves funds from the NCN reward router to the operator's
-                        // vault reward router for further distribution.
-                        ncn_program_client
-                            .do_distribute_operator_vault_reward_route(operator, ncn, epoch)
-                            .await?;
-                    }
-                }
-            }
-
-            // 8.3. Route rewards to operators and their delegated vaults
-            // This block handles the second level of distribution: from each operator's
-            // reward router to the operator (fees) and the vaults that delegated to them.
-            {
-                let mut ncn_program_client = fixture.ncn_program_client();
-                let ncn = test_ncn.ncn_root.ncn_pubkey;
-                let epoch = fixture.clock().await.epoch;
-
-                for operator_root in test_ncn.operators.iter() {
-                    let operator = operator_root.operator_pubkey;
-
-                    // This instruction processes the rewards within an operator's reward router,
-                    // splitting the funds based on operator fees and vault delegations.
-                    // Calling it twice demonstrates idempotency.
-                    ncn_program_client
-                        .do_route_operator_vault_rewards(ncn, operator, epoch)
-                        .await?;
-                    // Should be able to route twice
-                    ncn_program_client
-                        .do_route_operator_vault_rewards(ncn, operator, epoch)
-                        .await?;
-
-                    // Fetch the state of the operator's reward router to get the amounts.
-                    let operator_vault_reward_router = ncn_program_client
-                        .get_operator_vault_reward_router(operator, ncn, epoch)
-                        .await?;
-
-                    // 8.3.1. Distribute Operator Rewards
-                    // Pay out the operator's share of the rewards (their fees).
-                    let operator_rewards = operator_vault_reward_router.operator_rewards();
-                    if operator_rewards > 0 {
-                        ncn_program_client
-                            .do_distribute_operator_rewards(operator, ncn, epoch)
-                            .await?;
-                    }
-
-                    // 8.3.2. Distribute Vault Rewards
-                    // Pay out the rewards to each vault that delegated to this operator.
-                    for vault_root in test_ncn.vaults.iter() {
-                        let vault = vault_root.vault_pubkey;
-
-                        let vault_reward_route =
-                            operator_vault_reward_router.vault_reward_route(&vault);
-
-                        if let Ok(vault_reward_route) = vault_reward_route {
-                            let vault_rewards = vault_reward_route.rewards();
-
-                            if vault_rewards > 0 {
-                                // Transfer the final reward amount to the vault.
-                                ncn_program_client
-                                    .do_distribute_vault_rewards(vault, operator, ncn, epoch)
-                                    .await?;
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         // 9. Fetch and verify the consensus result account

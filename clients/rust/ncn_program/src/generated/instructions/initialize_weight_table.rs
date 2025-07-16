@@ -43,7 +43,7 @@ impl InitializeWeightTable {
             self.epoch_marker,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_state,
             false,
         ));
@@ -109,7 +109,7 @@ pub struct InitializeWeightTableInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[]` epoch_marker
-///   1. `[]` epoch_state
+///   1. `[writable]` epoch_state
 ///   2. `[]` vault_registry
 ///   3. `[]` ncn
 ///   4. `[writable]` weight_table
@@ -307,7 +307,7 @@ impl<'a, 'b> InitializeWeightTableCpi<'a, 'b> {
             *self.epoch_marker.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.epoch_state.key,
             false,
         ));
@@ -375,7 +375,7 @@ impl<'a, 'b> InitializeWeightTableCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[]` epoch_marker
-///   1. `[]` epoch_state
+///   1. `[writable]` epoch_state
 ///   2. `[]` vault_registry
 ///   3. `[]` ncn
 ///   4. `[writable]` weight_table

@@ -123,9 +123,9 @@ pub struct VaultRegistry {
     /// The bump seed for the PDA
     pub bump: u8,
     /// The list of supported token ( ST ) mints
-    pub st_mint_list: [StMintEntry; 64],
+    pub st_mint_list: [StMintEntry; 10],
     /// The list of vaults
-    pub vault_list: [VaultEntry; 64],
+    pub vault_list: [VaultEntry; 10],
 }
 
 impl Discriminator for VaultRegistry {

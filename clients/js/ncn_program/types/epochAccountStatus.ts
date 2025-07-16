@@ -8,8 +8,6 @@
 
 import {
   combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
   getU8Decoder,
@@ -23,10 +21,7 @@ export type EpochAccountStatus = {
   epochState: number;
   weightTable: number;
   epochSnapshot: number;
-  operatorSnapshot: Array<number>;
   ballotBox: number;
-  ncnRewardRouter: number;
-  operatorVaultRewardRouter: Array<number>;
 };
 
 export type EpochAccountStatusArgs = EpochAccountStatus;
@@ -36,13 +31,7 @@ export function getEpochAccountStatusEncoder(): Encoder<EpochAccountStatusArgs> 
     ['epochState', getU8Encoder()],
     ['weightTable', getU8Encoder()],
     ['epochSnapshot', getU8Encoder()],
-    ['operatorSnapshot', getArrayEncoder(getU8Encoder(), { size: 256 })],
     ['ballotBox', getU8Encoder()],
-    ['ncnRewardRouter', getU8Encoder()],
-    [
-      'operatorVaultRewardRouter',
-      getArrayEncoder(getU8Encoder(), { size: 256 }),
-    ],
   ]);
 }
 
@@ -51,13 +40,7 @@ export function getEpochAccountStatusDecoder(): Decoder<EpochAccountStatus> {
     ['epochState', getU8Decoder()],
     ['weightTable', getU8Decoder()],
     ['epochSnapshot', getU8Decoder()],
-    ['operatorSnapshot', getArrayDecoder(getU8Decoder(), { size: 256 })],
     ['ballotBox', getU8Decoder()],
-    ['ncnRewardRouter', getU8Decoder()],
-    [
-      'operatorVaultRewardRouter',
-      getArrayDecoder(getU8Decoder(), { size: 256 }),
-    ],
   ]);
 }
 

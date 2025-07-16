@@ -420,7 +420,7 @@
         },
         {
           "name": "epochState",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -559,12 +559,52 @@
           "isSigner": false
         },
         {
-          "name": "config",
+          "name": "ncn",
           "isMut": false,
           "isSigner": false
         },
         {
+          "name": "epochSnapshot",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "accountPayer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "epoch",
+          "type": "u64"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 12
+      }
+    },
+    {
+      "name": "ReallocEpochSnapshot",
+      "accounts": [
+        {
+          "name": "epochState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "ncn",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "config",
           "isMut": false,
           "isSigner": false
         },
@@ -597,7 +637,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 13
       }
     },
     {
@@ -611,11 +651,6 @@
         {
           "name": "epochState",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
           "isSigner": false
         },
         {
@@ -649,11 +684,6 @@
           "isSigner": false
         },
         {
-          "name": "operatorSnapshot",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "accountPayer",
           "isMut": true,
           "isSigner": false
@@ -672,7 +702,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 14
       }
     },
     {
@@ -732,11 +762,6 @@
           "name": "epochSnapshot",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "operatorSnapshot",
-          "isMut": true,
-          "isSigner": false
         }
       ],
       "args": [
@@ -747,7 +772,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 14
+        "value": 15
       }
     },
     {
@@ -802,7 +827,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 15
+        "value": 16
       }
     },
     {
@@ -847,7 +872,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 16
+        "value": 17
       }
     },
     {
@@ -879,11 +904,6 @@
           "isSigner": false
         },
         {
-          "name": "operatorSnapshot",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "operator",
           "isMut": false,
           "isSigner": false
@@ -911,425 +931,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 17
-      }
-    },
-    {
-      "name": "InitializeNCNRewardRouter",
-      "accounts": [
-        {
-          "name": "epochMarker",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
         "value": 18
-      }
-    },
-    {
-      "name": "ReallocNCNRewardRouter",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 19
-      }
-    },
-    {
-      "name": "RouteNCNRewards",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochSnapshot",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ballotBox",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "maxIterations",
-          "type": "u16"
-        },
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 20
-      }
-    },
-    {
-      "name": "DistributeProtocolRewards",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "protocolFeeWallet",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 21
-      }
-    },
-    {
-      "name": "DistributeNCNRewards",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncnFeeWallet",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 22
-      }
-    },
-    {
-      "name": "InitializeOperatorVaultRewardRouter",
-      "accounts": [
-        {
-          "name": "epochMarker",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operator",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operatorSnapshot",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 23
-      }
-    },
-    {
-      "name": "DistributeOperatorVaultRewardRoute",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operator",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncnRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardRouter",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 24
-      }
-    },
-    {
-      "name": "RouteOperatorVaultRewards",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operator",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operatorSnapshot",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "maxIterations",
-          "type": "u16"
-        },
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 25
       }
     },
     {
@@ -1391,122 +993,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 26
-      }
-    },
-    {
-      "name": "DistributeOperatorRewards",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operator",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorSnapshot",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 27
-      }
-    },
-    {
-      "name": "DistributeVaultRewards",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operator",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorSnapshot",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardRouter",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVaultRewardReceiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 28
+        "value": 19
       }
     },
     {
@@ -1556,7 +1043,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 29
+        "value": 20
       }
     },
     {
@@ -1593,7 +1080,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 30
+        "value": 21
       }
     },
     {
@@ -1637,7 +1124,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 31
+        "value": 22
       }
     },
     {
@@ -1680,7 +1167,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 32
+        "value": 23
       }
     },
     {
@@ -1722,7 +1209,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 33
+        "value": 24
       }
     },
     {
@@ -1763,7 +1250,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 34
+        "value": 25
       }
     }
   ],
@@ -1888,6 +1375,12 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "minimumStakeWeight",
+            "type": {
+              "defined": "StakeWeights"
+            }
           }
         ]
       }
@@ -2010,15 +1503,9 @@
             }
           },
           {
-            "name": "validOperatorVaultDelegations",
+            "name": "operatorsCanVoteCount",
             "type": {
               "defined": "PodU64"
-            }
-          },
-          {
-            "name": "stakeWeights",
-            "type": {
-              "defined": "StakeWeights"
             }
           },
           {
@@ -2031,115 +1518,20 @@
             }
           },
           {
-            "name": "fees",
-            "type": {
-              "defined": "Fees"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OperatorSnapshot",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "operator",
-            "type": "publicKey"
-          },
-          {
-            "name": "g1Pubkey",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "ncnEpoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "slotFinalized",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "isActive",
-            "type": {
-              "defined": "PodBool"
-            }
-          },
-          {
-            "name": "ncnOperatorIndex",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorIndex",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorFeeBps",
-            "type": {
-              "defined": "PodU16"
-            }
-          },
-          {
-            "name": "vaultOperatorDelegationCount",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "vaultOperatorDelegationsRegistered",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "validOperatorVaultDelegations",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "stakeWeights",
-            "type": {
-              "defined": "StakeWeights"
-            }
-          },
-          {
-            "name": "vaultOperatorStakeWeight",
+            "name": "operatorSnapshots",
             "type": {
               "array": [
                 {
-                  "defined": "VaultOperatorStakeWeight"
+                  "defined": "OperatorSnapshot"
                 },
-                64
+                256
               ]
+            }
+          },
+          {
+            "name": "minimumStakeWeight",
+            "type": {
+              "defined": "StakeWeights"
             }
           }
         ]
@@ -2274,102 +1666,6 @@
       }
     },
     {
-      "name": "NCNRewardRouter",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "totalRewards",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "rewardPool",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "rewardsProcessed",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "reserved",
-            "type": {
-              "array": [
-                "u8",
-                128
-              ]
-            }
-          },
-          {
-            "name": "lastVoteIndex",
-            "type": {
-              "defined": "PodU16"
-            }
-          },
-          {
-            "name": "lastRewardsToProcess",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "protocolRewards",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "ncnRewards",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorVaultRewards",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorVaultRewardRoutes",
-            "type": {
-              "array": [
-                {
-                  "defined": "OperatorVaultRewardRoute"
-                },
-                256
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "OperatorRegistry",
       "type": {
         "kind": "struct",
@@ -2397,91 +1693,6 @@
       }
     },
     {
-      "name": "OperatorVaultRewardRouter",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "operator",
-            "type": "publicKey"
-          },
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "ncnOperatorIndex",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "totalRewards",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "rewardPool",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "rewardsProcessed",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorRewards",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "lastRewardsToProcess",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "lastVaultOperatorDelegationIndex",
-            "type": {
-              "defined": "PodU16"
-            }
-          },
-          {
-            "name": "vaultRewardRoutes",
-            "type": {
-              "array": [
-                {
-                  "defined": "VaultRewardRoute"
-                },
-                64
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "VaultRegistry",
       "type": {
         "kind": "struct",
@@ -2501,7 +1712,7 @@
                 {
                   "defined": "StMintEntry"
                 },
-                64
+                10
               ]
             }
           },
@@ -2512,7 +1723,7 @@
                 {
                   "defined": "VaultEntry"
                 },
-                64
+                10
               ]
             }
           }
@@ -2557,7 +1768,7 @@
                 {
                   "defined": "VaultEntry"
                 },
-                64
+                10
               ]
             }
           },
@@ -2568,7 +1779,7 @@
                 {
                   "defined": "WeightEntry"
                 },
-                64
+                10
               ]
             }
           }
@@ -2658,6 +1869,96 @@
       }
     },
     {
+      "name": "OperatorSnapshot",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "publicKey"
+          },
+          {
+            "name": "g1Pubkey",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "slotCreated",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "slotFinalized",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "isActive",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
+            "name": "ncnOperatorIndex",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "operatorIndex",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "hasMinimumStakeWeight",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
+            "name": "stakeWeightSoFar",
+            "type": {
+              "defined": "StakeWeights"
+            }
+          },
+          {
+            "name": "vaultOperatorDelegationCount",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "vaultOperatorDelegationsRegistered",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "validOperatorVaultDelegations",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "vaultsDelegated",
+            "type": {
+              "array": [
+                "publicKey",
+                10
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "VaultOperatorStakeWeight",
       "type": {
         "kind": "struct",
@@ -2699,30 +2000,8 @@
             "type": "u8"
           },
           {
-            "name": "operatorSnapshot",
-            "type": {
-              "array": [
-                "u8",
-                256
-              ]
-            }
-          },
-          {
             "name": "ballotBox",
             "type": "u8"
-          },
-          {
-            "name": "ncnRewardRouter",
-            "type": "u8"
-          },
-          {
-            "name": "operatorVaultRewardRouter",
-            "type": {
-              "array": [
-                "u8",
-                256
-              ]
-            }
           }
         ]
       }
@@ -2816,38 +2095,6 @@
       }
     },
     {
-      "name": "OperatorVaultRewardRoute",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "operator",
-            "type": "publicKey"
-          },
-          {
-            "name": "rewards",
-            "type": {
-              "defined": "NCNRewardRouterRewards"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "NCNRewardRouterRewards",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "rewards",
-            "type": {
-              "defined": "PodU64"
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "OperatorEntry",
       "type": {
         "kind": "struct",
@@ -2893,24 +2140,6 @@
                 "u8",
                 200
               ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "VaultRewardRoute",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "vault",
-            "type": "publicKey"
-          },
-          {
-            "name": "rewards",
-            "type": {
-              "defined": "PodU64"
             }
           }
         ]
@@ -3257,308 +2486,318 @@
     },
     {
       "code": 8739,
+      "name": "EpochSnapshotAlreadyFinalized",
+      "msg": "epoch snapshot already finalized"
+    },
+    {
+      "code": 8740,
       "name": "TooManyVaultOperatorDelegations",
       "msg": "Too many vault operator delegations"
     },
     {
-      "code": 8740,
+      "code": 8741,
       "name": "DuplicateVaultOperatorDelegation",
       "msg": "Duplicate vault operator delegation"
     },
     {
-      "code": 8741,
+      "code": 8742,
       "name": "DuplicateVoteCast",
       "msg": "Duplicate Vote Cast"
     },
     {
-      "code": 8742,
+      "code": 8743,
       "name": "CannotVoteWithZeroStake",
       "msg": "Cannot Vote With Zero Delegation"
     },
     {
-      "code": 8743,
+      "code": 8744,
       "name": "OperatorAlreadyVoted",
       "msg": "Operator Already Voted"
     },
     {
-      "code": 8744,
+      "code": 8745,
       "name": "OperatorVotesFull",
       "msg": "Operator votes full"
     },
     {
-      "code": 8745,
+      "code": 8746,
       "name": "BallotTallyFull",
       "msg": "Merkle root tally full"
     },
     {
-      "code": 8746,
+      "code": 8747,
       "name": "BallotTallyNotFoundFull",
       "msg": "Ballot tally not found"
     },
     {
-      "code": 8747,
+      "code": 8748,
       "name": "BallotTallyNotEmpty",
       "msg": "Ballot tally not empty"
     },
     {
-      "code": 8748,
+      "code": 8749,
       "name": "ConsensusAlreadyReached",
       "msg": "Consensus already reached, cannot change vote"
     },
     {
-      "code": 8749,
+      "code": 8750,
       "name": "ConsensusNotReached",
       "msg": "Consensus not reached"
     },
     {
-      "code": 8750,
+      "code": 8751,
       "name": "EpochSnapshotNotFinalized",
       "msg": "Epoch snapshot not finalized"
     },
     {
-      "code": 8751,
+      "code": 8752,
       "name": "VotingNotValid",
       "msg": "Voting not valid, too many slots after consensus reached"
     },
     {
-      "code": 8752,
+      "code": 8753,
       "name": "TieBreakerAdminInvalid",
       "msg": "Tie breaker admin invalid"
     },
     {
-      "code": 8753,
+      "code": 8754,
       "name": "VotingNotFinalized",
       "msg": "Voting not finalized"
     },
     {
-      "code": 8754,
+      "code": 8755,
       "name": "TieBreakerNotInPriorVotes",
       "msg": "Tie breaking ballot must be one of the prior votes"
     },
     {
-      "code": 8755,
+      "code": 8756,
       "name": "InvalidMerkleProof",
       "msg": "Invalid merkle proof"
     },
     {
-      "code": 8756,
+      "code": 8757,
       "name": "InvalidOperatorVoter",
       "msg": "Operator voter needs to sign its vote"
     },
     {
-      "code": 8757,
+      "code": 8758,
       "name": "InvalidNcnFeeGroup",
       "msg": "Not a valid NCN fee group"
     },
     {
-      "code": 8758,
+      "code": 8759,
       "name": "InvalidBaseFeeGroup",
       "msg": "Not a valid base fee group"
     },
     {
-      "code": 8759,
+      "code": 8760,
       "name": "OperatorRewardListFull",
       "msg": "Operator reward list full"
     },
     {
-      "code": 8760,
+      "code": 8761,
       "name": "OperatorRewardNotFound",
       "msg": "Operator Reward not found"
     },
     {
-      "code": 8761,
+      "code": 8762,
       "name": "VaultRewardNotFound",
       "msg": "Vault Reward not found"
     },
     {
-      "code": 8762,
+      "code": 8763,
       "name": "DestinationMismatch",
       "msg": "Destination mismatch"
     },
     {
-      "code": 8763,
+      "code": 8764,
       "name": "NcnRewardRouteNotFound",
       "msg": "Ncn reward route not found"
     },
     {
-      "code": 8764,
+      "code": 8765,
       "name": "FeeNotActive",
       "msg": "Fee not active"
     },
     {
-      "code": 8765,
+      "code": 8766,
       "name": "NoRewards",
       "msg": "No rewards to distribute"
     },
     {
-      "code": 8766,
+      "code": 8767,
       "name": "WeightNotSet",
       "msg": "Weight not set"
     },
     {
-      "code": 8767,
+      "code": 8768,
       "name": "RouterStillRouting",
       "msg": "Router still routing"
     },
     {
-      "code": 8768,
+      "code": 8769,
       "name": "InvalidEpochsBeforeStall",
       "msg": "Invalid epochs before stall"
     },
     {
-      "code": 8769,
+      "code": 8770,
       "name": "InvalidEpochsBeforeClose",
       "msg": "Invalid epochs before accounts can close"
     },
     {
-      "code": 8770,
+      "code": 8771,
       "name": "InvalidSlotsAfterConsensus",
       "msg": "Invalid slots after consensus"
     },
     {
-      "code": 8771,
+      "code": 8772,
       "name": "VaultNeedsUpdate",
       "msg": "Vault needs to be updated"
     },
     {
-      "code": 8772,
+      "code": 8773,
       "name": "InvalidAccountStatus",
       "msg": "Invalid Account Status"
     },
     {
-      "code": 8773,
+      "code": 8774,
       "name": "AccountAlreadyInitialized",
       "msg": "Account already initialized"
     },
     {
-      "code": 8774,
+      "code": 8775,
       "name": "BadBallot",
       "msg": "Cannot vote with uninitialized account"
     },
     {
-      "code": 8775,
+      "code": 8776,
       "name": "VotingIsNotOver",
       "msg": "Cannot route until voting is over"
     },
     {
-      "code": 8776,
+      "code": 8777,
       "name": "OperatorIsNotInSnapshot",
       "msg": "Operator is not in snapshot"
     },
     {
-      "code": 8777,
+      "code": 8778,
       "name": "InvalidAccountToCloseDiscriminator",
       "msg": "Invalid account_to_close Discriminator"
     },
     {
-      "code": 8778,
+      "code": 8779,
       "name": "CannotCloseAccount",
       "msg": "Cannot close account"
     },
     {
-      "code": 8779,
+      "code": 8780,
       "name": "CannotCloseAccountAlreadyClosed",
       "msg": "Cannot close account - Already closed"
     },
     {
-      "code": 8780,
+      "code": 8781,
       "name": "CannotCloseAccountNotEnoughEpochs",
       "msg": "Cannot close account - Not enough epochs have passed since consensus reached"
     },
     {
-      "code": 8781,
+      "code": 8782,
       "name": "CannotCloseAccountNoReceiverProvided",
       "msg": "Cannot close account - No receiver provided"
     },
     {
-      "code": 8782,
+      "code": 8783,
       "name": "CannotCloseAccountNoEnoughAccounts",
       "msg": "Cannot close account - Not enough accounts"
     },
     {
-      "code": 8783,
+      "code": 8784,
       "name": "CannotCloseEpochStateAccount",
       "msg": "Cannot close epoch state account - Epoch state needs all other accounts to be closed first"
     },
     {
-      "code": 8784,
+      "code": 8785,
       "name": "InvalidNCNFeeWallet",
       "msg": "Invalid NCN Fee wallet"
     },
     {
-      "code": 8785,
+      "code": 8786,
       "name": "EpochIsClosingDown",
       "msg": "Epoch is closing down"
     },
     {
-      "code": 8786,
+      "code": 8787,
       "name": "MarkerExists",
       "msg": "Marker exists"
     },
     {
-      "code": 8787,
+      "code": 8788,
       "name": "SecretKeyError",
       "msg": "Secret key error"
     },
     {
-      "code": 8788,
+      "code": 8789,
       "name": "AltBN128AddError",
       "msg": "AltBN128 add error"
     },
     {
-      "code": 8789,
+      "code": 8790,
       "name": "AltBN128MulError",
       "msg": "AltBN128 mul error"
     },
     {
-      "code": 8790,
+      "code": 8791,
       "name": "AltBN128PairingError",
       "msg": "AltBN128 pairing error"
     },
     {
-      "code": 8791,
+      "code": 8792,
       "name": "HashToCurveError",
       "msg": "Hash to curve error"
     },
     {
-      "code": 8792,
+      "code": 8793,
       "name": "BLSSigningError",
       "msg": "BLSSigning error"
     },
     {
-      "code": 8793,
+      "code": 8794,
       "name": "BLSVerificationError",
       "msg": "BLSVerification error"
     },
     {
-      "code": 8794,
+      "code": 8795,
       "name": "SerializationError",
       "msg": "Serialization error"
     },
     {
-      "code": 8795,
+      "code": 8796,
       "name": "G1PointCompressionError",
       "msg": "G1 point compression error"
     },
     {
-      "code": 8796,
+      "code": 8797,
       "name": "G1PointDecompressionError",
       "msg": "G1 point decompression error"
     },
     {
-      "code": 8797,
+      "code": 8798,
       "name": "G2PointCompressionError",
       "msg": "G2 point compression error"
     },
     {
-      "code": 8798,
+      "code": 8799,
       "name": "G2PointDecompressionError",
       "msg": "G2 point decompression error"
     },
     {
-      "code": 8799,
+      "code": 8800,
       "name": "InvalidInputLength",
       "msg": "Invalid input length"
+    },
+    {
+      "code": 8801,
+      "name": "InvalidG1Pubkey",
+      "msg": "Invalid G1 Pubkey"
     }
   ],
   "metadata": {

@@ -35,8 +35,12 @@ import {
 import {
   getFeeConfigDecoder,
   getFeeConfigEncoder,
+  getStakeWeightsDecoder,
+  getStakeWeightsEncoder,
   type FeeConfig,
   type FeeConfigArgs,
+  type StakeWeights,
+  type StakeWeightsArgs,
 } from '../types';
 
 export type Config = {
@@ -49,6 +53,7 @@ export type Config = {
   startingValidEpoch: bigint;
   feeConfig: FeeConfig;
   bump: number;
+  minimumStakeWeight: StakeWeights;
 };
 
 export type ConfigArgs = {
@@ -61,6 +66,7 @@ export type ConfigArgs = {
   startingValidEpoch: number | bigint;
   feeConfig: FeeConfigArgs;
   bump: number;
+  minimumStakeWeight: StakeWeightsArgs;
 };
 
 export function getConfigEncoder(): Encoder<ConfigArgs> {
@@ -74,6 +80,7 @@ export function getConfigEncoder(): Encoder<ConfigArgs> {
     ['startingValidEpoch', getU64Encoder()],
     ['feeConfig', getFeeConfigEncoder()],
     ['bump', getU8Encoder()],
+    ['minimumStakeWeight', getStakeWeightsEncoder()],
   ]);
 }
 
@@ -88,6 +95,7 @@ export function getConfigDecoder(): Decoder<Config> {
     ['startingValidEpoch', getU64Decoder()],
     ['feeConfig', getFeeConfigDecoder()],
     ['bump', getU8Decoder()],
+    ['minimumStakeWeight', getStakeWeightsDecoder()],
   ]);
 }
 

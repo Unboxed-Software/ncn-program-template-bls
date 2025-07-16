@@ -5,7 +5,7 @@
 //! <https://github.com/kinobi-so/kinobi>
 //!
 
-use crate::generated::types::Fees;
+use crate::generated::types::OperatorSnapshot;
 use crate::generated::types::StakeWeights;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -27,10 +27,11 @@ pub struct EpochSnapshot {
     pub operator_count: u64,
     pub vault_count: u64,
     pub operators_registered: u64,
-    pub valid_operator_vault_delegations: u64,
-    pub stake_weights: StakeWeights,
+    pub operators_can_vote_count: u64,
     pub total_agg_g1_pubkey: [u8; 32],
-    pub fees: Fees,
+    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
+    pub operator_snapshots: [OperatorSnapshot; 256],
+    pub minimum_stake_weight: StakeWeights,
 }
 
 impl EpochSnapshot {

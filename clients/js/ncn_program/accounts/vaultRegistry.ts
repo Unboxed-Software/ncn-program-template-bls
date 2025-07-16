@@ -66,8 +66,8 @@ export function getVaultRegistryEncoder(): Encoder<VaultRegistryArgs> {
     ['discriminator', getU64Encoder()],
     ['ncn', getAddressEncoder()],
     ['bump', getU8Encoder()],
-    ['stMintList', getArrayEncoder(getStMintEntryEncoder(), { size: 64 })],
-    ['vaultList', getArrayEncoder(getVaultEntryEncoder(), { size: 64 })],
+    ['stMintList', getArrayEncoder(getStMintEntryEncoder(), { size: 10 })],
+    ['vaultList', getArrayEncoder(getVaultEntryEncoder(), { size: 10 })],
   ]);
 }
 
@@ -76,8 +76,8 @@ export function getVaultRegistryDecoder(): Decoder<VaultRegistry> {
     ['discriminator', getU64Decoder()],
     ['ncn', getAddressDecoder()],
     ['bump', getU8Decoder()],
-    ['stMintList', getArrayDecoder(getStMintEntryDecoder(), { size: 64 })],
-    ['vaultList', getArrayDecoder(getVaultEntryDecoder(), { size: 64 })],
+    ['stMintList', getArrayDecoder(getStMintEntryDecoder(), { size: 10 })],
+    ['vaultList', getArrayDecoder(getVaultEntryDecoder(), { size: 10 })],
   ]);
 }
 

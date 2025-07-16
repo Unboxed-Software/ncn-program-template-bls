@@ -30,9 +30,9 @@ pub struct WeightTable {
     /// Bump seed for the PDA
     bump: u8,
     /// A snapshot of the Vault Registry
-    vault_registry: [VaultEntry; 64],
+    vault_registry: [VaultEntry; 10],
     /// The weight table
-    table: [WeightEntry; 64],
+    table: [WeightEntry; 10],
 }
 
 impl Discriminator for WeightTable {
@@ -343,7 +343,7 @@ mod tests {
 
     use super::*;
 
-    fn get_test_mint_entries(count: usize) -> [StMintEntry; 64] {
+    fn get_test_mint_entries(count: usize) -> [StMintEntry; 10] {
         let mut mints = [StMintEntry::default(); MAX_ST_MINTS];
 
         for i in 0..count {

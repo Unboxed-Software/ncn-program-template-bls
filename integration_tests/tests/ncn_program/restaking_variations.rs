@@ -3,6 +3,7 @@ mod tests {
 
     use jito_restaking_core::MAX_FEE_BPS;
     use ncn_program_core::error::NCNProgramError;
+    use solana_sdk::msg;
 
     use crate::fixtures::{
         ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,
@@ -27,6 +28,7 @@ mod tests {
         }
 
         {
+            msg!("First Run");
             // First Run
             fixture.snapshot_test_ncn(&test_ncn).await?;
 
@@ -45,6 +47,7 @@ mod tests {
         }
 
         {
+            msg!("Second Run");
             // Second Run
             fixture.snapshot_test_ncn(&test_ncn).await?;
 

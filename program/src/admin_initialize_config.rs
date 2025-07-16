@@ -11,6 +11,7 @@ use ncn_program_core::{
     },
     error::NCNProgramError,
     fees::FeeConfig,
+    stake_weight::StakeWeights,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
@@ -155,6 +156,10 @@ pub fn process_admin_initialize_config(
         "Creating new config with tie_breaker_admin: {}",
         tie_breaker_admin.key
     );
+
+    // TODO: get minimum stake weight from parameters
+    let minimum_stake_weight = StakeWeights::new(10);
+
     *config = Config::new(
         ncn.key,
         tie_breaker_admin.key,
@@ -163,6 +168,7 @@ pub fn process_admin_initialize_config(
         epochs_before_stall,
         epochs_after_consensus_before_close,
         &fee_config,
+        &minimum_stake_weight,
         config_bump,
     );
     config.fee_config.check_fees_okay(epoch)?;

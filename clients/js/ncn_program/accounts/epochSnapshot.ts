@@ -17,6 +17,8 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
+  getArrayDecoder,
+  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -38,12 +40,12 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/web3.js';
 import {
-  getFeesDecoder,
-  getFeesEncoder,
+  getOperatorSnapshotDecoder,
+  getOperatorSnapshotEncoder,
   getStakeWeightsDecoder,
   getStakeWeightsEncoder,
-  type Fees,
-  type FeesArgs,
+  type OperatorSnapshot,
+  type OperatorSnapshotArgs,
   type StakeWeights,
   type StakeWeightsArgs,
 } from '../types';
@@ -58,10 +60,10 @@ export type EpochSnapshot = {
   operatorCount: bigint;
   vaultCount: bigint;
   operatorsRegistered: bigint;
-  validOperatorVaultDelegations: bigint;
-  stakeWeights: StakeWeights;
+  operatorsCanVoteCount: bigint;
   totalAggG1Pubkey: ReadonlyUint8Array;
-  fees: Fees;
+  operatorSnapshots: Array<OperatorSnapshot>;
+  minimumStakeWeight: StakeWeights;
 };
 
 export type EpochSnapshotArgs = {
@@ -74,10 +76,10 @@ export type EpochSnapshotArgs = {
   operatorCount: number | bigint;
   vaultCount: number | bigint;
   operatorsRegistered: number | bigint;
-  validOperatorVaultDelegations: number | bigint;
-  stakeWeights: StakeWeightsArgs;
+  operatorsCanVoteCount: number | bigint;
   totalAggG1Pubkey: ReadonlyUint8Array;
-  fees: FeesArgs;
+  operatorSnapshots: Array<OperatorSnapshotArgs>;
+  minimumStakeWeight: StakeWeightsArgs;
 };
 
 export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
@@ -91,10 +93,13 @@ export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
     ['operatorCount', getU64Encoder()],
     ['vaultCount', getU64Encoder()],
     ['operatorsRegistered', getU64Encoder()],
-    ['validOperatorVaultDelegations', getU64Encoder()],
-    ['stakeWeights', getStakeWeightsEncoder()],
+    ['operatorsCanVoteCount', getU64Encoder()],
     ['totalAggG1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
-    ['fees', getFeesEncoder()],
+    [
+      'operatorSnapshots',
+      getArrayEncoder(getOperatorSnapshotEncoder(), { size: 256 }),
+    ],
+    ['minimumStakeWeight', getStakeWeightsEncoder()],
   ]);
 }
 
@@ -109,10 +114,13 @@ export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
     ['operatorCount', getU64Decoder()],
     ['vaultCount', getU64Decoder()],
     ['operatorsRegistered', getU64Decoder()],
-    ['validOperatorVaultDelegations', getU64Decoder()],
-    ['stakeWeights', getStakeWeightsDecoder()],
+    ['operatorsCanVoteCount', getU64Decoder()],
     ['totalAggG1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],
-    ['fees', getFeesDecoder()],
+    [
+      'operatorSnapshots',
+      getArrayDecoder(getOperatorSnapshotDecoder(), { size: 256 }),
+    ],
+    ['minimumStakeWeight', getStakeWeightsDecoder()],
   ]);
 }
 

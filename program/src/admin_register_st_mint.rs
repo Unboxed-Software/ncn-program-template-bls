@@ -28,11 +28,17 @@ pub fn process_admin_register_st_mint(
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
+    msg!("Processing admin register st mint...");
     Config::load(program_id, config, ncn.key, false)?;
+    msg!("Config loaded successfully");
     VaultRegistry::load(program_id, vault_registry, ncn.key, true)?;
+    msg!("Vault registry loaded successfully");
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
+    msg!("NCN loaded successfully");
     load_token_mint(st_mint)?;
+    msg!("ST mint loaded successfully");
     load_signer(admin, false)?;
+    msg!("Admin signer loaded successfully");
 
     {
         let ncn_data = ncn.data.borrow();

@@ -1,4 +1,4 @@
-use jito_bytemuck::AccountDeserialize;
+use jito_bytemuck::{AccountDeserialize, Discriminator};
 use jito_jsm_core::loader::{load_system_account, load_system_program};
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
@@ -6,8 +6,8 @@ use ncn_program_core::{
     epoch_state::EpochState, vault_registry::VaultRegistry, weight_table::WeightTable,
 };
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    pubkey::Pubkey,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
 };
 
 /// Initializes the weight table for a specific epoch, which will store the importance weights of different tokens.
@@ -85,9 +85,38 @@ pub fn process_initialize_weight_table(
         weight_table,
         system_program,
         program_id,
-        MAX_REALLOC_BYTES as usize,
+        WeightTable::SIZE,
         &weight_table_seeds,
     )?;
+
+    let vault_registry_data = vault_registry.data.borrow();
+    let vault_registry = VaultRegistry::try_from_slice_unchecked(&vault_registry_data)?;
+
+    let vault_count = vault_registry.vault_count();
+    let st_mint_count = vault_registry.st_mint_count();
+    let vault_entries = vault_registry.get_vault_entries();
+    let mint_entries = vault_registry.get_mint_entries();
+
+    let mut weight_table_data = weight_table.try_borrow_mut_data()?;
+    weight_table_data[0] = WeightTable::DISCRIMINATOR;
+    let weight_table_account = WeightTable::try_from_slice_unchecked_mut(&mut weight_table_data)?;
+
+    weight_table_account.initialize(
+        ncn.key,
+        epoch,
+        Clock::get()?.slot,
+        vault_count,
+        weight_table_bump,
+        vault_entries,
+        mint_entries,
+    )?;
+
+    // Update Epoch State
+    {
+        let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
+        let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
+        epoch_state_account.update_realloc_weight_table(vault_count, st_mint_count as u64);
+    }
 
     Ok(())
 }

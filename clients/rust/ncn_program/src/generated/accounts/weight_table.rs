@@ -24,10 +24,8 @@ pub struct WeightTable {
     pub slot_created: u64,
     pub vault_count: u64,
     pub bump: u8,
-    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub vault_registry: [VaultEntry; 64],
-    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub table: [WeightEntry; 64],
+    pub vault_registry: [VaultEntry; 10],
+    pub table: [WeightEntry; 10],
 }
 
 impl WeightTable {

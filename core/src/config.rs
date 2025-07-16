@@ -7,7 +7,10 @@ use jito_bytemuck::{types::PodU64, AccountDeserialize, Discriminator};
 use shank::ShankAccount;
 use solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
-use crate::{discriminators::Discriminators, fees::FeeConfig, loaders::check_load};
+use crate::{
+    discriminators::Discriminators, fees::FeeConfig, loaders::check_load,
+    stake_weight::StakeWeights,
+};
 
 #[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub enum ConfigAdminRole {
@@ -33,6 +36,8 @@ pub struct Config {
     pub fee_config: FeeConfig,
     /// Bump seed for the PDA
     pub bump: u8,
+    /// Minimum stake weight required to vote
+    pub minimum_stake_weight: StakeWeights,
 }
 
 impl Discriminator for Config {
@@ -62,6 +67,7 @@ impl Config {
         epochs_before_stall: u64,
         epochs_after_consensus_before_close: u64,
         fee_config: &FeeConfig,
+        minimum_stake_weight: &StakeWeights,
         bump: u8,
     ) -> Self {
         Self {
@@ -73,6 +79,7 @@ impl Config {
             epochs_after_consensus_before_close: PodU64::from(epochs_after_consensus_before_close),
             fee_config: *fee_config,
             bump,
+            minimum_stake_weight: *minimum_stake_weight,
         }
     }
 
@@ -130,6 +137,10 @@ impl Config {
     pub fn epochs_after_consensus_before_close(&self) -> u64 {
         self.epochs_after_consensus_before_close.into()
     }
+
+    pub fn minimum_stake_weight(&self) -> &StakeWeights {
+        &self.minimum_stake_weight
+    }
 }
 
 #[rustfmt::skip]
@@ -142,6 +153,7 @@ impl fmt::Display for Config {
         writeln!(f, "  Epochs Before Stall:          {}", self.epochs_before_stall())?;
         writeln!(f, "  Starting Valid Epochs:        {}", self.starting_valid_epoch())?;
         writeln!(f, "  Close Epoch:                  {}", self.epochs_after_consensus_before_close())?;
+        writeln!(f, "  Minimum Stake Weight:         {:?}", self.minimum_stake_weight())?;
 
         Ok(())
     }
@@ -162,7 +174,8 @@ mod tests {
             + size_of::<PodU64>() // epochs_after_consensus_before_close
             + size_of::<PodU64>() // starting_valid_epoch
             + size_of::<FeeConfig>() // fee_config
-            + 1; // bump
+            + 1 // bump
+            + size_of::<StakeWeights>(); // minimum_stake_weight
 
         assert_eq!(size_of::<Config>(), expected_total);
         assert_eq!(size_of::<Config>() + 8, Config::SIZE);

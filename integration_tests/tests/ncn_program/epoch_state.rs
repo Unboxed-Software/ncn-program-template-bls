@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use solana_sdk::msg;
+
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
 
     #[tokio::test]
@@ -47,7 +49,6 @@ mod tests {
 
         fixture.snapshot_test_ncn(&test_ncn).await?;
         fixture.vote_test_ncn(&test_ncn).await?;
-        fixture.reward_test_ncn(&test_ncn, 10_000).await?;
         fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
         let epoch_marker = ncn_program_client.get_epoch_marker(ncn, epoch).await?;
@@ -129,8 +130,13 @@ mod tests {
                 .add_operator_snapshots_to_test_ncn(&test_ncn)
                 .await?;
             let epoch_state = ncn_program_client.get_epoch_state(ncn, epoch).await?;
+            msg!("epoch count: {}", epoch_state);
 
             for i in 0..OPERATOR_COUNT {
+                msg!(
+                    "Operator state: {:?}",
+                    epoch_state.operator_snapshot_progress(i)
+                );
                 assert_eq!(epoch_state.operator_snapshot_progress(i).tally(), 0);
                 assert_eq!(
                     epoch_state.operator_snapshot_progress(i).total(),

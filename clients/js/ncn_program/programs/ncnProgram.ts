@@ -21,30 +21,21 @@ import {
   type ParsedAdminSetWeightInstruction,
   type ParsedCastVoteInstruction,
   type ParsedCloseEpochAccountInstruction,
-  type ParsedDistributeNCNRewardsInstruction,
-  type ParsedDistributeOperatorRewardsInstruction,
-  type ParsedDistributeOperatorVaultRewardRouteInstruction,
-  type ParsedDistributeProtocolRewardsInstruction,
-  type ParsedDistributeVaultRewardsInstruction,
   type ParsedInitializeBallotBoxInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeEpochSnapshotInstruction,
   type ParsedInitializeEpochStateInstruction,
-  type ParsedInitializeNCNRewardRouterInstruction,
   type ParsedInitializeOperatorRegistryInstruction,
   type ParsedInitializeOperatorSnapshotInstruction,
-  type ParsedInitializeOperatorVaultRewardRouterInstruction,
   type ParsedInitializeVaultRegistryInstruction,
   type ParsedInitializeWeightTableInstruction,
   type ParsedReallocBallotBoxInstruction,
-  type ParsedReallocNCNRewardRouterInstruction,
+  type ParsedReallocEpochSnapshotInstruction,
   type ParsedReallocOperatorRegistryInstruction,
   type ParsedReallocVaultRegistryInstruction,
   type ParsedReallocWeightTableInstruction,
   type ParsedRegisterOperatorInstruction,
   type ParsedRegisterVaultInstruction,
-  type ParsedRouteNCNRewardsInstruction,
-  type ParsedRouteOperatorVaultRewardsInstruction,
   type ParsedSetEpochWeightsInstruction,
   type ParsedSnapshotVaultOperatorDelegationInstruction,
   type ParsedUpdateOperatorBN128KeysInstruction,
@@ -59,11 +50,8 @@ export enum NcnProgramAccount {
   ConsensusResult,
   EpochMarker,
   EpochSnapshot,
-  OperatorSnapshot,
   EpochState,
-  NCNRewardRouter,
   OperatorRegistry,
-  OperatorVaultRewardRouter,
   VaultRegistry,
   WeightTable,
 }
@@ -82,22 +70,13 @@ export enum NcnProgramInstruction {
   SetEpochWeights,
   ReallocWeightTable,
   InitializeEpochSnapshot,
+  ReallocEpochSnapshot,
   InitializeOperatorSnapshot,
   SnapshotVaultOperatorDelegation,
   InitializeBallotBox,
   ReallocBallotBox,
   CastVote,
-  InitializeNCNRewardRouter,
-  ReallocNCNRewardRouter,
-  RouteNCNRewards,
-  DistributeProtocolRewards,
-  DistributeNCNRewards,
-  InitializeOperatorVaultRewardRouter,
-  DistributeOperatorVaultRewardRoute,
-  RouteOperatorVaultRewards,
   CloseEpochAccount,
-  DistributeOperatorRewards,
-  DistributeVaultRewards,
   AdminSetParameters,
   AdminSetNewAdmin,
   AdminSetTieBreaker,
@@ -150,69 +129,42 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.InitializeEpochSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(13), 0)) {
-    return NcnProgramInstruction.InitializeOperatorSnapshot;
+    return NcnProgramInstruction.ReallocEpochSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(14), 0)) {
-    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
+    return NcnProgramInstruction.InitializeOperatorSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(15), 0)) {
-    return NcnProgramInstruction.InitializeBallotBox;
+    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
   if (containsBytes(data, getU8Encoder().encode(16), 0)) {
-    return NcnProgramInstruction.ReallocBallotBox;
+    return NcnProgramInstruction.InitializeBallotBox;
   }
   if (containsBytes(data, getU8Encoder().encode(17), 0)) {
-    return NcnProgramInstruction.CastVote;
+    return NcnProgramInstruction.ReallocBallotBox;
   }
   if (containsBytes(data, getU8Encoder().encode(18), 0)) {
-    return NcnProgramInstruction.InitializeNCNRewardRouter;
+    return NcnProgramInstruction.CastVote;
   }
   if (containsBytes(data, getU8Encoder().encode(19), 0)) {
-    return NcnProgramInstruction.ReallocNCNRewardRouter;
-  }
-  if (containsBytes(data, getU8Encoder().encode(20), 0)) {
-    return NcnProgramInstruction.RouteNCNRewards;
-  }
-  if (containsBytes(data, getU8Encoder().encode(21), 0)) {
-    return NcnProgramInstruction.DistributeProtocolRewards;
-  }
-  if (containsBytes(data, getU8Encoder().encode(22), 0)) {
-    return NcnProgramInstruction.DistributeNCNRewards;
-  }
-  if (containsBytes(data, getU8Encoder().encode(23), 0)) {
-    return NcnProgramInstruction.InitializeOperatorVaultRewardRouter;
-  }
-  if (containsBytes(data, getU8Encoder().encode(24), 0)) {
-    return NcnProgramInstruction.DistributeOperatorVaultRewardRoute;
-  }
-  if (containsBytes(data, getU8Encoder().encode(25), 0)) {
-    return NcnProgramInstruction.RouteOperatorVaultRewards;
-  }
-  if (containsBytes(data, getU8Encoder().encode(26), 0)) {
     return NcnProgramInstruction.CloseEpochAccount;
   }
-  if (containsBytes(data, getU8Encoder().encode(27), 0)) {
-    return NcnProgramInstruction.DistributeOperatorRewards;
-  }
-  if (containsBytes(data, getU8Encoder().encode(28), 0)) {
-    return NcnProgramInstruction.DistributeVaultRewards;
-  }
-  if (containsBytes(data, getU8Encoder().encode(29), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(20), 0)) {
     return NcnProgramInstruction.AdminSetParameters;
   }
-  if (containsBytes(data, getU8Encoder().encode(30), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(21), 0)) {
     return NcnProgramInstruction.AdminSetNewAdmin;
   }
-  if (containsBytes(data, getU8Encoder().encode(31), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(22), 0)) {
     return NcnProgramInstruction.AdminSetTieBreaker;
   }
-  if (containsBytes(data, getU8Encoder().encode(32), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(23), 0)) {
     return NcnProgramInstruction.AdminSetWeight;
   }
-  if (containsBytes(data, getU8Encoder().encode(33), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(24), 0)) {
     return NcnProgramInstruction.AdminRegisterStMint;
   }
-  if (containsBytes(data, getU8Encoder().encode(34), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(25), 0)) {
     return NcnProgramInstruction.AdminSetStMint;
   }
   throw new Error(
@@ -263,6 +215,9 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.InitializeEpochSnapshot;
     } & ParsedInitializeEpochSnapshotInstruction<TProgram>)
   | ({
+      instructionType: NcnProgramInstruction.ReallocEpochSnapshot;
+    } & ParsedReallocEpochSnapshotInstruction<TProgram>)
+  | ({
       instructionType: NcnProgramInstruction.InitializeOperatorSnapshot;
     } & ParsedInitializeOperatorSnapshotInstruction<TProgram>)
   | ({
@@ -278,38 +233,8 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.CastVote;
     } & ParsedCastVoteInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.InitializeNCNRewardRouter;
-    } & ParsedInitializeNCNRewardRouterInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.ReallocNCNRewardRouter;
-    } & ParsedReallocNCNRewardRouterInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.RouteNCNRewards;
-    } & ParsedRouteNCNRewardsInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.DistributeProtocolRewards;
-    } & ParsedDistributeProtocolRewardsInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.DistributeNCNRewards;
-    } & ParsedDistributeNCNRewardsInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.InitializeOperatorVaultRewardRouter;
-    } & ParsedInitializeOperatorVaultRewardRouterInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.DistributeOperatorVaultRewardRoute;
-    } & ParsedDistributeOperatorVaultRewardRouteInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.RouteOperatorVaultRewards;
-    } & ParsedRouteOperatorVaultRewardsInstruction<TProgram>)
-  | ({
       instructionType: NcnProgramInstruction.CloseEpochAccount;
     } & ParsedCloseEpochAccountInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.DistributeOperatorRewards;
-    } & ParsedDistributeOperatorRewardsInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.DistributeVaultRewards;
-    } & ParsedDistributeVaultRewardsInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.AdminSetParameters;
     } & ParsedAdminSetParametersInstruction<TProgram>)

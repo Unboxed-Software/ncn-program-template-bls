@@ -5,9 +5,10 @@ use ncn_program_core::{
     ballot_box::{Ballot, BallotBox},
     config::Config as NcnConfig,
     consensus_result::ConsensusResult,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
+    epoch_snapshot::EpochSnapshot,
     epoch_state::EpochState,
     error::NCNProgramError,
+    stake_weight::StakeWeights,
 };
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -29,11 +30,10 @@ use solana_program::{
 /// 2. `[]` config: NCN configuration account (named `ncn_config` in code)
 /// 3. `[writable]` ballot_box: The ballot box for recording votes
 /// 4. `[]` ncn: The NCN account
-/// 5. `[]` epoch_snapshot: Epoch snapshot containing stake weights
-/// 6. `[]` operator_snapshot: Operator snapshot containing operator stake
-/// 7. `[]` operator: The operator account casting the vote
-/// 8. `[signer]` operator_admin: The account authorized to vote on behalf of the operator (referred to as `operator_voter` in some docs)
-/// 9. `[writable]` consensus_result: Account for storing the consensus result
+/// 5. `[]` epoch_snapshot: Epoch snapshot containing stake weights and operator snapshots
+/// 6. `[]` operator: The operator account casting the vote
+/// 7. `[signer]` operator_admin: The account authorized to vote on behalf of the operator (referred to as `operator_voter` in some docs)
+/// 8. `[writable]` consensus_result: Account for storing the consensus result
 pub fn process_cast_vote(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -46,7 +46,6 @@ pub fn process_cast_vote(
     let ballot_box = next_account_info(account_info_iter)?;
     let ncn = next_account_info(account_info_iter)?;
     let epoch_snapshot = next_account_info(account_info_iter)?;
-    let operator_snapshot = next_account_info(account_info_iter)?;
     let operator = next_account_info(account_info_iter)?;
     let operator_admin = next_account_info(account_info_iter)?;
     let consensus_result = next_account_info(account_info_iter)?;
@@ -58,14 +57,6 @@ pub fn process_cast_vote(
     Operator::load(&jito_restaking_program::id(), operator, false)?;
     BallotBox::load(program_id, ballot_box, ncn.key, epoch, true)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, false)?;
-    OperatorSnapshot::load(
-        program_id,
-        operator_snapshot,
-        operator.key,
-        ncn.key,
-        epoch,
-        false,
-    )?;
     ConsensusResult::load(program_id, consensus_result, ncn.key, epoch, true)?;
 
     let operator_data = operator.data.borrow();
@@ -98,26 +89,11 @@ pub fn process_cast_vote(
             return Err(NCNProgramError::EpochSnapshotNotFinalized.into());
         }
 
-        *epoch_snapshot.stake_weights()
+        StakeWeights::new(epoch_snapshot.operators_can_vote_count() as u128)
     };
-    msg!("Total stake weight: {}", total_stake_weights.stake_weight());
+    msg!("Total operators: {}", total_stake_weights.stake_weight());
 
-    let operator_stake_weights = {
-        let operator_snapshot_data = operator_snapshot.data.borrow();
-        let operator_snapshot =
-            OperatorSnapshot::try_from_slice_unchecked(&operator_snapshot_data)?;
-
-        *operator_snapshot.stake_weights()
-    };
-    msg!(
-        "Operator stake weight: {}",
-        operator_stake_weights.stake_weight()
-    );
-
-    if operator_stake_weights.stake_weight() == 0 {
-        msg!("Error: Operator has zero stake weight, cannot vote");
-        return Err(NCNProgramError::CannotVoteWithZeroStake.into());
-    }
+    let operator_stake_weights = StakeWeights::new(1);
 
     let slot = Clock::get()?.slot;
     msg!("Current slot: {}", slot);

@@ -14,8 +14,6 @@ pub struct InitializeOperatorSnapshot {
 
     pub epoch_state: solana_program::pubkey::Pubkey,
 
-    pub config: solana_program::pubkey::Pubkey,
-
     pub restaking_config: solana_program::pubkey::Pubkey,
 
     pub ncn: solana_program::pubkey::Pubkey,
@@ -27,8 +25,6 @@ pub struct InitializeOperatorSnapshot {
     pub operator_registry: solana_program::pubkey::Pubkey,
 
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
-
-    pub operator_snapshot: solana_program::pubkey::Pubkey,
 
     pub account_payer: solana_program::pubkey::Pubkey,
 
@@ -48,17 +44,13 @@ impl InitializeOperatorSnapshot {
         args: InitializeOperatorSnapshotInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.epoch_marker,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_state,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.config,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -82,10 +74,6 @@ impl InitializeOperatorSnapshot {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_snapshot,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.operator_snapshot,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -118,7 +106,7 @@ pub struct InitializeOperatorSnapshotInstructionData {
 
 impl InitializeOperatorSnapshotInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 13 }
+        Self { discriminator: 14 }
     }
 }
 
@@ -140,28 +128,24 @@ pub struct InitializeOperatorSnapshotInstructionArgs {
 ///
 ///   0. `[]` epoch_marker
 ///   1. `[writable]` epoch_state
-///   2. `[]` config
-///   3. `[]` restaking_config
-///   4. `[]` ncn
-///   5. `[]` operator
-///   6. `[]` ncn_operator_state
-///   7. `[]` operator_registry
-///   8. `[writable]` epoch_snapshot
-///   9. `[writable]` operator_snapshot
-///   10. `[writable]` account_payer
-///   11. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   2. `[]` restaking_config
+///   3. `[]` ncn
+///   4. `[]` operator
+///   5. `[]` ncn_operator_state
+///   6. `[]` operator_registry
+///   7. `[writable]` epoch_snapshot
+///   8. `[writable]` account_payer
+///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InitializeOperatorSnapshotBuilder {
     epoch_marker: Option<solana_program::pubkey::Pubkey>,
     epoch_state: Option<solana_program::pubkey::Pubkey>,
-    config: Option<solana_program::pubkey::Pubkey>,
     restaking_config: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     operator: Option<solana_program::pubkey::Pubkey>,
     ncn_operator_state: Option<solana_program::pubkey::Pubkey>,
     operator_registry: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
-    operator_snapshot: Option<solana_program::pubkey::Pubkey>,
     account_payer: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     epoch: Option<u64>,
@@ -180,11 +164,6 @@ impl InitializeOperatorSnapshotBuilder {
     #[inline(always)]
     pub fn epoch_state(&mut self, epoch_state: solana_program::pubkey::Pubkey) -> &mut Self {
         self.epoch_state = Some(epoch_state);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.config = Some(config);
         self
     }
     #[inline(always)]
@@ -227,14 +206,6 @@ impl InitializeOperatorSnapshotBuilder {
         self
     }
     #[inline(always)]
-    pub fn operator_snapshot(
-        &mut self,
-        operator_snapshot: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.operator_snapshot = Some(operator_snapshot);
-        self
-    }
-    #[inline(always)]
     pub fn account_payer(&mut self, account_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.account_payer = Some(account_payer);
         self
@@ -273,7 +244,6 @@ impl InitializeOperatorSnapshotBuilder {
         let accounts = InitializeOperatorSnapshot {
             epoch_marker: self.epoch_marker.expect("epoch_marker is not set"),
             epoch_state: self.epoch_state.expect("epoch_state is not set"),
-            config: self.config.expect("config is not set"),
             restaking_config: self.restaking_config.expect("restaking_config is not set"),
             ncn: self.ncn.expect("ncn is not set"),
             operator: self.operator.expect("operator is not set"),
@@ -284,9 +254,6 @@ impl InitializeOperatorSnapshotBuilder {
                 .operator_registry
                 .expect("operator_registry is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
-            operator_snapshot: self
-                .operator_snapshot
-                .expect("operator_snapshot is not set"),
             account_payer: self.account_payer.expect("account_payer is not set"),
             system_program: self
                 .system_program
@@ -306,8 +273,6 @@ pub struct InitializeOperatorSnapshotCpiAccounts<'a, 'b> {
 
     pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub config: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
@@ -319,8 +284,6 @@ pub struct InitializeOperatorSnapshotCpiAccounts<'a, 'b> {
     pub operator_registry: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub account_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -336,8 +299,6 @@ pub struct InitializeOperatorSnapshotCpi<'a, 'b> {
 
     pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub config: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
@@ -349,8 +310,6 @@ pub struct InitializeOperatorSnapshotCpi<'a, 'b> {
     pub operator_registry: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub account_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -369,14 +328,12 @@ impl<'a, 'b> InitializeOperatorSnapshotCpi<'a, 'b> {
             __program: program,
             epoch_marker: accounts.epoch_marker,
             epoch_state: accounts.epoch_state,
-            config: accounts.config,
             restaking_config: accounts.restaking_config,
             ncn: accounts.ncn,
             operator: accounts.operator,
             ncn_operator_state: accounts.ncn_operator_state,
             operator_registry: accounts.operator_registry,
             epoch_snapshot: accounts.epoch_snapshot,
-            operator_snapshot: accounts.operator_snapshot,
             account_payer: accounts.account_payer,
             system_program: accounts.system_program,
             __args: args,
@@ -415,17 +372,13 @@ impl<'a, 'b> InitializeOperatorSnapshotCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.epoch_marker.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.epoch_state.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.config.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -450,10 +403,6 @@ impl<'a, 'b> InitializeOperatorSnapshotCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.epoch_snapshot.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.operator_snapshot.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -482,18 +431,16 @@ impl<'a, 'b> InitializeOperatorSnapshotCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(12 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(10 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.epoch_marker.clone());
         account_infos.push(self.epoch_state.clone());
-        account_infos.push(self.config.clone());
         account_infos.push(self.restaking_config.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.operator.clone());
         account_infos.push(self.ncn_operator_state.clone());
         account_infos.push(self.operator_registry.clone());
         account_infos.push(self.epoch_snapshot.clone());
-        account_infos.push(self.operator_snapshot.clone());
         account_infos.push(self.account_payer.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
@@ -514,16 +461,14 @@ impl<'a, 'b> InitializeOperatorSnapshotCpi<'a, 'b> {
 ///
 ///   0. `[]` epoch_marker
 ///   1. `[writable]` epoch_state
-///   2. `[]` config
-///   3. `[]` restaking_config
-///   4. `[]` ncn
-///   5. `[]` operator
-///   6. `[]` ncn_operator_state
-///   7. `[]` operator_registry
-///   8. `[writable]` epoch_snapshot
-///   9. `[writable]` operator_snapshot
-///   10. `[writable]` account_payer
-///   11. `[]` system_program
+///   2. `[]` restaking_config
+///   3. `[]` ncn
+///   4. `[]` operator
+///   5. `[]` ncn_operator_state
+///   6. `[]` operator_registry
+///   7. `[writable]` epoch_snapshot
+///   8. `[writable]` account_payer
+///   9. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct InitializeOperatorSnapshotCpiBuilder<'a, 'b> {
     instruction: Box<InitializeOperatorSnapshotCpiBuilderInstruction<'a, 'b>>,
@@ -535,14 +480,12 @@ impl<'a, 'b> InitializeOperatorSnapshotCpiBuilder<'a, 'b> {
             __program: program,
             epoch_marker: None,
             epoch_state: None,
-            config: None,
             restaking_config: None,
             ncn: None,
             operator: None,
             ncn_operator_state: None,
             operator_registry: None,
             epoch_snapshot: None,
-            operator_snapshot: None,
             account_payer: None,
             system_program: None,
             epoch: None,
@@ -564,14 +507,6 @@ impl<'a, 'b> InitializeOperatorSnapshotCpiBuilder<'a, 'b> {
         epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.epoch_state = Some(epoch_state);
-        self
-    }
-    #[inline(always)]
-    pub fn config(
-        &mut self,
-        config: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.config = Some(config);
         self
     }
     #[inline(always)]
@@ -617,14 +552,6 @@ impl<'a, 'b> InitializeOperatorSnapshotCpiBuilder<'a, 'b> {
         epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.epoch_snapshot = Some(epoch_snapshot);
-        self
-    }
-    #[inline(always)]
-    pub fn operator_snapshot(
-        &mut self,
-        operator_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.operator_snapshot = Some(operator_snapshot);
         self
     }
     #[inline(always)]
@@ -705,8 +632,6 @@ impl<'a, 'b> InitializeOperatorSnapshotCpiBuilder<'a, 'b> {
                 .epoch_state
                 .expect("epoch_state is not set"),
 
-            config: self.instruction.config.expect("config is not set"),
-
             restaking_config: self
                 .instruction
                 .restaking_config
@@ -731,11 +656,6 @@ impl<'a, 'b> InitializeOperatorSnapshotCpiBuilder<'a, 'b> {
                 .epoch_snapshot
                 .expect("epoch_snapshot is not set"),
 
-            operator_snapshot: self
-                .instruction
-                .operator_snapshot
-                .expect("operator_snapshot is not set"),
-
             account_payer: self
                 .instruction
                 .account_payer
@@ -759,14 +679,12 @@ struct InitializeOperatorSnapshotCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     epoch_marker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     restaking_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn_operator_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator_registry: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    operator_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     account_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch: Option<u64>,

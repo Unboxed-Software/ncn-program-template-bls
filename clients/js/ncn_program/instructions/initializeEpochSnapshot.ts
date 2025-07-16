@@ -39,9 +39,7 @@ export type InitializeEpochSnapshotInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountEpochMarker extends string | IAccountMeta<string> = string,
   TAccountEpochState extends string | IAccountMeta<string> = string,
-  TAccountConfig extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
-  TAccountWeightTable extends string | IAccountMeta<string> = string,
   TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
   TAccountAccountPayer extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
@@ -58,13 +56,7 @@ export type InitializeEpochSnapshotInstruction<
       TAccountEpochState extends string
         ? WritableAccount<TAccountEpochState>
         : TAccountEpochState,
-      TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
-        : TAccountConfig,
       TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
-      TAccountWeightTable extends string
-        ? ReadonlyAccount<TAccountWeightTable>
-        : TAccountWeightTable,
       TAccountEpochSnapshot extends string
         ? WritableAccount<TAccountEpochSnapshot>
         : TAccountEpochSnapshot,
@@ -120,18 +112,14 @@ export function getInitializeEpochSnapshotInstructionDataCodec(): Codec<
 export type InitializeEpochSnapshotInput<
   TAccountEpochMarker extends string = string,
   TAccountEpochState extends string = string,
-  TAccountConfig extends string = string,
   TAccountNcn extends string = string,
-  TAccountWeightTable extends string = string,
   TAccountEpochSnapshot extends string = string,
   TAccountAccountPayer extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   epochMarker: Address<TAccountEpochMarker>;
   epochState: Address<TAccountEpochState>;
-  config: Address<TAccountConfig>;
   ncn: Address<TAccountNcn>;
-  weightTable: Address<TAccountWeightTable>;
   epochSnapshot: Address<TAccountEpochSnapshot>;
   accountPayer: Address<TAccountAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -141,9 +129,7 @@ export type InitializeEpochSnapshotInput<
 export function getInitializeEpochSnapshotInstruction<
   TAccountEpochMarker extends string,
   TAccountEpochState extends string,
-  TAccountConfig extends string,
   TAccountNcn extends string,
-  TAccountWeightTable extends string,
   TAccountEpochSnapshot extends string,
   TAccountAccountPayer extends string,
   TAccountSystemProgram extends string,
@@ -152,9 +138,7 @@ export function getInitializeEpochSnapshotInstruction<
   input: InitializeEpochSnapshotInput<
     TAccountEpochMarker,
     TAccountEpochState,
-    TAccountConfig,
     TAccountNcn,
-    TAccountWeightTable,
     TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
@@ -164,9 +148,7 @@ export function getInitializeEpochSnapshotInstruction<
   TProgramAddress,
   TAccountEpochMarker,
   TAccountEpochState,
-  TAccountConfig,
   TAccountNcn,
-  TAccountWeightTable,
   TAccountEpochSnapshot,
   TAccountAccountPayer,
   TAccountSystemProgram
@@ -178,9 +160,7 @@ export function getInitializeEpochSnapshotInstruction<
   const originalAccounts = {
     epochMarker: { value: input.epochMarker ?? null, isWritable: false },
     epochState: { value: input.epochState ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: false },
     ncn: { value: input.ncn ?? null, isWritable: false },
-    weightTable: { value: input.weightTable ?? null, isWritable: false },
     epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: true },
     accountPayer: { value: input.accountPayer ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
@@ -204,9 +184,7 @@ export function getInitializeEpochSnapshotInstruction<
     accounts: [
       getAccountMeta(accounts.epochMarker),
       getAccountMeta(accounts.epochState),
-      getAccountMeta(accounts.config),
       getAccountMeta(accounts.ncn),
-      getAccountMeta(accounts.weightTable),
       getAccountMeta(accounts.epochSnapshot),
       getAccountMeta(accounts.accountPayer),
       getAccountMeta(accounts.systemProgram),
@@ -219,9 +197,7 @@ export function getInitializeEpochSnapshotInstruction<
     TProgramAddress,
     TAccountEpochMarker,
     TAccountEpochState,
-    TAccountConfig,
     TAccountNcn,
-    TAccountWeightTable,
     TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
@@ -238,12 +214,10 @@ export type ParsedInitializeEpochSnapshotInstruction<
   accounts: {
     epochMarker: TAccountMetas[0];
     epochState: TAccountMetas[1];
-    config: TAccountMetas[2];
-    ncn: TAccountMetas[3];
-    weightTable: TAccountMetas[4];
-    epochSnapshot: TAccountMetas[5];
-    accountPayer: TAccountMetas[6];
-    systemProgram: TAccountMetas[7];
+    ncn: TAccountMetas[2];
+    epochSnapshot: TAccountMetas[3];
+    accountPayer: TAccountMetas[4];
+    systemProgram: TAccountMetas[5];
   };
   data: InitializeEpochSnapshotInstructionData;
 };
@@ -256,7 +230,7 @@ export function parseInitializeEpochSnapshotInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedInitializeEpochSnapshotInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 8) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -271,9 +245,7 @@ export function parseInitializeEpochSnapshotInstruction<
     accounts: {
       epochMarker: getNextAccount(),
       epochState: getNextAccount(),
-      config: getNextAccount(),
       ncn: getNextAccount(),
-      weightTable: getNextAccount(),
       epochSnapshot: getNextAccount(),
       accountPayer: getNextAccount(),
       systemProgram: getNextAccount(),

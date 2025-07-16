@@ -6,6 +6,7 @@
 //!
 
 use crate::generated::types::FeeConfig;
+use crate::generated::types::StakeWeights;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
@@ -30,6 +31,7 @@ pub struct Config {
     pub starting_valid_epoch: u64,
     pub fee_config: FeeConfig,
     pub bump: u8,
+    pub minimum_stake_weight: StakeWeights,
 }
 
 impl Config {

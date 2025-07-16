@@ -1,3 +1,4 @@
+use jito_bytemuck::{AccountDeserialize, Discriminator};
 use jito_jsm_core::loader::{load_system_account, load_system_program};
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
@@ -48,9 +49,15 @@ pub fn process_initialize_vault_registry(
         vault_registry,
         system_program,
         program_id,
-        MAX_REALLOC_BYTES as usize,
+        VaultRegistry::SIZE,
         &vault_registry_seeds,
     )?;
+
+    let mut vault_registry_data = vault_registry.try_borrow_mut_data()?;
+    vault_registry_data[0] = VaultRegistry::DISCRIMINATOR;
+    let vault_registry_account =
+        VaultRegistry::try_from_slice_unchecked_mut(&mut vault_registry_data)?;
+    vault_registry_account.initialize(ncn.key, vault_registry_bump);
 
     Ok(())
 }

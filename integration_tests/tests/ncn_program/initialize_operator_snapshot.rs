@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use ncn_program_core::{epoch_snapshot::OperatorSnapshot, error::NCNProgramError};
+    use ncn_program_core::{epoch_snapshot::EpochSnapshot, error::NCNProgramError};
 
     use crate::fixtures::{
         ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,
@@ -31,19 +31,19 @@ mod tests {
             .await?;
 
         // Check initial size is MAX_REALLOC_BYTES
-        let address =
-            OperatorSnapshot::find_program_address(&ncn_program::id(), &operator, &ncn, epoch).0;
-        let raw_account = fixture.get_account(&address).await?.unwrap();
+        // OperatorSnapshot is now embedded in EpochSnapshot, so we verify the epoch snapshot exists
+        let epoch_snapshot_address =
+            EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
+        let raw_account = fixture.get_account(&epoch_snapshot_address).await?.unwrap();
         assert_eq!(raw_account.owner, ncn_program::id());
 
-        // Get operator snapshot and verify it was initialized correctly
+        // Get operator snapshot from the epoch snapshot and verify it was initialized correctly
         let operator_snapshot = ncn_program_client
             .get_operator_snapshot(operator, ncn, epoch)
             .await?;
 
-        // Verify initial state
+        // Verify initial state - operator snapshot should exist in the epoch snapshot
         assert_eq!(*operator_snapshot.operator(), operator);
-        assert_eq!(*operator_snapshot.ncn(), ncn);
 
         Ok(())
     }

@@ -40,7 +40,7 @@ mod tests {
             .await?;
 
         ncn_program_client
-            .do_initialize_epoch_snapshot(ncn, epoch)
+            .do_full_initialize_epoch_snapshot(ncn, epoch)
             .await?;
 
         let operator = test_ncn.operators[0].operator_pubkey;
@@ -89,7 +89,7 @@ mod tests {
             .await?;
 
         ncn_program_client
-            .do_initialize_epoch_snapshot(ncn, epoch)
+            .do_full_initialize_epoch_snapshot(ncn, epoch)
             .await?;
 
         for operator_root in test_ncn.operators.iter() {
@@ -201,7 +201,7 @@ mod tests {
         }
 
         ncn_program_client
-            .do_initialize_epoch_snapshot(ncn, epoch)
+            .do_full_initialize_epoch_snapshot(ncn, epoch)
             .await?;
 
         for operator_root in test_ncn.operators.iter() {

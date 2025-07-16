@@ -28,17 +28,6 @@ mod tests {
 
         let address = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let raw_account = fixture.get_account(&address).await?.unwrap();
-        assert_eq!(raw_account.data.len(), MAX_REALLOC_BYTES as usize);
-        assert_eq!(raw_account.owner, ncn_program::id());
-        assert_eq!(raw_account.data[0], 0);
-
-        let num_reallocs = (WeightTable::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-
-        ncn_program_client
-            .do_realloc_weight_table(ncn, epoch, num_reallocs)
-            .await?;
-
-        let raw_account = fixture.get_account(&address).await?.unwrap();
         assert_eq!(raw_account.data.len(), { WeightTable::SIZE });
         assert_eq!(raw_account.owner, ncn_program::id());
         assert_eq!(raw_account.data[0], WeightTable::DISCRIMINATOR);
@@ -70,17 +59,6 @@ mod tests {
             .await?;
 
         let address = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let raw_account = fixture.get_account(&address).await?.unwrap();
-        assert_eq!(raw_account.data.len(), MAX_REALLOC_BYTES as usize);
-        assert_eq!(raw_account.owner, ncn_program::id());
-        assert_eq!(raw_account.data[0], 0);
-
-        let num_reallocs = (WeightTable::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-
-        ncn_program_client
-            .do_realloc_weight_table(ncn, epoch, num_reallocs)
-            .await?;
-
         let raw_account = fixture.get_account(&address).await?.unwrap();
         assert_eq!(raw_account.data.len(), { WeightTable::SIZE });
         assert_eq!(raw_account.owner, ncn_program::id());

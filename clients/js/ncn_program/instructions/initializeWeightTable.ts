@@ -55,7 +55,7 @@ export type InitializeWeightTableInstruction<
         ? ReadonlyAccount<TAccountEpochMarker>
         : TAccountEpochMarker,
       TAccountEpochState extends string
-        ? ReadonlyAccount<TAccountEpochState>
+        ? WritableAccount<TAccountEpochState>
         : TAccountEpochState,
       TAccountVaultRegistry extends string
         ? ReadonlyAccount<TAccountVaultRegistry>
@@ -168,7 +168,7 @@ export function getInitializeWeightTableInstruction<
   // Original accounts.
   const originalAccounts = {
     epochMarker: { value: input.epochMarker ?? null, isWritable: false },
-    epochState: { value: input.epochState ?? null, isWritable: false },
+    epochState: { value: input.epochState ?? null, isWritable: true },
     vaultRegistry: { value: input.vaultRegistry ?? null, isWritable: false },
     ncn: { value: input.ncn ?? null, isWritable: false },
     weightTable: { value: input.weightTable ?? null, isWritable: true },

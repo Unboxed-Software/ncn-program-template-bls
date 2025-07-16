@@ -9,33 +9,33 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct DistributeProtocolRewards {
+pub struct ReallocEpochSnapshot {
     pub epoch_state: solana_program::pubkey::Pubkey,
-
-    pub config: solana_program::pubkey::Pubkey,
 
     pub ncn: solana_program::pubkey::Pubkey,
 
-    pub ncn_reward_router: solana_program::pubkey::Pubkey,
+    pub config: solana_program::pubkey::Pubkey,
 
-    pub ncn_reward_receiver: solana_program::pubkey::Pubkey,
+    pub weight_table: solana_program::pubkey::Pubkey,
 
-    pub protocol_fee_wallet: solana_program::pubkey::Pubkey,
+    pub epoch_snapshot: solana_program::pubkey::Pubkey,
+
+    pub account_payer: solana_program::pubkey::Pubkey,
 
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
-impl DistributeProtocolRewards {
+impl ReallocEpochSnapshot {
     pub fn instruction(
         &self,
-        args: DistributeProtocolRewardsInstructionArgs,
+        args: ReallocEpochSnapshotInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: DistributeProtocolRewardsInstructionArgs,
+        args: ReallocEpochSnapshotInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
@@ -44,22 +44,22 @@ impl DistributeProtocolRewards {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.ncn, false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.config,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.ncn, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.ncn_reward_router,
+            self.weight_table,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.ncn_reward_receiver,
+            self.epoch_snapshot,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.protocol_fee_wallet,
+            self.account_payer,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -67,7 +67,7 @@ impl DistributeProtocolRewards {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = DistributeProtocolRewardsInstructionData::new()
+        let mut data = ReallocEpochSnapshotInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -82,17 +82,17 @@ impl DistributeProtocolRewards {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct DistributeProtocolRewardsInstructionData {
+pub struct ReallocEpochSnapshotInstructionData {
     discriminator: u8,
 }
 
-impl DistributeProtocolRewardsInstructionData {
+impl ReallocEpochSnapshotInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 21 }
+        Self { discriminator: 13 }
     }
 }
 
-impl Default for DistributeProtocolRewardsInstructionData {
+impl Default for ReallocEpochSnapshotInstructionData {
     fn default() -> Self {
         Self::new()
     }
@@ -100,35 +100,35 @@ impl Default for DistributeProtocolRewardsInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct DistributeProtocolRewardsInstructionArgs {
+pub struct ReallocEpochSnapshotInstructionArgs {
     pub epoch: u64,
 }
 
-/// Instruction builder for `DistributeProtocolRewards`.
+/// Instruction builder for `ReallocEpochSnapshot`.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` epoch_state
-///   1. `[]` config
-///   2. `[]` ncn
-///   3. `[writable]` ncn_reward_router
-///   4. `[writable]` ncn_reward_receiver
-///   5. `[writable]` protocol_fee_wallet
+///   1. `[]` ncn
+///   2. `[]` config
+///   3. `[]` weight_table
+///   4. `[writable]` epoch_snapshot
+///   5. `[writable]` account_payer
 ///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct DistributeProtocolRewardsBuilder {
+pub struct ReallocEpochSnapshotBuilder {
     epoch_state: Option<solana_program::pubkey::Pubkey>,
-    config: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
-    ncn_reward_router: Option<solana_program::pubkey::Pubkey>,
-    ncn_reward_receiver: Option<solana_program::pubkey::Pubkey>,
-    protocol_fee_wallet: Option<solana_program::pubkey::Pubkey>,
+    config: Option<solana_program::pubkey::Pubkey>,
+    weight_table: Option<solana_program::pubkey::Pubkey>,
+    epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
+    account_payer: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     epoch: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl DistributeProtocolRewardsBuilder {
+impl ReallocEpochSnapshotBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -138,37 +138,28 @@ impl DistributeProtocolRewardsBuilder {
         self
     }
     #[inline(always)]
-    pub fn config(&mut self, config: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.config = Some(config);
-        self
-    }
-    #[inline(always)]
     pub fn ncn(&mut self, ncn: solana_program::pubkey::Pubkey) -> &mut Self {
         self.ncn = Some(ncn);
         self
     }
     #[inline(always)]
-    pub fn ncn_reward_router(
-        &mut self,
-        ncn_reward_router: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.ncn_reward_router = Some(ncn_reward_router);
+    pub fn config(&mut self, config: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.config = Some(config);
         self
     }
     #[inline(always)]
-    pub fn ncn_reward_receiver(
-        &mut self,
-        ncn_reward_receiver: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.ncn_reward_receiver = Some(ncn_reward_receiver);
+    pub fn weight_table(&mut self, weight_table: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.weight_table = Some(weight_table);
         self
     }
     #[inline(always)]
-    pub fn protocol_fee_wallet(
-        &mut self,
-        protocol_fee_wallet: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.protocol_fee_wallet = Some(protocol_fee_wallet);
+    pub fn epoch_snapshot(&mut self, epoch_snapshot: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.epoch_snapshot = Some(epoch_snapshot);
+        self
+    }
+    #[inline(always)]
+    pub fn account_payer(&mut self, account_payer: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.account_payer = Some(account_payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -202,24 +193,18 @@ impl DistributeProtocolRewardsBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = DistributeProtocolRewards {
+        let accounts = ReallocEpochSnapshot {
             epoch_state: self.epoch_state.expect("epoch_state is not set"),
-            config: self.config.expect("config is not set"),
             ncn: self.ncn.expect("ncn is not set"),
-            ncn_reward_router: self
-                .ncn_reward_router
-                .expect("ncn_reward_router is not set"),
-            ncn_reward_receiver: self
-                .ncn_reward_receiver
-                .expect("ncn_reward_receiver is not set"),
-            protocol_fee_wallet: self
-                .protocol_fee_wallet
-                .expect("protocol_fee_wallet is not set"),
+            config: self.config.expect("config is not set"),
+            weight_table: self.weight_table.expect("weight_table is not set"),
+            epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
+            account_payer: self.account_payer.expect("account_payer is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
-        let args = DistributeProtocolRewardsInstructionArgs {
+        let args = ReallocEpochSnapshotInstructionArgs {
             epoch: self.epoch.clone().expect("epoch is not set"),
         };
 
@@ -227,59 +212,59 @@ impl DistributeProtocolRewardsBuilder {
     }
 }
 
-/// `distribute_protocol_rewards` CPI accounts.
-pub struct DistributeProtocolRewardsCpiAccounts<'a, 'b> {
+/// `realloc_epoch_snapshot` CPI accounts.
+pub struct ReallocEpochSnapshotCpiAccounts<'a, 'b> {
     pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_reward_router: &'b solana_program::account_info::AccountInfo<'a>,
+    pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_reward_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+    pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub protocol_fee_wallet: &'b solana_program::account_info::AccountInfo<'a>,
+    pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub account_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `distribute_protocol_rewards` CPI instruction.
-pub struct DistributeProtocolRewardsCpi<'a, 'b> {
+/// `realloc_epoch_snapshot` CPI instruction.
+pub struct ReallocEpochSnapshotCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub config: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_reward_router: &'b solana_program::account_info::AccountInfo<'a>,
+    pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_reward_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+    pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub protocol_fee_wallet: &'b solana_program::account_info::AccountInfo<'a>,
+    pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub account_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: DistributeProtocolRewardsInstructionArgs,
+    pub __args: ReallocEpochSnapshotInstructionArgs,
 }
 
-impl<'a, 'b> DistributeProtocolRewardsCpi<'a, 'b> {
+impl<'a, 'b> ReallocEpochSnapshotCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: DistributeProtocolRewardsCpiAccounts<'a, 'b>,
-        args: DistributeProtocolRewardsInstructionArgs,
+        accounts: ReallocEpochSnapshotCpiAccounts<'a, 'b>,
+        args: ReallocEpochSnapshotInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
             epoch_state: accounts.epoch_state,
-            config: accounts.config,
             ncn: accounts.ncn,
-            ncn_reward_router: accounts.ncn_reward_router,
-            ncn_reward_receiver: accounts.ncn_reward_receiver,
-            protocol_fee_wallet: accounts.protocol_fee_wallet,
+            config: accounts.config,
+            weight_table: accounts.weight_table,
+            epoch_snapshot: accounts.epoch_snapshot,
+            account_payer: accounts.account_payer,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -323,23 +308,23 @@ impl<'a, 'b> DistributeProtocolRewardsCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.ncn.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.ncn.key,
+            *self.weight_table.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.ncn_reward_router.key,
+            *self.epoch_snapshot.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.ncn_reward_receiver.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.protocol_fee_wallet.key,
+            *self.account_payer.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -353,7 +338,7 @@ impl<'a, 'b> DistributeProtocolRewardsCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = DistributeProtocolRewardsInstructionData::new()
+        let mut data = ReallocEpochSnapshotInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
@@ -367,11 +352,11 @@ impl<'a, 'b> DistributeProtocolRewardsCpi<'a, 'b> {
         let mut account_infos = Vec::with_capacity(7 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.epoch_state.clone());
-        account_infos.push(self.config.clone());
         account_infos.push(self.ncn.clone());
-        account_infos.push(self.ncn_reward_router.clone());
-        account_infos.push(self.ncn_reward_receiver.clone());
-        account_infos.push(self.protocol_fee_wallet.clone());
+        account_infos.push(self.config.clone());
+        account_infos.push(self.weight_table.clone());
+        account_infos.push(self.epoch_snapshot.clone());
+        account_infos.push(self.account_payer.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -385,32 +370,32 @@ impl<'a, 'b> DistributeProtocolRewardsCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `DistributeProtocolRewards` via CPI.
+/// Instruction builder for `ReallocEpochSnapshot` via CPI.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` epoch_state
-///   1. `[]` config
-///   2. `[]` ncn
-///   3. `[writable]` ncn_reward_router
-///   4. `[writable]` ncn_reward_receiver
-///   5. `[writable]` protocol_fee_wallet
+///   1. `[]` ncn
+///   2. `[]` config
+///   3. `[]` weight_table
+///   4. `[writable]` epoch_snapshot
+///   5. `[writable]` account_payer
 ///   6. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct DistributeProtocolRewardsCpiBuilder<'a, 'b> {
-    instruction: Box<DistributeProtocolRewardsCpiBuilderInstruction<'a, 'b>>,
+pub struct ReallocEpochSnapshotCpiBuilder<'a, 'b> {
+    instruction: Box<ReallocEpochSnapshotCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> DistributeProtocolRewardsCpiBuilder<'a, 'b> {
+impl<'a, 'b> ReallocEpochSnapshotCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(DistributeProtocolRewardsCpiBuilderInstruction {
+        let instruction = Box::new(ReallocEpochSnapshotCpiBuilderInstruction {
             __program: program,
             epoch_state: None,
-            config: None,
             ncn: None,
-            ncn_reward_router: None,
-            ncn_reward_receiver: None,
-            protocol_fee_wallet: None,
+            config: None,
+            weight_table: None,
+            epoch_snapshot: None,
+            account_payer: None,
             system_program: None,
             epoch: None,
             __remaining_accounts: Vec::new(),
@@ -426,6 +411,11 @@ impl<'a, 'b> DistributeProtocolRewardsCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn ncn(&mut self, ncn: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.ncn = Some(ncn);
+        self
+    }
+    #[inline(always)]
     pub fn config(
         &mut self,
         config: &'b solana_program::account_info::AccountInfo<'a>,
@@ -434,32 +424,27 @@ impl<'a, 'b> DistributeProtocolRewardsCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn ncn(&mut self, ncn: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.ncn = Some(ncn);
+    pub fn weight_table(
+        &mut self,
+        weight_table: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.weight_table = Some(weight_table);
         self
     }
     #[inline(always)]
-    pub fn ncn_reward_router(
+    pub fn epoch_snapshot(
         &mut self,
-        ncn_reward_router: &'b solana_program::account_info::AccountInfo<'a>,
+        epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.ncn_reward_router = Some(ncn_reward_router);
+        self.instruction.epoch_snapshot = Some(epoch_snapshot);
         self
     }
     #[inline(always)]
-    pub fn ncn_reward_receiver(
+    pub fn account_payer(
         &mut self,
-        ncn_reward_receiver: &'b solana_program::account_info::AccountInfo<'a>,
+        account_payer: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.ncn_reward_receiver = Some(ncn_reward_receiver);
-        self
-    }
-    #[inline(always)]
-    pub fn protocol_fee_wallet(
-        &mut self,
-        protocol_fee_wallet: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.protocol_fee_wallet = Some(protocol_fee_wallet);
+        self.instruction.account_payer = Some(account_payer);
         self
     }
     #[inline(always)]
@@ -516,10 +501,10 @@ impl<'a, 'b> DistributeProtocolRewardsCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = DistributeProtocolRewardsInstructionArgs {
+        let args = ReallocEpochSnapshotInstructionArgs {
             epoch: self.instruction.epoch.clone().expect("epoch is not set"),
         };
-        let instruction = DistributeProtocolRewardsCpi {
+        let instruction = ReallocEpochSnapshotCpi {
             __program: self.instruction.__program,
 
             epoch_state: self
@@ -527,24 +512,24 @@ impl<'a, 'b> DistributeProtocolRewardsCpiBuilder<'a, 'b> {
                 .epoch_state
                 .expect("epoch_state is not set"),
 
-            config: self.instruction.config.expect("config is not set"),
-
             ncn: self.instruction.ncn.expect("ncn is not set"),
 
-            ncn_reward_router: self
-                .instruction
-                .ncn_reward_router
-                .expect("ncn_reward_router is not set"),
+            config: self.instruction.config.expect("config is not set"),
 
-            ncn_reward_receiver: self
+            weight_table: self
                 .instruction
-                .ncn_reward_receiver
-                .expect("ncn_reward_receiver is not set"),
+                .weight_table
+                .expect("weight_table is not set"),
 
-            protocol_fee_wallet: self
+            epoch_snapshot: self
                 .instruction
-                .protocol_fee_wallet
-                .expect("protocol_fee_wallet is not set"),
+                .epoch_snapshot
+                .expect("epoch_snapshot is not set"),
+
+            account_payer: self
+                .instruction
+                .account_payer
+                .expect("account_payer is not set"),
 
             system_program: self
                 .instruction
@@ -560,14 +545,14 @@ impl<'a, 'b> DistributeProtocolRewardsCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct DistributeProtocolRewardsCpiBuilderInstruction<'a, 'b> {
+struct ReallocEpochSnapshotCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     epoch_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ncn_reward_router: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ncn_reward_receiver: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    protocol_fee_wallet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    weight_table: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    account_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

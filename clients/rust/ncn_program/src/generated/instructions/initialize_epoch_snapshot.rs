@@ -14,11 +14,7 @@ pub struct InitializeEpochSnapshot {
 
     pub epoch_state: solana_program::pubkey::Pubkey,
 
-    pub config: solana_program::pubkey::Pubkey,
-
     pub ncn: solana_program::pubkey::Pubkey,
-
-    pub weight_table: solana_program::pubkey::Pubkey,
 
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
 
@@ -40,7 +36,7 @@ impl InitializeEpochSnapshot {
         args: InitializeEpochSnapshotInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.epoch_marker,
             false,
@@ -50,15 +46,7 @@ impl InitializeEpochSnapshot {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.config,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.ncn, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.weight_table,
-            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_snapshot,
@@ -116,19 +104,15 @@ pub struct InitializeEpochSnapshotInstructionArgs {
 ///
 ///   0. `[]` epoch_marker
 ///   1. `[writable]` epoch_state
-///   2. `[]` config
-///   3. `[]` ncn
-///   4. `[]` weight_table
-///   5. `[writable]` epoch_snapshot
-///   6. `[writable]` account_payer
-///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   2. `[]` ncn
+///   3. `[writable]` epoch_snapshot
+///   4. `[writable]` account_payer
+///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InitializeEpochSnapshotBuilder {
     epoch_marker: Option<solana_program::pubkey::Pubkey>,
     epoch_state: Option<solana_program::pubkey::Pubkey>,
-    config: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
-    weight_table: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
     account_payer: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
@@ -151,18 +135,8 @@ impl InitializeEpochSnapshotBuilder {
         self
     }
     #[inline(always)]
-    pub fn config(&mut self, config: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.config = Some(config);
-        self
-    }
-    #[inline(always)]
     pub fn ncn(&mut self, ncn: solana_program::pubkey::Pubkey) -> &mut Self {
         self.ncn = Some(ncn);
-        self
-    }
-    #[inline(always)]
-    pub fn weight_table(&mut self, weight_table: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.weight_table = Some(weight_table);
         self
     }
     #[inline(always)]
@@ -209,9 +183,7 @@ impl InitializeEpochSnapshotBuilder {
         let accounts = InitializeEpochSnapshot {
             epoch_marker: self.epoch_marker.expect("epoch_marker is not set"),
             epoch_state: self.epoch_state.expect("epoch_state is not set"),
-            config: self.config.expect("config is not set"),
             ncn: self.ncn.expect("ncn is not set"),
-            weight_table: self.weight_table.expect("weight_table is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
             account_payer: self.account_payer.expect("account_payer is not set"),
             system_program: self
@@ -232,11 +204,7 @@ pub struct InitializeEpochSnapshotCpiAccounts<'a, 'b> {
 
     pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub config: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -254,11 +222,7 @@ pub struct InitializeEpochSnapshotCpi<'a, 'b> {
 
     pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub config: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -279,9 +243,7 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
             __program: program,
             epoch_marker: accounts.epoch_marker,
             epoch_state: accounts.epoch_state,
-            config: accounts.config,
             ncn: accounts.ncn,
-            weight_table: accounts.weight_table,
             epoch_snapshot: accounts.epoch_snapshot,
             account_payer: accounts.account_payer,
             system_program: accounts.system_program,
@@ -321,7 +283,7 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.epoch_marker.key,
             false,
@@ -331,15 +293,7 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.config.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.ncn.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.weight_table.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -372,13 +326,11 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(8 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.epoch_marker.clone());
         account_infos.push(self.epoch_state.clone());
-        account_infos.push(self.config.clone());
         account_infos.push(self.ncn.clone());
-        account_infos.push(self.weight_table.clone());
         account_infos.push(self.epoch_snapshot.clone());
         account_infos.push(self.account_payer.clone());
         account_infos.push(self.system_program.clone());
@@ -400,12 +352,10 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
 ///
 ///   0. `[]` epoch_marker
 ///   1. `[writable]` epoch_state
-///   2. `[]` config
-///   3. `[]` ncn
-///   4. `[]` weight_table
-///   5. `[writable]` epoch_snapshot
-///   6. `[writable]` account_payer
-///   7. `[]` system_program
+///   2. `[]` ncn
+///   3. `[writable]` epoch_snapshot
+///   4. `[writable]` account_payer
+///   5. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct InitializeEpochSnapshotCpiBuilder<'a, 'b> {
     instruction: Box<InitializeEpochSnapshotCpiBuilderInstruction<'a, 'b>>,
@@ -417,9 +367,7 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
             __program: program,
             epoch_marker: None,
             epoch_state: None,
-            config: None,
             ncn: None,
-            weight_table: None,
             epoch_snapshot: None,
             account_payer: None,
             system_program: None,
@@ -445,24 +393,8 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn config(
-        &mut self,
-        config: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.config = Some(config);
-        self
-    }
-    #[inline(always)]
     pub fn ncn(&mut self, ncn: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.ncn = Some(ncn);
-        self
-    }
-    #[inline(always)]
-    pub fn weight_table(
-        &mut self,
-        weight_table: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.weight_table = Some(weight_table);
         self
     }
     #[inline(always)]
@@ -551,14 +483,7 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
                 .epoch_state
                 .expect("epoch_state is not set"),
 
-            config: self.instruction.config.expect("config is not set"),
-
             ncn: self.instruction.ncn.expect("ncn is not set"),
-
-            weight_table: self
-                .instruction
-                .weight_table
-                .expect("weight_table is not set"),
 
             epoch_snapshot: self
                 .instruction
@@ -588,9 +513,7 @@ struct InitializeEpochSnapshotCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     epoch_marker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    weight_table: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     account_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,

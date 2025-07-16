@@ -145,189 +145,195 @@ pub enum NcnProgramError {
     /// 8738 - Operator is already finalized - should not happen
     #[error("Operator is already finalized - should not happen")]
     OperatorFinalized = 0x2222,
-    /// 8739 - Too many vault operator delegations
+    /// 8739 - epoch snapshot already finalized
+    #[error("epoch snapshot already finalized")]
+    EpochSnapshotAlreadyFinalized = 0x2223,
+    /// 8740 - Too many vault operator delegations
     #[error("Too many vault operator delegations")]
-    TooManyVaultOperatorDelegations = 0x2223,
-    /// 8740 - Duplicate vault operator delegation
+    TooManyVaultOperatorDelegations = 0x2224,
+    /// 8741 - Duplicate vault operator delegation
     #[error("Duplicate vault operator delegation")]
-    DuplicateVaultOperatorDelegation = 0x2224,
-    /// 8741 - Duplicate Vote Cast
+    DuplicateVaultOperatorDelegation = 0x2225,
+    /// 8742 - Duplicate Vote Cast
     #[error("Duplicate Vote Cast")]
-    DuplicateVoteCast = 0x2225,
-    /// 8742 - Cannot Vote With Zero Delegation
+    DuplicateVoteCast = 0x2226,
+    /// 8743 - Cannot Vote With Zero Delegation
     #[error("Cannot Vote With Zero Delegation")]
-    CannotVoteWithZeroStake = 0x2226,
-    /// 8743 - Operator Already Voted
+    CannotVoteWithZeroStake = 0x2227,
+    /// 8744 - Operator Already Voted
     #[error("Operator Already Voted")]
-    OperatorAlreadyVoted = 0x2227,
-    /// 8744 - Operator votes full
+    OperatorAlreadyVoted = 0x2228,
+    /// 8745 - Operator votes full
     #[error("Operator votes full")]
-    OperatorVotesFull = 0x2228,
-    /// 8745 - Merkle root tally full
+    OperatorVotesFull = 0x2229,
+    /// 8746 - Merkle root tally full
     #[error("Merkle root tally full")]
-    BallotTallyFull = 0x2229,
-    /// 8746 - Ballot tally not found
+    BallotTallyFull = 0x222A,
+    /// 8747 - Ballot tally not found
     #[error("Ballot tally not found")]
-    BallotTallyNotFoundFull = 0x222A,
-    /// 8747 - Ballot tally not empty
+    BallotTallyNotFoundFull = 0x222B,
+    /// 8748 - Ballot tally not empty
     #[error("Ballot tally not empty")]
-    BallotTallyNotEmpty = 0x222B,
-    /// 8748 - Consensus already reached, cannot change vote
+    BallotTallyNotEmpty = 0x222C,
+    /// 8749 - Consensus already reached, cannot change vote
     #[error("Consensus already reached, cannot change vote")]
-    ConsensusAlreadyReached = 0x222C,
-    /// 8749 - Consensus not reached
+    ConsensusAlreadyReached = 0x222D,
+    /// 8750 - Consensus not reached
     #[error("Consensus not reached")]
-    ConsensusNotReached = 0x222D,
-    /// 8750 - Epoch snapshot not finalized
+    ConsensusNotReached = 0x222E,
+    /// 8751 - Epoch snapshot not finalized
     #[error("Epoch snapshot not finalized")]
-    EpochSnapshotNotFinalized = 0x222E,
-    /// 8751 - Voting not valid, too many slots after consensus reached
+    EpochSnapshotNotFinalized = 0x222F,
+    /// 8752 - Voting not valid, too many slots after consensus reached
     #[error("Voting not valid, too many slots after consensus reached")]
-    VotingNotValid = 0x222F,
-    /// 8752 - Tie breaker admin invalid
+    VotingNotValid = 0x2230,
+    /// 8753 - Tie breaker admin invalid
     #[error("Tie breaker admin invalid")]
-    TieBreakerAdminInvalid = 0x2230,
-    /// 8753 - Voting not finalized
+    TieBreakerAdminInvalid = 0x2231,
+    /// 8754 - Voting not finalized
     #[error("Voting not finalized")]
-    VotingNotFinalized = 0x2231,
-    /// 8754 - Tie breaking ballot must be one of the prior votes
+    VotingNotFinalized = 0x2232,
+    /// 8755 - Tie breaking ballot must be one of the prior votes
     #[error("Tie breaking ballot must be one of the prior votes")]
-    TieBreakerNotInPriorVotes = 0x2232,
-    /// 8755 - Invalid merkle proof
+    TieBreakerNotInPriorVotes = 0x2233,
+    /// 8756 - Invalid merkle proof
     #[error("Invalid merkle proof")]
-    InvalidMerkleProof = 0x2233,
-    /// 8756 - Operator voter needs to sign its vote
+    InvalidMerkleProof = 0x2234,
+    /// 8757 - Operator voter needs to sign its vote
     #[error("Operator voter needs to sign its vote")]
-    InvalidOperatorVoter = 0x2234,
-    /// 8757 - Not a valid NCN fee group
+    InvalidOperatorVoter = 0x2235,
+    /// 8758 - Not a valid NCN fee group
     #[error("Not a valid NCN fee group")]
-    InvalidNcnFeeGroup = 0x2235,
-    /// 8758 - Not a valid base fee group
+    InvalidNcnFeeGroup = 0x2236,
+    /// 8759 - Not a valid base fee group
     #[error("Not a valid base fee group")]
-    InvalidBaseFeeGroup = 0x2236,
-    /// 8759 - Operator reward list full
+    InvalidBaseFeeGroup = 0x2237,
+    /// 8760 - Operator reward list full
     #[error("Operator reward list full")]
-    OperatorRewardListFull = 0x2237,
-    /// 8760 - Operator Reward not found
+    OperatorRewardListFull = 0x2238,
+    /// 8761 - Operator Reward not found
     #[error("Operator Reward not found")]
-    OperatorRewardNotFound = 0x2238,
-    /// 8761 - Vault Reward not found
+    OperatorRewardNotFound = 0x2239,
+    /// 8762 - Vault Reward not found
     #[error("Vault Reward not found")]
-    VaultRewardNotFound = 0x2239,
-    /// 8762 - Destination mismatch
+    VaultRewardNotFound = 0x223A,
+    /// 8763 - Destination mismatch
     #[error("Destination mismatch")]
-    DestinationMismatch = 0x223A,
-    /// 8763 - Ncn reward route not found
+    DestinationMismatch = 0x223B,
+    /// 8764 - Ncn reward route not found
     #[error("Ncn reward route not found")]
-    NcnRewardRouteNotFound = 0x223B,
-    /// 8764 - Fee not active
+    NcnRewardRouteNotFound = 0x223C,
+    /// 8765 - Fee not active
     #[error("Fee not active")]
-    FeeNotActive = 0x223C,
-    /// 8765 - No rewards to distribute
+    FeeNotActive = 0x223D,
+    /// 8766 - No rewards to distribute
     #[error("No rewards to distribute")]
-    NoRewards = 0x223D,
-    /// 8766 - Weight not set
+    NoRewards = 0x223E,
+    /// 8767 - Weight not set
     #[error("Weight not set")]
-    WeightNotSet = 0x223E,
-    /// 8767 - Router still routing
+    WeightNotSet = 0x223F,
+    /// 8768 - Router still routing
     #[error("Router still routing")]
-    RouterStillRouting = 0x223F,
-    /// 8768 - Invalid epochs before stall
+    RouterStillRouting = 0x2240,
+    /// 8769 - Invalid epochs before stall
     #[error("Invalid epochs before stall")]
-    InvalidEpochsBeforeStall = 0x2240,
-    /// 8769 - Invalid epochs before accounts can close
+    InvalidEpochsBeforeStall = 0x2241,
+    /// 8770 - Invalid epochs before accounts can close
     #[error("Invalid epochs before accounts can close")]
-    InvalidEpochsBeforeClose = 0x2241,
-    /// 8770 - Invalid slots after consensus
+    InvalidEpochsBeforeClose = 0x2242,
+    /// 8771 - Invalid slots after consensus
     #[error("Invalid slots after consensus")]
-    InvalidSlotsAfterConsensus = 0x2242,
-    /// 8771 - Vault needs to be updated
+    InvalidSlotsAfterConsensus = 0x2243,
+    /// 8772 - Vault needs to be updated
     #[error("Vault needs to be updated")]
-    VaultNeedsUpdate = 0x2243,
-    /// 8772 - Invalid Account Status
+    VaultNeedsUpdate = 0x2244,
+    /// 8773 - Invalid Account Status
     #[error("Invalid Account Status")]
-    InvalidAccountStatus = 0x2244,
-    /// 8773 - Account already initialized
+    InvalidAccountStatus = 0x2245,
+    /// 8774 - Account already initialized
     #[error("Account already initialized")]
-    AccountAlreadyInitialized = 0x2245,
-    /// 8774 - Cannot vote with uninitialized account
+    AccountAlreadyInitialized = 0x2246,
+    /// 8775 - Cannot vote with uninitialized account
     #[error("Cannot vote with uninitialized account")]
-    BadBallot = 0x2246,
-    /// 8775 - Cannot route until voting is over
+    BadBallot = 0x2247,
+    /// 8776 - Cannot route until voting is over
     #[error("Cannot route until voting is over")]
-    VotingIsNotOver = 0x2247,
-    /// 8776 - Operator is not in snapshot
+    VotingIsNotOver = 0x2248,
+    /// 8777 - Operator is not in snapshot
     #[error("Operator is not in snapshot")]
-    OperatorIsNotInSnapshot = 0x2248,
-    /// 8777 - Invalid account_to_close Discriminator
+    OperatorIsNotInSnapshot = 0x2249,
+    /// 8778 - Invalid account_to_close Discriminator
     #[error("Invalid account_to_close Discriminator")]
-    InvalidAccountToCloseDiscriminator = 0x2249,
-    /// 8778 - Cannot close account
+    InvalidAccountToCloseDiscriminator = 0x224A,
+    /// 8779 - Cannot close account
     #[error("Cannot close account")]
-    CannotCloseAccount = 0x224A,
-    /// 8779 - Cannot close account - Already closed
+    CannotCloseAccount = 0x224B,
+    /// 8780 - Cannot close account - Already closed
     #[error("Cannot close account - Already closed")]
-    CannotCloseAccountAlreadyClosed = 0x224B,
-    /// 8780 - Cannot close account - Not enough epochs have passed since consensus reached
+    CannotCloseAccountAlreadyClosed = 0x224C,
+    /// 8781 - Cannot close account - Not enough epochs have passed since consensus reached
     #[error("Cannot close account - Not enough epochs have passed since consensus reached")]
-    CannotCloseAccountNotEnoughEpochs = 0x224C,
-    /// 8781 - Cannot close account - No receiver provided
+    CannotCloseAccountNotEnoughEpochs = 0x224D,
+    /// 8782 - Cannot close account - No receiver provided
     #[error("Cannot close account - No receiver provided")]
-    CannotCloseAccountNoReceiverProvided = 0x224D,
-    /// 8782 - Cannot close account - Not enough accounts
+    CannotCloseAccountNoReceiverProvided = 0x224E,
+    /// 8783 - Cannot close account - Not enough accounts
     #[error("Cannot close account - Not enough accounts")]
-    CannotCloseAccountNoEnoughAccounts = 0x224E,
-    /// 8783 - Cannot close epoch state account - Epoch state needs all other accounts to be closed first
+    CannotCloseAccountNoEnoughAccounts = 0x224F,
+    /// 8784 - Cannot close epoch state account - Epoch state needs all other accounts to be closed first
     #[error("Cannot close epoch state account - Epoch state needs all other accounts to be closed first")]
-    CannotCloseEpochStateAccount = 0x224F,
-    /// 8784 - Invalid NCN Fee wallet
+    CannotCloseEpochStateAccount = 0x2250,
+    /// 8785 - Invalid NCN Fee wallet
     #[error("Invalid NCN Fee wallet")]
-    InvalidNCNFeeWallet = 0x2250,
-    /// 8785 - Epoch is closing down
+    InvalidNCNFeeWallet = 0x2251,
+    /// 8786 - Epoch is closing down
     #[error("Epoch is closing down")]
-    EpochIsClosingDown = 0x2251,
-    /// 8786 - Marker exists
+    EpochIsClosingDown = 0x2252,
+    /// 8787 - Marker exists
     #[error("Marker exists")]
-    MarkerExists = 0x2252,
-    /// 8787 - Secret key error
+    MarkerExists = 0x2253,
+    /// 8788 - Secret key error
     #[error("Secret key error")]
-    SecretKeyError = 0x2253,
-    /// 8788 - AltBN128 add error
+    SecretKeyError = 0x2254,
+    /// 8789 - AltBN128 add error
     #[error("AltBN128 add error")]
-    AltBN128AddError = 0x2254,
-    /// 8789 - AltBN128 mul error
+    AltBN128AddError = 0x2255,
+    /// 8790 - AltBN128 mul error
     #[error("AltBN128 mul error")]
-    AltBN128MulError = 0x2255,
-    /// 8790 - AltBN128 pairing error
+    AltBN128MulError = 0x2256,
+    /// 8791 - AltBN128 pairing error
     #[error("AltBN128 pairing error")]
-    AltBN128PairingError = 0x2256,
-    /// 8791 - Hash to curve error
+    AltBN128PairingError = 0x2257,
+    /// 8792 - Hash to curve error
     #[error("Hash to curve error")]
-    HashToCurveError = 0x2257,
-    /// 8792 - BLSSigning error
+    HashToCurveError = 0x2258,
+    /// 8793 - BLSSigning error
     #[error("BLSSigning error")]
-    BLSSigningError = 0x2258,
-    /// 8793 - BLSVerification error
+    BLSSigningError = 0x2259,
+    /// 8794 - BLSVerification error
     #[error("BLSVerification error")]
-    BLSVerificationError = 0x2259,
-    /// 8794 - Serialization error
+    BLSVerificationError = 0x225A,
+    /// 8795 - Serialization error
     #[error("Serialization error")]
-    SerializationError = 0x225A,
-    /// 8795 - G1 point compression error
+    SerializationError = 0x225B,
+    /// 8796 - G1 point compression error
     #[error("G1 point compression error")]
-    G1PointCompressionError = 0x225B,
-    /// 8796 - G1 point decompression error
+    G1PointCompressionError = 0x225C,
+    /// 8797 - G1 point decompression error
     #[error("G1 point decompression error")]
-    G1PointDecompressionError = 0x225C,
-    /// 8797 - G2 point compression error
+    G1PointDecompressionError = 0x225D,
+    /// 8798 - G2 point compression error
     #[error("G2 point compression error")]
-    G2PointCompressionError = 0x225D,
-    /// 8798 - G2 point decompression error
+    G2PointCompressionError = 0x225E,
+    /// 8799 - G2 point decompression error
     #[error("G2 point decompression error")]
-    G2PointDecompressionError = 0x225E,
-    /// 8799 - Invalid input length
+    G2PointDecompressionError = 0x225F,
+    /// 8800 - Invalid input length
     #[error("Invalid input length")]
-    InvalidInputLength = 0x225F,
+    InvalidInputLength = 0x2260,
+    /// 8801 - Invalid G1 Pubkey
+    #[error("Invalid G1 Pubkey")]
+    InvalidG1Pubkey = 0x2261,
 }
 
 impl solana_program::program_error::PrintProgramError for NcnProgramError {

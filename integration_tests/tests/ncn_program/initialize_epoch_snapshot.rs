@@ -15,7 +15,7 @@ mod tests {
         let epoch = fixture.clock().await.epoch;
 
         ncn_program_client
-            .do_initialize_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+            .do_full_initialize_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
             .await?;
 
         Ok(())

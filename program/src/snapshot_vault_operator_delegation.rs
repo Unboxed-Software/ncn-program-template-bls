@@ -27,18 +27,22 @@ use solana_program::{
 ///
 /// ### Accounts:
 /// 1. `[writable]` epoch_state: The epoch state account for the target epoch
-/// 2. `[]` ncn: The NCN account
-/// 3. `[]` vault: The vault account
-/// 4. `[]` operator: The operator account
-/// 5. `[writable]` epoch_snapshot: Epoch snapshot account
-/// 6. `[writable]` operator_snapshot: Operator snapshot account
-/// 7. `[]` vault_operator_delegation: The delegation between vault and operator
+/// 2. `[]` ncn_config: NCN configuration account
+/// 3. `[]` restaking_config: Restaking configuration account
+/// 4. `[]` ncn: The NCN account
+/// 5. `[]` operator: The operator account
+/// 6. `[]` vault: The vault account
+/// 7. `[]` vault_ncn_ticket: The vault NCN ticket
+/// 8. `[]` ncn_vault_ticket: The NCN vault ticket
+/// 9. `[]` vault_operator_delegation: The delegation between vault and operator
+/// 10. `[]` weight_table: The weight table for the epoch
+/// 11. `[writable]` epoch_snapshot: Epoch snapshot account containing operator snapshots
 pub fn process_snapshot_vault_operator_delegation(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_state, ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, weight_table, epoch_snapshot, operator_snapshot] =
+    let [epoch_state, ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, weight_table, epoch_snapshot] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -86,14 +90,6 @@ pub fn process_snapshot_vault_operator_delegation(
 
     WeightTable::load(program_id, weight_table, ncn.key, epoch, false)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, true)?;
-    OperatorSnapshot::load(
-        program_id,
-        operator_snapshot,
-        operator.key,
-        ncn.key,
-        epoch,
-        true,
-    )?;
 
     // check vault is up to date
     let vault_needs_update = {
@@ -113,44 +109,70 @@ pub fn process_snapshot_vault_operator_delegation(
         (vault_account.vault_index(), vault_account.supported_mint)
     };
 
-    let mut operator_snapshot_data = operator_snapshot.try_borrow_mut_data()?;
-    let operator_snapshot_account =
-        OperatorSnapshot::try_from_slice_unchecked_mut(&mut operator_snapshot_data)?;
+    let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
+    let epoch_snapshot_account =
+        EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
+    let operator_snapshot = *epoch_snapshot_account
+        .find_operator_snapshot(operator.key)
+        .ok_or_else(|| {
+            msg!(
+                "Error: Operator snapshot not found for operator: {}",
+                operator.key
+            );
+            NCNProgramError::OperatorIsNotInSnapshot
+        })?;
 
-    let is_active = if !operator_snapshot_account.have_valid_bn128_g1_pubkey() {
-        false
-    } else {
-        let ncn_vault_okay = {
-            let ncn_vault_ticket_data = ncn_vault_ticket.data.borrow();
-            let ncn_vault_ticket_account =
-                NcnVaultTicket::try_from_slice_unchecked(&ncn_vault_ticket_data)?;
+    msg!("Operator snapshot: {}", operator_snapshot);
 
-            // If the NCN removes a vault, it should immediately be barred from the snapshot
-            ncn_vault_ticket_account
-                .state
-                .is_active(current_slot, ncn_epoch_length)?
-        };
+    let mut cloned_operator_snapshot = operator_snapshot.clone();
 
-        let vault_ncn_okay = {
-            if vault_ncn_ticket.data_is_empty() {
-                false
-            } else {
-                let vault_ncn_ticket_data = vault_ncn_ticket.data.borrow();
-                let vault_ncn_ticket_account =
-                    VaultNcnTicket::try_from_slice_unchecked(&vault_ncn_ticket_data)?;
+    if cloned_operator_snapshot.finalized() {
+        msg!("Error: Operator snapshot is already finalized");
+        return Err(NCNProgramError::OperatorFinalized.into());
+    }
 
-                // If a vault removes itself from the ncn, it should still be able to participate
-                // until it is finished cooling down - this is so the operators with delegation
-                // from this vault can still participate
-                vault_ncn_ticket_account
+    // Check if operator has valid BN128 G1 pubkey and determine active status
+    let is_active = {
+        if cloned_operator_snapshot.has_minimum_stake_weight() {
+            msg!("Operator already has minimum stake weight");
+            return Ok(());
+        }
+
+        if !cloned_operator_snapshot.have_valid_bn128_g1_pubkey() {
+            false
+        } else {
+            let ncn_vault_okay = {
+                let ncn_vault_ticket_data = ncn_vault_ticket.data.borrow();
+                let ncn_vault_ticket_account =
+                    NcnVaultTicket::try_from_slice_unchecked(&ncn_vault_ticket_data)?;
+
+                // If the NCN removes a vault, it should immediately be barred from the snapshot
+                ncn_vault_ticket_account
                     .state
-                    .is_active_or_cooldown(current_slot, ncn_epoch_length)?
-            }
-        };
+                    .is_active(current_slot, ncn_epoch_length)?
+            };
 
-        let delegation_dne = vault_operator_delegation.data_is_empty();
+            let vault_ncn_okay = {
+                if vault_ncn_ticket.data_is_empty() {
+                    false
+                } else {
+                    let vault_ncn_ticket_data = vault_ncn_ticket.data.borrow();
+                    let vault_ncn_ticket_account =
+                        VaultNcnTicket::try_from_slice_unchecked(&vault_ncn_ticket_data)?;
 
-        vault_ncn_okay && ncn_vault_okay && !delegation_dne
+                    // If a vault removes itself from the ncn, it should still be able to participate
+                    // until it is finished cooling down - this is so the operators with delegation
+                    // from this vault can still participate
+                    vault_ncn_ticket_account
+                        .state
+                        .is_active_or_cooldown(current_slot, ncn_epoch_length)?
+                }
+            };
+
+            let delegation_dne = vault_operator_delegation.data_is_empty();
+
+            vault_ncn_okay && ncn_vault_okay && !delegation_dne
+        }
     };
 
     msg!("Vault operator delegation active status: {}", is_active);
@@ -166,7 +188,7 @@ pub fn process_snapshot_vault_operator_delegation(
             let vault_operator_delegation_account =
                 VaultOperatorDelegation::try_from_slice_unchecked(&vault_operator_delegation_data)?;
 
-            OperatorSnapshot::calculate_total_stake_weight(
+            OperatorSnapshot::calculate_stake_weight(
                 vault_operator_delegation_account,
                 weight_table_account,
                 &st_mint,
@@ -178,37 +200,40 @@ pub fn process_snapshot_vault_operator_delegation(
         total_stake_weight
     };
 
-    // Increment vault operator delegation
+    // Increment vault operator delegation and check if finalized
     let stake_weights = StakeWeights::snapshot(total_stake_weight)?;
+    let (is_finalized, ncn_operator_index, valid_delegations) = {
+        cloned_operator_snapshot.increment_vault_operator_delegation_registration(
+            current_slot,
+            vault.key,
+            &stake_weights,
+            epoch_snapshot_account.minimum_stake_weight(),
+        )?;
 
-    operator_snapshot_account.increment_vault_operator_delegation_registration(
-        current_slot,
-        vault.key,
-        vault_index,
-        &stake_weights,
-    )?;
+        let is_finalized = cloned_operator_snapshot.finalized();
+        let ncn_operator_index = cloned_operator_snapshot.ncn_operator_index();
+        let valid_delegations = cloned_operator_snapshot.valid_operator_vault_delegations();
+
+        (is_finalized, ncn_operator_index, valid_delegations)
+    };
 
     // If operator is finalized, increment operator registration
-    if operator_snapshot_account.finalized() {
-        let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
-        let epoch_snapshot_account =
-            EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
-
-        epoch_snapshot_account.increment_operator_registration(
-            current_slot,
-            operator_snapshot_account.valid_operator_vault_delegations(),
-            operator_snapshot_account.stake_weights(),
-        )?;
+    if is_finalized {
+        epoch_snapshot_account.increment_operator_registration(current_slot, valid_delegations)?;
     }
+
+    epoch_snapshot_account.update_operator_snapshot(
+        cloned_operator_snapshot.ncn_operator_index() as usize,
+        &cloned_operator_snapshot,
+    );
 
     // Update Epoch State
     {
+        msg!("Updating epoch state for vault operator delegation");
         let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
         let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
-        epoch_state_account.update_snapshot_vault_operator_delegation(
-            operator_snapshot_account.ncn_operator_index() as usize,
-            operator_snapshot_account.finalized(),
-        )?;
+        epoch_state_account
+            .update_snapshot_vault_operator_delegation(ncn_operator_index as usize, is_finalized)?;
     }
 
     Ok(())

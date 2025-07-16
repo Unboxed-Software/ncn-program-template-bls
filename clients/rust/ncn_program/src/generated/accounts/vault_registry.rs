@@ -21,10 +21,8 @@ pub struct VaultRegistry {
     )]
     pub ncn: Pubkey,
     pub bump: u8,
-    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub st_mint_list: [StMintEntry; 64],
-    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub vault_list: [VaultEntry; 64],
+    pub st_mint_list: [StMintEntry; 10],
+    pub vault_list: [VaultEntry; 10],
 }
 
 impl VaultRegistry {

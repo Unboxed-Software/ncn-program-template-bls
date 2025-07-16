@@ -32,7 +32,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const CAST_VOTE_DISCRIMINATOR = 17;
+export const CAST_VOTE_DISCRIMINATOR = 18;
 
 export function getCastVoteDiscriminatorBytes() {
   return getU8Encoder().encode(CAST_VOTE_DISCRIMINATOR);
@@ -45,7 +45,6 @@ export type CastVoteInstruction<
   TAccountBallotBox extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
-  TAccountOperatorSnapshot extends string | IAccountMeta<string> = string,
   TAccountOperator extends string | IAccountMeta<string> = string,
   TAccountOperatorVoter extends string | IAccountMeta<string> = string,
   TAccountConsensusResult extends string | IAccountMeta<string> = string,
@@ -67,9 +66,6 @@ export type CastVoteInstruction<
       TAccountEpochSnapshot extends string
         ? ReadonlyAccount<TAccountEpochSnapshot>
         : TAccountEpochSnapshot,
-      TAccountOperatorSnapshot extends string
-        ? ReadonlyAccount<TAccountOperatorSnapshot>
-        : TAccountOperatorSnapshot,
       TAccountOperator extends string
         ? ReadonlyAccount<TAccountOperator>
         : TAccountOperator,
@@ -130,7 +126,6 @@ export type CastVoteInput<
   TAccountBallotBox extends string = string,
   TAccountNcn extends string = string,
   TAccountEpochSnapshot extends string = string,
-  TAccountOperatorSnapshot extends string = string,
   TAccountOperator extends string = string,
   TAccountOperatorVoter extends string = string,
   TAccountConsensusResult extends string = string,
@@ -140,7 +135,6 @@ export type CastVoteInput<
   ballotBox: Address<TAccountBallotBox>;
   ncn: Address<TAccountNcn>;
   epochSnapshot: Address<TAccountEpochSnapshot>;
-  operatorSnapshot: Address<TAccountOperatorSnapshot>;
   operator: Address<TAccountOperator>;
   operatorVoter: TransactionSigner<TAccountOperatorVoter>;
   consensusResult: Address<TAccountConsensusResult>;
@@ -154,7 +148,6 @@ export function getCastVoteInstruction<
   TAccountBallotBox extends string,
   TAccountNcn extends string,
   TAccountEpochSnapshot extends string,
-  TAccountOperatorSnapshot extends string,
   TAccountOperator extends string,
   TAccountOperatorVoter extends string,
   TAccountConsensusResult extends string,
@@ -166,7 +159,6 @@ export function getCastVoteInstruction<
     TAccountBallotBox,
     TAccountNcn,
     TAccountEpochSnapshot,
-    TAccountOperatorSnapshot,
     TAccountOperator,
     TAccountOperatorVoter,
     TAccountConsensusResult
@@ -179,7 +171,6 @@ export function getCastVoteInstruction<
   TAccountBallotBox,
   TAccountNcn,
   TAccountEpochSnapshot,
-  TAccountOperatorSnapshot,
   TAccountOperator,
   TAccountOperatorVoter,
   TAccountConsensusResult
@@ -194,10 +185,6 @@ export function getCastVoteInstruction<
     ballotBox: { value: input.ballotBox ?? null, isWritable: true },
     ncn: { value: input.ncn ?? null, isWritable: false },
     epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: false },
-    operatorSnapshot: {
-      value: input.operatorSnapshot ?? null,
-      isWritable: false,
-    },
     operator: { value: input.operator ?? null, isWritable: false },
     operatorVoter: { value: input.operatorVoter ?? null, isWritable: false },
     consensusResult: { value: input.consensusResult ?? null, isWritable: true },
@@ -218,7 +205,6 @@ export function getCastVoteInstruction<
       getAccountMeta(accounts.ballotBox),
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.epochSnapshot),
-      getAccountMeta(accounts.operatorSnapshot),
       getAccountMeta(accounts.operator),
       getAccountMeta(accounts.operatorVoter),
       getAccountMeta(accounts.consensusResult),
@@ -234,7 +220,6 @@ export function getCastVoteInstruction<
     TAccountBallotBox,
     TAccountNcn,
     TAccountEpochSnapshot,
-    TAccountOperatorSnapshot,
     TAccountOperator,
     TAccountOperatorVoter,
     TAccountConsensusResult
@@ -254,10 +239,9 @@ export type ParsedCastVoteInstruction<
     ballotBox: TAccountMetas[2];
     ncn: TAccountMetas[3];
     epochSnapshot: TAccountMetas[4];
-    operatorSnapshot: TAccountMetas[5];
-    operator: TAccountMetas[6];
-    operatorVoter: TAccountMetas[7];
-    consensusResult: TAccountMetas[8];
+    operator: TAccountMetas[5];
+    operatorVoter: TAccountMetas[6];
+    consensusResult: TAccountMetas[7];
   };
   data: CastVoteInstructionData;
 };
@@ -270,7 +254,7 @@ export function parseCastVoteInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedCastVoteInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 9) {
+  if (instruction.accounts.length < 8) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -288,7 +272,6 @@ export function parseCastVoteInstruction<
       ballotBox: getNextAccount(),
       ncn: getNextAccount(),
       epochSnapshot: getNextAccount(),
-      operatorSnapshot: getNextAccount(),
       operator: getNextAccount(),
       operatorVoter: getNextAccount(),
       consensusResult: getNextAccount(),

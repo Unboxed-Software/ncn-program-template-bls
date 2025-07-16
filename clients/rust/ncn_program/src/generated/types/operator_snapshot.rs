@@ -5,18 +5,29 @@
 //! <https://github.com/kinobi-so/kinobi>
 //!
 
-use crate::generated::types::NCNRewardRouterRewards;
+use crate::generated::types::StakeWeights;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct OperatorVaultRewardRoute {
+pub struct OperatorSnapshot {
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub operator: Pubkey,
-    pub rewards: NCNRewardRouterRewards,
+    pub g1_pubkey: [u8; 32],
+    pub slot_created: u64,
+    pub slot_finalized: u64,
+    pub is_active: bool,
+    pub ncn_operator_index: u64,
+    pub operator_index: u64,
+    pub has_minimum_stake_weight: bool,
+    pub stake_weight_so_far: StakeWeights,
+    pub vault_operator_delegation_count: u64,
+    pub vault_operator_delegations_registered: u64,
+    pub valid_operator_vault_delegations: u64,
+    pub vaults_delegated: [Pubkey; 10],
 }

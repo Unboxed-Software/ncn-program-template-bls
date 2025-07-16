@@ -50,16 +50,7 @@ pub fn can_operator_vote(
         return false;
     }
 
-    // Get operator's stake weight for this epoch
-    let stake_weight = operator_snapshot.stake_weights().stake_weight();
-
-    // If operator has no stake weight, they cannot vote
-    if stake_weight == 0 {
-        return false;
-    }
-
-    // Operator can vote if they haven't voted and have stake weight
-    true
+    operator_snapshot.is_active()
 }
 use crate::constants::MODULUS;
 use dashu::integer::UBig;

@@ -94,6 +94,8 @@ pub enum NCNProgramError {
     VaultOperatorDelegationFinalized,
     #[error("Operator is already finalized - should not happen")]
     OperatorFinalized,
+    #[error("epoch snapshot already finalized")]
+    EpochSnapshotAlreadyFinalized,
     #[error("Too many vault operator delegations")]
     TooManyVaultOperatorDelegations,
     #[error("Duplicate vault operator delegation")]
@@ -218,6 +220,9 @@ pub enum NCNProgramError {
     G2PointDecompressionError,
     #[error("Invalid input length")]
     InvalidInputLength,
+
+    #[error("Invalid G1 Pubkey")]
+    InvalidG1Pubkey,
 }
 
 impl<T> DecodeError<T> for NCNProgramError {

@@ -29,18 +29,19 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REALLOC_N_C_N_REWARD_ROUTER_DISCRIMINATOR = 19;
+export const REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR = 13;
 
-export function getReallocNCNRewardRouterDiscriminatorBytes() {
-  return getU8Encoder().encode(REALLOC_N_C_N_REWARD_ROUTER_DISCRIMINATOR);
+export function getReallocEpochSnapshotDiscriminatorBytes() {
+  return getU8Encoder().encode(REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR);
 }
 
-export type ReallocNCNRewardRouterInstruction<
+export type ReallocEpochSnapshotInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountEpochState extends string | IAccountMeta<string> = string,
-  TAccountConfig extends string | IAccountMeta<string> = string,
-  TAccountNcnRewardRouter extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
+  TAccountConfig extends string | IAccountMeta<string> = string,
+  TAccountWeightTable extends string | IAccountMeta<string> = string,
+  TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
   TAccountAccountPayer extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -53,13 +54,16 @@ export type ReallocNCNRewardRouterInstruction<
       TAccountEpochState extends string
         ? WritableAccount<TAccountEpochState>
         : TAccountEpochState,
+      TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
       TAccountConfig extends string
         ? ReadonlyAccount<TAccountConfig>
         : TAccountConfig,
-      TAccountNcnRewardRouter extends string
-        ? WritableAccount<TAccountNcnRewardRouter>
-        : TAccountNcnRewardRouter,
-      TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
+      TAccountWeightTable extends string
+        ? ReadonlyAccount<TAccountWeightTable>
+        : TAccountWeightTable,
+      TAccountEpochSnapshot extends string
+        ? WritableAccount<TAccountEpochSnapshot>
+        : TAccountEpochSnapshot,
       TAccountAccountPayer extends string
         ? WritableAccount<TAccountAccountPayer>
         : TAccountAccountPayer,
@@ -70,16 +74,16 @@ export type ReallocNCNRewardRouterInstruction<
     ]
   >;
 
-export type ReallocNCNRewardRouterInstructionData = {
+export type ReallocEpochSnapshotInstructionData = {
   discriminator: number;
   epoch: bigint;
 };
 
-export type ReallocNCNRewardRouterInstructionDataArgs = {
+export type ReallocEpochSnapshotInstructionDataArgs = {
   epoch: number | bigint;
 };
 
-export function getReallocNCNRewardRouterInstructionDataEncoder(): Encoder<ReallocNCNRewardRouterInstructionDataArgs> {
+export function getReallocEpochSnapshotInstructionDataEncoder(): Encoder<ReallocEpochSnapshotInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', getU8Encoder()],
@@ -87,69 +91,74 @@ export function getReallocNCNRewardRouterInstructionDataEncoder(): Encoder<Reall
     ]),
     (value) => ({
       ...value,
-      discriminator: REALLOC_N_C_N_REWARD_ROUTER_DISCRIMINATOR,
+      discriminator: REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR,
     })
   );
 }
 
-export function getReallocNCNRewardRouterInstructionDataDecoder(): Decoder<ReallocNCNRewardRouterInstructionData> {
+export function getReallocEpochSnapshotInstructionDataDecoder(): Decoder<ReallocEpochSnapshotInstructionData> {
   return getStructDecoder([
     ['discriminator', getU8Decoder()],
     ['epoch', getU64Decoder()],
   ]);
 }
 
-export function getReallocNCNRewardRouterInstructionDataCodec(): Codec<
-  ReallocNCNRewardRouterInstructionDataArgs,
-  ReallocNCNRewardRouterInstructionData
+export function getReallocEpochSnapshotInstructionDataCodec(): Codec<
+  ReallocEpochSnapshotInstructionDataArgs,
+  ReallocEpochSnapshotInstructionData
 > {
   return combineCodec(
-    getReallocNCNRewardRouterInstructionDataEncoder(),
-    getReallocNCNRewardRouterInstructionDataDecoder()
+    getReallocEpochSnapshotInstructionDataEncoder(),
+    getReallocEpochSnapshotInstructionDataDecoder()
   );
 }
 
-export type ReallocNCNRewardRouterInput<
+export type ReallocEpochSnapshotInput<
   TAccountEpochState extends string = string,
-  TAccountConfig extends string = string,
-  TAccountNcnRewardRouter extends string = string,
   TAccountNcn extends string = string,
+  TAccountConfig extends string = string,
+  TAccountWeightTable extends string = string,
+  TAccountEpochSnapshot extends string = string,
   TAccountAccountPayer extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   epochState: Address<TAccountEpochState>;
-  config: Address<TAccountConfig>;
-  ncnRewardRouter: Address<TAccountNcnRewardRouter>;
   ncn: Address<TAccountNcn>;
+  config: Address<TAccountConfig>;
+  weightTable: Address<TAccountWeightTable>;
+  epochSnapshot: Address<TAccountEpochSnapshot>;
   accountPayer: Address<TAccountAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  epoch: ReallocNCNRewardRouterInstructionDataArgs['epoch'];
+  epoch: ReallocEpochSnapshotInstructionDataArgs['epoch'];
 };
 
-export function getReallocNCNRewardRouterInstruction<
+export function getReallocEpochSnapshotInstruction<
   TAccountEpochState extends string,
-  TAccountConfig extends string,
-  TAccountNcnRewardRouter extends string,
   TAccountNcn extends string,
+  TAccountConfig extends string,
+  TAccountWeightTable extends string,
+  TAccountEpochSnapshot extends string,
   TAccountAccountPayer extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
-  input: ReallocNCNRewardRouterInput<
+  input: ReallocEpochSnapshotInput<
     TAccountEpochState,
-    TAccountConfig,
-    TAccountNcnRewardRouter,
     TAccountNcn,
+    TAccountConfig,
+    TAccountWeightTable,
+    TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): ReallocNCNRewardRouterInstruction<
+): ReallocEpochSnapshotInstruction<
   TProgramAddress,
   TAccountEpochState,
-  TAccountConfig,
-  TAccountNcnRewardRouter,
   TAccountNcn,
+  TAccountConfig,
+  TAccountWeightTable,
+  TAccountEpochSnapshot,
   TAccountAccountPayer,
   TAccountSystemProgram
 > {
@@ -159,9 +168,10 @@ export function getReallocNCNRewardRouterInstruction<
   // Original accounts.
   const originalAccounts = {
     epochState: { value: input.epochState ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: false },
-    ncnRewardRouter: { value: input.ncnRewardRouter ?? null, isWritable: true },
     ncn: { value: input.ncn ?? null, isWritable: false },
+    config: { value: input.config ?? null, isWritable: false },
+    weightTable: { value: input.weightTable ?? null, isWritable: false },
+    epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: true },
     accountPayer: { value: input.accountPayer ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -183,22 +193,24 @@ export function getReallocNCNRewardRouterInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.epochState),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.ncnRewardRouter),
       getAccountMeta(accounts.ncn),
+      getAccountMeta(accounts.config),
+      getAccountMeta(accounts.weightTable),
+      getAccountMeta(accounts.epochSnapshot),
       getAccountMeta(accounts.accountPayer),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getReallocNCNRewardRouterInstructionDataEncoder().encode(
-      args as ReallocNCNRewardRouterInstructionDataArgs
+    data: getReallocEpochSnapshotInstructionDataEncoder().encode(
+      args as ReallocEpochSnapshotInstructionDataArgs
     ),
-  } as ReallocNCNRewardRouterInstruction<
+  } as ReallocEpochSnapshotInstruction<
     TProgramAddress,
     TAccountEpochState,
-    TAccountConfig,
-    TAccountNcnRewardRouter,
     TAccountNcn,
+    TAccountConfig,
+    TAccountWeightTable,
+    TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
   >;
@@ -206,31 +218,32 @@ export function getReallocNCNRewardRouterInstruction<
   return instruction;
 }
 
-export type ParsedReallocNCNRewardRouterInstruction<
+export type ParsedReallocEpochSnapshotInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     epochState: TAccountMetas[0];
-    config: TAccountMetas[1];
-    ncnRewardRouter: TAccountMetas[2];
-    ncn: TAccountMetas[3];
-    accountPayer: TAccountMetas[4];
-    systemProgram: TAccountMetas[5];
+    ncn: TAccountMetas[1];
+    config: TAccountMetas[2];
+    weightTable: TAccountMetas[3];
+    epochSnapshot: TAccountMetas[4];
+    accountPayer: TAccountMetas[5];
+    systemProgram: TAccountMetas[6];
   };
-  data: ReallocNCNRewardRouterInstructionData;
+  data: ReallocEpochSnapshotInstructionData;
 };
 
-export function parseReallocNCNRewardRouterInstruction<
+export function parseReallocEpochSnapshotInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedReallocNCNRewardRouterInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 6) {
+): ParsedReallocEpochSnapshotInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 7) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -244,13 +257,14 @@ export function parseReallocNCNRewardRouterInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       epochState: getNextAccount(),
-      config: getNextAccount(),
-      ncnRewardRouter: getNextAccount(),
       ncn: getNextAccount(),
+      config: getNextAccount(),
+      weightTable: getNextAccount(),
+      epochSnapshot: getNextAccount(),
       accountPayer: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getReallocNCNRewardRouterInstructionDataDecoder().decode(
+    data: getReallocEpochSnapshotInstructionDataDecoder().decode(
       instruction.data
     ),
   };

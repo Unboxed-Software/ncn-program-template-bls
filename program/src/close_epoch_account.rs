@@ -2,16 +2,9 @@ use jito_bytemuck::{AccountDeserialize, Discriminator};
 use jito_jsm_core::loader::load_system_program;
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
-    account_payer::AccountPayer,
-    ballot_box::BallotBox,
-    config::Config as NcnConfig,
-    epoch_marker::EpochMarker,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
-    epoch_state::EpochState,
-    error::NCNProgramError,
-    ncn_reward_router::{NCNRewardReceiver, NCNRewardRouter},
-    operator_vault_reward_router::{OperatorVaultRewardReceiver, OperatorVaultRewardRouter},
-    weight_table::WeightTable,
+    account_payer::AccountPayer, ballot_box::BallotBox, config::Config as NcnConfig,
+    epoch_marker::EpochMarker, epoch_snapshot::EpochSnapshot, epoch_state::EpochState,
+    error::NCNProgramError, weight_table::WeightTable,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult,
@@ -131,129 +124,13 @@ pub fn process_close_epoch_account(
                     msg!("Closing epoch snapshot");
                     epoch_state_account.close_epoch_snapshot();
                 }
-                OperatorSnapshot::DISCRIMINATOR => {
-                    OperatorSnapshot::load_to_close(program_id, account_to_close, ncn.key, epoch)?;
-                    let account_to_close_data = account_to_close.try_borrow_data()?;
-                    let account_to_close_struct =
-                        OperatorSnapshot::try_from_slice_unchecked(&account_to_close_data)?;
-                    let ncn_operator_index = account_to_close_struct.ncn_operator_index() as usize;
-                    msg!(
-                        "Closing operator snapshot with index: {}",
-                        ncn_operator_index
-                    );
-                    epoch_state_account.close_operator_snapshot(ncn_operator_index);
-                }
+
                 BallotBox::DISCRIMINATOR => {
                     BallotBox::load_to_close(program_id, account_to_close, ncn.key, epoch)?;
                     msg!("Closing ballot box");
                     epoch_state_account.close_ballot_box();
                 }
 
-                NCNRewardRouter::DISCRIMINATOR => {
-                    NCNRewardRouter::load_to_close(program_id, account_to_close, ncn.key, epoch)?;
-                    msg!("Closing NCN Rewards Router");
-                    let [ncn_fee_wallet, ncn_reward_receiver] = optional_accounts else {
-                        msg!("Optional Accounts are not enough");
-                        return Err(NCNProgramError::CannotCloseAccountNoEnoughAccounts.into());
-                    };
-
-                    // Check correct NCN fee wallet
-                    {
-                        if config_account
-                            .fee_config
-                            .ncn_fee_wallet()
-                            .ne(ncn_fee_wallet.key)
-                        {
-                            return Err(NCNProgramError::InvalidNCNFeeWallet.into());
-                        }
-                    }
-
-                    NCNRewardReceiver::load(program_id, ncn_reward_receiver, ncn.key, epoch, true)?;
-                    NCNRewardReceiver::close(
-                        program_id,
-                        ncn.key,
-                        epoch,
-                        ncn_reward_receiver,
-                        ncn_fee_wallet,
-                        account_payer,
-                    )?;
-                    msg!("Closing NCN Rewards Receiver");
-
-                    epoch_state_account.close_ncn_reward_router();
-                }
-
-                OperatorVaultRewardRouter::DISCRIMINATOR => {
-                    msg!(
-                        "Loading OperatorVaultRewardRouter for operator and epoch {}...",
-                        epoch
-                    );
-                    OperatorVaultRewardRouter::load_to_close(
-                        program_id,
-                        account_to_close,
-                        ncn.key,
-                        epoch,
-                    )?;
-
-                    msg!("Closing Operator Vault Rewards Router");
-                    let [ncn_fee_wallet, operator_vault_reward_receiver] = optional_accounts else {
-                        msg!("Optional Accounts are not enough");
-                        return Err(NCNProgramError::CannotCloseAccountNoEnoughAccounts.into());
-                    };
-
-                    // Check correct NCN fee wallet
-                    {
-                        msg!("Verifying NCN fee wallet...");
-                        if config_account
-                            .fee_config
-                            .ncn_fee_wallet()
-                            .ne(ncn_fee_wallet.key)
-                        {
-                            msg!("Invalid NCN fee wallet provided");
-                            return Err(NCNProgramError::InvalidNCNFeeWallet.into());
-                        }
-                    }
-
-                    msg!("Loading operator vault reward router data...");
-                    let account_to_close_data = account_to_close.try_borrow_data()?;
-                    let operator_vault_reward_router =
-                        OperatorVaultRewardRouter::try_from_slice_unchecked(
-                            &account_to_close_data,
-                        )?;
-
-                    let operator_vault_operator_index =
-                        operator_vault_reward_router.ncn_operator_index() as usize;
-                    let operator = operator_vault_reward_router.operator();
-                    msg!(
-                        "Operator index: {}, Operator: {}",
-                        operator_vault_operator_index,
-                        operator
-                    );
-
-                    msg!("Loading OperatorVaultRewardReceiver...");
-                    OperatorVaultRewardReceiver::load(
-                        program_id,
-                        operator_vault_reward_receiver,
-                        operator,
-                        ncn.key,
-                        epoch,
-                        true,
-                    )?;
-
-                    msg!("Closing OperatorVaultRewardReceiver...");
-                    OperatorVaultRewardReceiver::close(
-                        program_id,
-                        operator,
-                        ncn.key,
-                        epoch,
-                        operator_vault_reward_receiver,
-                        ncn_fee_wallet,
-                        account_payer,
-                    )?;
-
-                    msg!("Closing operator vault reward router in epoch state...");
-                    epoch_state_account
-                        .close_operator_vault_reward_router(operator_vault_operator_index);
-                }
                 _ => {
                     msg!("Error: Invalid account discriminator: {}", discriminator);
                     return Err(NCNProgramError::InvalidAccountToCloseDiscriminator.into());
