@@ -28,14 +28,19 @@ mod tests {
         let mut restaking_client = fixture.restaking_program_client();
 
         // 2. Define test parameters
-        const OPERATOR_COUNT: usize = 10; // Number of operators to create for testing
+        const OPERATOR_COUNT: usize = 13; // Number of operators to create for testing
         let mints = vec![
             (Keypair::new(), WEIGHT),     // Alice with base weight
             (Keypair::new(), WEIGHT * 2), // Bob with double weight
+            (Keypair::new(), WEIGHT * 3), // Charlie with triple weight
+            (Keypair::new(), WEIGHT * 4), // Dave with quadruple weight
         ];
         let delegations = [
-            1000,   // minimum delegation amount
-            100000, // 100 tokens
+            1,                  // minimum delegation amount
+            10_000_000_000,     // 10 tokens
+            100_000_000_000,    // 100 tokens
+            1_000_000_000_000,  // 1k tokens
+            10_000_000_000_000, // 10k tokens
         ];
 
         // 3. Initialize system accounts and establish relationships
@@ -85,11 +90,19 @@ mod tests {
         {
             // Create 3 vaults for Alice
             fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[0].0.insecure_clone()))
+                .add_vaults_to_test_ncn(&mut test_ncn, 3, Some(mints[0].0.insecure_clone()))
                 .await?;
             // Create 2 vaults for Bob
             fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[1].0.insecure_clone()))
+                .add_vaults_to_test_ncn(&mut test_ncn, 2, Some(mints[1].0.insecure_clone()))
+                .await?;
+            // Create 1 vault for Charlie
+            fixture
+                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[2].0.insecure_clone()))
+                .await?;
+            // Create 1 vault for Dave
+            fixture
+                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[3].0.insecure_clone()))
                 .await?;
         }
 
@@ -138,7 +151,7 @@ mod tests {
                 .do_initialize_config(
                     test_ncn.ncn_root.ncn_pubkey,
                     &test_ncn.ncn_root.ncn_admin,
-                    None,
+                    Some(100),
                 )
                 .await?;
 
