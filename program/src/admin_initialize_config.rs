@@ -39,6 +39,7 @@ pub fn process_admin_initialize_config(
     epochs_before_stall: u64,
     epochs_after_consensus_before_close: u64,
     valid_slots_after_consensus: u64,
+    minimum_stake_weight: u128,
     ncn_fee_bps: u16,
 ) -> ProgramResult {
     let [config, ncn, ncn_fee_wallet, ncn_admin, tie_breaker_admin, account_payer, system_program] =
@@ -157,8 +158,7 @@ pub fn process_admin_initialize_config(
         tie_breaker_admin.key
     );
 
-    // TODO: get minimum stake weight from parameters
-    let minimum_stake_weight = StakeWeights::new(10);
+    let minimum_stake_weight = StakeWeights::new(minimum_stake_weight);
 
     *config = Config::new(
         ncn.key,

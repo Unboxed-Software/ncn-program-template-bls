@@ -230,6 +230,8 @@ export const NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR = 0x225f; // 8799
 export const NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH = 0x2260; // 8800
 /** InvalidG1Pubkey: Invalid G1 Pubkey */
 export const NCN_PROGRAM_ERROR__INVALID_G1_PUBKEY = 0x2261; // 8801
+/** InvalidMinimumStakeWeight: Invalid Minimum Stake Weight */
+export const NCN_PROGRAM_ERROR__INVALID_MINIMUM_STAKE_WEIGHT = 0x2262; // 8802
 
 export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -289,6 +291,7 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__INVALID_G1_PUBKEY
   | typeof NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH
   | typeof NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF
+  | typeof NCN_PROGRAM_ERROR__INVALID_MINIMUM_STAKE_WEIGHT
   | typeof NCN_PROGRAM_ERROR__INVALID_MINT_FOR_WEIGHT_TABLE
   | typeof NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP
   | typeof NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET
@@ -401,6 +404,7 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__INVALID_G1_PUBKEY]: `Invalid G1 Pubkey`,
     [NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH]: `Invalid input length`,
     [NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF]: `Invalid merkle proof`,
+    [NCN_PROGRAM_ERROR__INVALID_MINIMUM_STAKE_WEIGHT]: `Invalid Minimum Stake Weight`,
     [NCN_PROGRAM_ERROR__INVALID_MINT_FOR_WEIGHT_TABLE]: `Invalid mint for weight table`,
     [NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP]: `Not a valid NCN fee group`,
     [NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET]: `Invalid NCN Fee wallet`,

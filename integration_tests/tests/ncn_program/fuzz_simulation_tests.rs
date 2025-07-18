@@ -135,7 +135,11 @@ mod fuzz_tests {
         {
             // 3.a. Initialize the config for the NCN program
             ncn_program_client
-                .do_initialize_config(test_ncn.ncn_root.ncn_pubkey, &test_ncn.ncn_root.ncn_admin)
+                .do_initialize_config(
+                    test_ncn.ncn_root.ncn_pubkey,
+                    &test_ncn.ncn_root.ncn_admin,
+                    None,
+                )
                 .await?;
 
             // 3.b Initialize the vault_registry - creates accounts to track vaults

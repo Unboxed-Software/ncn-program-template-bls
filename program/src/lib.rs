@@ -97,6 +97,7 @@ pub fn process_instruction(
             epochs_before_stall,
             epochs_after_consensus_before_close,
             valid_slots_after_consensus,
+            minimum_stake_weight,
             ncn_fee_bps,
         } => {
             msg!("Instruction: InitializeConfig");
@@ -106,6 +107,7 @@ pub fn process_instruction(
                 epochs_before_stall,
                 epochs_after_consensus_before_close,
                 valid_slots_after_consensus,
+                minimum_stake_weight,
                 ncn_fee_bps,
             )
         }
@@ -219,6 +221,7 @@ pub fn process_instruction(
             epochs_before_stall,
             epochs_after_consensus_before_close,
             valid_slots_after_consensus,
+            minimum_stake_weight,
         } => {
             msg!("Instruction: AdminSetParameters");
             process_admin_set_parameters(
@@ -227,6 +230,7 @@ pub fn process_instruction(
                 starting_valid_epoch,
                 epochs_before_stall,
                 epochs_after_consensus_before_close,
+                minimum_stake_weight,
                 valid_slots_after_consensus,
             )
         }

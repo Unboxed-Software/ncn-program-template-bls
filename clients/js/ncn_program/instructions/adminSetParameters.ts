@@ -12,6 +12,8 @@ import {
   getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU128Decoder,
+  getU128Encoder,
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
@@ -70,6 +72,7 @@ export type AdminSetParametersInstructionData = {
   epochsBeforeStall: Option<bigint>;
   epochsAfterConsensusBeforeClose: Option<bigint>;
   validSlotsAfterConsensus: Option<bigint>;
+  minimumStakeWeight: Option<bigint>;
 };
 
 export type AdminSetParametersInstructionDataArgs = {
@@ -77,6 +80,7 @@ export type AdminSetParametersInstructionDataArgs = {
   epochsBeforeStall: OptionOrNullable<number | bigint>;
   epochsAfterConsensusBeforeClose: OptionOrNullable<number | bigint>;
   validSlotsAfterConsensus: OptionOrNullable<number | bigint>;
+  minimumStakeWeight: OptionOrNullable<number | bigint>;
 };
 
 export function getAdminSetParametersInstructionDataEncoder(): Encoder<AdminSetParametersInstructionDataArgs> {
@@ -87,6 +91,7 @@ export function getAdminSetParametersInstructionDataEncoder(): Encoder<AdminSetP
       ['epochsBeforeStall', getOptionEncoder(getU64Encoder())],
       ['epochsAfterConsensusBeforeClose', getOptionEncoder(getU64Encoder())],
       ['validSlotsAfterConsensus', getOptionEncoder(getU64Encoder())],
+      ['minimumStakeWeight', getOptionEncoder(getU128Encoder())],
     ]),
     (value) => ({ ...value, discriminator: ADMIN_SET_PARAMETERS_DISCRIMINATOR })
   );
@@ -99,6 +104,7 @@ export function getAdminSetParametersInstructionDataDecoder(): Decoder<AdminSetP
     ['epochsBeforeStall', getOptionDecoder(getU64Decoder())],
     ['epochsAfterConsensusBeforeClose', getOptionDecoder(getU64Decoder())],
     ['validSlotsAfterConsensus', getOptionDecoder(getU64Decoder())],
+    ['minimumStakeWeight', getOptionDecoder(getU128Decoder())],
   ]);
 }
 
@@ -124,6 +130,7 @@ export type AdminSetParametersInput<
   epochsBeforeStall: AdminSetParametersInstructionDataArgs['epochsBeforeStall'];
   epochsAfterConsensusBeforeClose: AdminSetParametersInstructionDataArgs['epochsAfterConsensusBeforeClose'];
   validSlotsAfterConsensus: AdminSetParametersInstructionDataArgs['validSlotsAfterConsensus'];
+  minimumStakeWeight: AdminSetParametersInstructionDataArgs['minimumStakeWeight'];
 };
 
 export function getAdminSetParametersInstruction<

@@ -220,9 +220,10 @@ pub enum NCNProgramError {
     G2PointDecompressionError,
     #[error("Invalid input length")]
     InvalidInputLength,
-
     #[error("Invalid G1 Pubkey")]
     InvalidG1Pubkey,
+    #[error("Invalid Minimum Stake Weight")]
+    InvalidMinimumStakeWeight,
 }
 
 impl<T> DecodeError<T> for NCNProgramError {

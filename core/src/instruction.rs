@@ -35,6 +35,8 @@ pub enum NCNProgramInstruction {
         epochs_after_consensus_before_close: u64,
         /// Number of slots after consensus where voting is still valid
         valid_slots_after_consensus: u64,
+        /// Minimum stake weight for a validator to be considered valid
+        minimum_stake_weight: u128,
         /// NCN fee basis points (bps) for the NCN program
         ncn_fee_bps: u16,
     },
@@ -284,6 +286,7 @@ pub enum NCNProgramInstruction {
         epochs_before_stall: Option<u64>,
         epochs_after_consensus_before_close: Option<u64>,
         valid_slots_after_consensus: Option<u64>,
+        minimum_stake_weight: Option<u128>,
     },
 
 

@@ -11,7 +11,7 @@ mod tests {
         let ncn_root = fixture.setup_ncn().await?;
 
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         // Test that we can initialize the operator registry
@@ -38,7 +38,7 @@ mod tests {
         let ncn_root = fixture.setup_ncn().await?;
 
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         // Initialize once should succeed

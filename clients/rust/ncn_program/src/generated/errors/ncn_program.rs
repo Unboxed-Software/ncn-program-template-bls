@@ -334,6 +334,9 @@ pub enum NcnProgramError {
     /// 8801 - Invalid G1 Pubkey
     #[error("Invalid G1 Pubkey")]
     InvalidG1Pubkey = 0x2261,
+    /// 8802 - Invalid Minimum Stake Weight
+    #[error("Invalid Minimum Stake Weight")]
+    InvalidMinimumStakeWeight = 0x2262,
 }
 
 impl solana_program::program_error::PrintProgramError for NcnProgramError {

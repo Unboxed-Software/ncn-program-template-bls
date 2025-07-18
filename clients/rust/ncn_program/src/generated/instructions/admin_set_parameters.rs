@@ -81,6 +81,7 @@ pub struct AdminSetParametersInstructionArgs {
     pub epochs_before_stall: Option<u64>,
     pub epochs_after_consensus_before_close: Option<u64>,
     pub valid_slots_after_consensus: Option<u64>,
+    pub minimum_stake_weight: Option<u128>,
 }
 
 /// Instruction builder for `AdminSetParameters`.
@@ -99,6 +100,7 @@ pub struct AdminSetParametersBuilder {
     epochs_before_stall: Option<u64>,
     epochs_after_consensus_before_close: Option<u64>,
     valid_slots_after_consensus: Option<u64>,
+    minimum_stake_weight: Option<u128>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -148,6 +150,12 @@ impl AdminSetParametersBuilder {
         self.valid_slots_after_consensus = Some(valid_slots_after_consensus);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn minimum_stake_weight(&mut self, minimum_stake_weight: u128) -> &mut Self {
+        self.minimum_stake_weight = Some(minimum_stake_weight);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -178,6 +186,7 @@ impl AdminSetParametersBuilder {
             epochs_before_stall: self.epochs_before_stall.clone(),
             epochs_after_consensus_before_close: self.epochs_after_consensus_before_close.clone(),
             valid_slots_after_consensus: self.valid_slots_after_consensus.clone(),
+            minimum_stake_weight: self.minimum_stake_weight.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -325,6 +334,7 @@ impl<'a, 'b> AdminSetParametersCpiBuilder<'a, 'b> {
             epochs_before_stall: None,
             epochs_after_consensus_before_close: None,
             valid_slots_after_consensus: None,
+            minimum_stake_weight: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -378,6 +388,12 @@ impl<'a, 'b> AdminSetParametersCpiBuilder<'a, 'b> {
         self.instruction.valid_slots_after_consensus = Some(valid_slots_after_consensus);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn minimum_stake_weight(&mut self, minimum_stake_weight: u128) -> &mut Self {
+        self.instruction.minimum_stake_weight = Some(minimum_stake_weight);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -427,6 +443,7 @@ impl<'a, 'b> AdminSetParametersCpiBuilder<'a, 'b> {
                 .epochs_after_consensus_before_close
                 .clone(),
             valid_slots_after_consensus: self.instruction.valid_slots_after_consensus.clone(),
+            minimum_stake_weight: self.instruction.minimum_stake_weight.clone(),
         };
         let instruction = AdminSetParametersCpi {
             __program: self.instruction.__program,
@@ -455,6 +472,7 @@ struct AdminSetParametersCpiBuilderInstruction<'a, 'b> {
     epochs_before_stall: Option<u64>,
     epochs_after_consensus_before_close: Option<u64>,
     valid_slots_after_consensus: Option<u64>,
+    minimum_stake_weight: Option<u128>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

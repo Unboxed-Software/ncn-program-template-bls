@@ -808,7 +808,10 @@ mod tests {
         );
 
         // Verify we get the expected error
-        assert_eq!(result.unwrap_err(), NCNProgramError::OperatorFinalized);
+        assert_eq!(
+            result.unwrap_err(),
+            NCNProgramError::EpochSnapshotAlreadyFinalized
+        );
     }
 
     #[test]
@@ -1410,7 +1413,10 @@ mod tests {
         // Third increment - should fail since finalized
         let result = epoch_snapshot.increment_operator_registration(250, 1);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), NCNProgramError::OperatorFinalized);
+        assert_eq!(
+            result.unwrap_err(),
+            NCNProgramError::EpochSnapshotAlreadyFinalized
+        );
     }
 
     #[test]
@@ -1979,6 +1985,9 @@ mod tests {
             &StakeWeights::new(100),
         );
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), NCNProgramError::ArithmeticOverflow);
+        assert_eq!(
+            result.unwrap_err(),
+            NCNProgramError::VaultOperatorDelegationFinalized
+        );
     }
 }

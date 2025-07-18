@@ -12,7 +12,7 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         // Test setting valid parameters
@@ -22,6 +22,7 @@ mod tests {
                 Some(5),    // epochs_before_stall
                 Some(10),   // epochs_after_consensus_before_close
                 Some(1000), // valid_slots_after_consensus
+                Some(100),  // minimum_stake_weight
                 &ncn_root,
             )
             .await?;
@@ -41,6 +42,7 @@ mod tests {
                 Some(0), // Invalid - too low
                 None,
                 None,
+                Some(100), // minimum_stake_weight
                 &ncn_root,
             )
             .await;
@@ -53,6 +55,7 @@ mod tests {
                 None,
                 Some(0), // Invalid - too low
                 None,
+                Some(100), // minimum_stake_weight
                 &ncn_root,
             )
             .await;
@@ -64,7 +67,8 @@ mod tests {
                 None,
                 None,
                 None,
-                Some(99), // Invalid - too low
+                Some(99),  // Invalid - too low
+                Some(100), // minimum_stake_weight
                 &ncn_root,
             )
             .await;

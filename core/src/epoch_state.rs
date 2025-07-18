@@ -686,7 +686,7 @@ impl EpochState {
             return Ok(State::PostVoteCooldown);
         }
 
-        Ok(State::Distribute)
+        Ok(State::PostVoteCooldown)
     }
 
     pub fn current_state_patched(
@@ -727,7 +727,7 @@ impl EpochState {
             return Ok(State::PostVoteCooldown);
         }
 
-        Ok(State::Distribute)
+        Ok(State::PostVoteCooldown)
     }
 }
 
@@ -738,7 +738,6 @@ pub enum State {
     Snapshot,
     Vote,
     PostVoteCooldown,
-    Distribute,
     Close,
 }
 

@@ -15,7 +15,7 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
         Ok(())
     }
@@ -26,11 +26,11 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
         fixture.warp_slot_incremental(1).await?;
         let transaction_error = ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await;
         assert_ix_error(transaction_error, InstructionError::InvalidAccountOwner);
         Ok(())
@@ -50,7 +50,7 @@ mod tests {
             .airdrop(&fake_ncn_root.ncn_admin.pubkey(), 1.0)
             .await?;
         let transaction_error = ncn_program_client
-            .do_initialize_config(fake_ncn_root.ncn_pubkey, &fake_ncn_root.ncn_admin)
+            .do_initialize_config(fake_ncn_root.ncn_pubkey, &fake_ncn_root.ncn_admin, None)
             .await;
         assert_ix_error(transaction_error, InstructionError::InvalidAccountOwner);
         Ok(())
@@ -73,6 +73,7 @@ mod tests {
                 10001,
                 &ncn_root.ncn_admin.pubkey(), // Use NCN admin as fee wallet
                 400,                          // Default fee BPS
+                100,                          // minimum_stake_weight
             )
             .await;
         assert_ncn_program_error(result, NCNProgramError::InvalidEpochsBeforeStall, None);
@@ -88,6 +89,7 @@ mod tests {
                 10001,
                 &ncn_root.ncn_admin.pubkey(), // Use NCN admin as fee wallet
                 400,                          // Default fee BPS
+                100,                          // minimum_stake_weight
             )
             .await;
         assert_ncn_program_error(result, NCNProgramError::InvalidEpochsBeforeClose, None);
@@ -103,6 +105,7 @@ mod tests {
                 50,                           // Invalid - too low
                 &ncn_root.ncn_admin.pubkey(), // Use NCN admin as fee wallet
                 400,                          // Default fee BPS
+                100,                          // minimum_stake_weight
             )
             .await;
         assert_ncn_program_error(result, NCNProgramError::InvalidSlotsAfterConsensus, None);

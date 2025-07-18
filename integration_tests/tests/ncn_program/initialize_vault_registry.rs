@@ -12,7 +12,7 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         ncn_program_client
@@ -34,7 +34,7 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         // Try to initialize with wrong NCN config
@@ -56,7 +56,7 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         // Try to initialize with wrong NCN
@@ -82,7 +82,7 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         ncn_program_client

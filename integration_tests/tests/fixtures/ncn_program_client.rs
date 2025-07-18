@@ -104,7 +104,7 @@ impl NCNProgramClient {
 
     /// Sets up the NCN program by initializing the config and vault registry.
     pub async fn setup_ncn_program(&mut self, ncn_root: &NcnRoot) -> TestResult<()> {
-        self.do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin)
+        self.do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
         self.do_full_initialize_vault_registry(ncn_root.ncn_pubkey)
@@ -239,6 +239,7 @@ impl NCNProgramClient {
         &mut self,
         ncn: Pubkey,
         ncn_admin: &Keypair,
+        minimum_stake_weight: Option<u128>,
     ) -> TestResult<()> {
         // Setup Payer
         self.airdrop(&self.payer.pubkey(), 1.0).await?;
@@ -265,6 +266,7 @@ impl NCNProgramClient {
             10000,
             &ncn_fee_wallet.pubkey(),
             400,
+            minimum_stake_weight.unwrap_or(100),
         )
         .await
     }
@@ -281,6 +283,7 @@ impl NCNProgramClient {
         valid_slots_after_consensus: u64,
         ncn_fee_wallet: &Pubkey,
         ncn_fee_bps: u16,
+        minimum_stake_weight: u128,
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
@@ -296,6 +299,7 @@ impl NCNProgramClient {
             .epochs_before_stall(epochs_before_stall)
             .epochs_after_consensus_before_close(epochs_after_consensus_before_close)
             .valid_slots_after_consensus(valid_slots_after_consensus)
+            .minimum_stake_weight(minimum_stake_weight)
             .ncn_fee_bps(ncn_fee_bps)
             .instruction();
 
@@ -1405,6 +1409,7 @@ impl NCNProgramClient {
         epochs_before_stall: Option<u64>,
         epochs_after_consensus_before_close: Option<u64>,
         valid_slots_after_consensus: Option<u64>,
+        minimum_stake_weight: Option<u128>,
         ncn_root: &NcnRoot,
     ) -> TestResult<()> {
         let config_pda =
@@ -1429,6 +1434,10 @@ impl NCNProgramClient {
 
         if let Some(slots) = valid_slots_after_consensus {
             ix.valid_slots_after_consensus(slots);
+        }
+
+        if let Some(minimum_stake_weight) = minimum_stake_weight {
+            ix.minimum_stake_weight(minimum_stake_weight);
         }
 
         let blockhash = self.banks_client.get_latest_blockhash().await?;

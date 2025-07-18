@@ -55,6 +55,10 @@
           "type": "u64"
         },
         {
+          "name": "minimumStakeWeight",
+          "type": "u128"
+        },
+        {
           "name": "ncnFeeBps",
           "type": "u16"
         }
@@ -1038,6 +1042,12 @@
           "name": "validSlotsAfterConsensus",
           "type": {
             "option": "u64"
+          }
+        },
+        {
+          "name": "minimumStakeWeight",
+          "type": {
+            "option": "u128"
           }
         }
       ],
@@ -2798,6 +2808,11 @@
       "code": 8801,
       "name": "InvalidG1Pubkey",
       "msg": "Invalid G1 Pubkey"
+    },
+    {
+      "code": 8802,
+      "name": "InvalidMinimumStakeWeight",
+      "msg": "Invalid Minimum Stake Weight"
     }
   ],
   "metadata": {
