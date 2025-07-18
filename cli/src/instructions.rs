@@ -4,9 +4,7 @@ use crate::{
     getters::{
         get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault, get_all_vaults,
         get_all_vaults_in_ncn, get_ballot_box, get_consensus_result, get_current_slot,
-        get_epoch_snapshot, get_ncn_program_config, get_ncn_reward_receiver_rewards,
-        get_ncn_reward_router, get_operator, get_operator_snapshot,
-        get_operator_vault_reward_receiver_rewards, get_operator_vault_reward_router,
+        get_epoch_snapshot, get_ncn_program_config, get_operator, get_operator_snapshot,
         get_or_create_vault_registry, get_vault, get_vault_config, get_vault_registry,
         get_vault_update_state_tracker, get_weight_table,
     },
@@ -35,16 +33,12 @@ use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
         AdminSetTieBreakerBuilder, AdminSetWeightBuilder, CastVoteBuilder,
-        CloseEpochAccountBuilder, DistributeNCNRewardsBuilder, DistributeOperatorRewardsBuilder,
-        DistributeOperatorVaultRewardRouteBuilder, DistributeProtocolRewardsBuilder,
-        DistributeVaultRewardsBuilder, InitializeBallotBoxBuilder,
+        CloseEpochAccountBuilder, InitializeBallotBoxBuilder,
         InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
         InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
-        InitializeNCNRewardRouterBuilder, InitializeOperatorSnapshotBuilder,
-        InitializeOperatorVaultRewardRouterBuilder, InitializeVaultRegistryBuilder,
-        InitializeWeightTableBuilder, ReallocBallotBoxBuilder, ReallocNCNRewardRouterBuilder,
-        ReallocVaultRegistryBuilder, ReallocWeightTableBuilder, RegisterVaultBuilder,
-        RouteNCNRewardsBuilder, RouteOperatorVaultRewardsBuilder, SetEpochWeightsBuilder,
+        InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
+        InitializeWeightTableBuilder, ReallocBallotBoxBuilder, ReallocVaultRegistryBuilder,
+        ReallocWeightTableBuilder, RegisterVaultBuilder, SetEpochWeightsBuilder,
         SnapshotVaultOperatorDelegationBuilder,
     },
     types::ConfigAdminRole,
@@ -58,8 +52,6 @@ use ncn_program_core::{
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
-    ncn_reward_router::{NCNRewardReceiver, NCNRewardRouter},
-    operator_vault_reward_router::{OperatorVaultRewardReceiver, OperatorVaultRewardRouter},
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
@@ -677,10 +669,8 @@ pub async fn create_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<(
 
     let initialize_epoch_snapshot_ix = InitializeEpochSnapshotBuilder::new()
         .epoch_marker(epoch_marker)
-        .config(config)
-        .ncn(ncn)
         .epoch_state(epoch_state)
-        .weight_table(weight_table)
+        .ncn(ncn)
         .epoch_snapshot(epoch_snapshot)
         .account_payer(account_payer)
         .system_program(system_program::id())
@@ -719,29 +709,24 @@ pub async fn create_operator_snapshot(
     let (epoch_snapshot, _, _) =
         EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, &operator, &ncn, epoch);
-
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
     let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
 
-    let operator_snapshot_account = get_account(handler, &operator_snapshot).await?;
+    // Check if operator snapshot already exists by trying to get it
+    let operator_snapshot_result = get_operator_snapshot(handler, &operator, epoch).await;
 
-    // Skip if operator snapshot already exists
-    if operator_snapshot_account.is_none() {
+    if operator_snapshot_result.is_err() {
         // Initialize operator snapshot
         let initialize_operator_snapshot_ix = InitializeOperatorSnapshotBuilder::new()
             .epoch_marker(epoch_marker)
-            .config(config)
+            .epoch_state(epoch_state)
             .restaking_config(
                 RestakingConfig::find_program_address(&handler.restaking_program_id).0,
             )
             .ncn(ncn)
             .operator(operator)
-            .epoch_state(epoch_state)
             .ncn_operator_state(ncn_operator_state)
             .epoch_snapshot(epoch_snapshot)
-            .operator_snapshot(operator_snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
             .epoch(epoch)
@@ -798,11 +783,7 @@ pub async fn snapshot_vault_operator_delegation(
     let (epoch_snapshot, _, _) =
         EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, &operator, &ncn, epoch);
-
     let snapshot_vault_operator_delegation_ix = SnapshotVaultOperatorDelegationBuilder::new()
-        .config(config)
         .epoch_state(epoch_state)
         .restaking_config(restaking_config)
         .ncn(ncn)
@@ -813,7 +794,6 @@ pub async fn snapshot_vault_operator_delegation(
         .vault_operator_delegation(vault_operator_delegation)
         .weight_table(weight_table)
         .epoch_snapshot(epoch_snapshot)
-        .operator_snapshot(operator_snapshot)
         .epoch(epoch)
         .instruction();
 
@@ -989,18 +969,14 @@ pub async fn operator_cast_vote(
     let (epoch_snapshot, _, _) =
         EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, &operator, &ncn, epoch);
     let (consensus_result, _, _) =
         ConsensusResult::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
     let cast_vote_ix = CastVoteBuilder::new()
-        .config(config)
         .epoch_state(epoch_state)
         .ballot_box(ballot_box)
         .ncn(ncn)
         .epoch_snapshot(epoch_snapshot)
-        .operator_snapshot(operator_snapshot)
         .operator(operator)
         .operator_voter(keypair.pubkey())
         .consensus_result(consensus_result)
@@ -1265,76 +1241,20 @@ pub async fn get_or_create_epoch_snapshot(
     get_epoch_snapshot(handler, epoch).await
 }
 
-pub async fn get_or_create_ncn_reward_router(
-    handler: &CliHandler,
-    epoch: u64,
-) -> Result<NCNRewardRouter> {
-    let ncn = *handler.ncn()?;
-    let (ncn_reward_router, _, _) =
-        NCNRewardRouter::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    if get_account(handler, &ncn_reward_router)
-        .await?
-        .map_or(true, |router| router.data.len() < NCNRewardRouter::SIZE)
-    {
-        create_ncn_reward_router(handler, epoch).await?;
-        check_created(handler, &ncn_reward_router).await?;
-    }
-    get_ncn_reward_router(handler, epoch).await
-}
-
-pub async fn get_or_create_operator_vault_reward_router(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<OperatorVaultRewardRouter> {
-    let ncn = *handler.ncn()?;
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, operator, &ncn, epoch);
-
-    let (operator_vault_reward_router, _, _) = OperatorVaultRewardRouter::find_program_address(
-        &handler.ncn_program_id,
-        operator,
-        &ncn,
-        epoch,
-    );
-
-    // If operator snapshot does not exist, we cannot create the ncn reward router
-    if get_account(handler, &operator_snapshot).await?.is_none() {
-        return Err(anyhow!("Invalid Route"));
-    }
-
-    if get_account(handler, &operator_vault_reward_router)
-        .await?
-        .map_or(true, |router| {
-            router.data.len() < OperatorVaultRewardRouter::SIZE
-        })
-    {
-        create_operator_vault_reward_router(handler, operator, epoch).await?;
-        check_created(handler, &operator_vault_reward_router).await?;
-    }
-    get_operator_vault_reward_router(handler, operator, epoch).await
-}
-
 pub async fn get_or_create_operator_snapshot(
     handler: &CliHandler,
     operator: &Pubkey,
     epoch: u64,
 ) -> Result<OperatorSnapshot> {
-    let ncn = *handler.ncn()?;
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, operator, &ncn, epoch);
-
-    if get_account(handler, &operator_snapshot)
-        .await?
-        .map_or(true, |snapshot| {
-            snapshot.data.len() < OperatorSnapshot::SIZE
-        })
-    {
-        create_operator_snapshot(handler, operator, epoch).await?;
-        check_created(handler, &operator_snapshot).await?;
+    // Try to get the operator snapshot from epoch snapshot
+    match get_operator_snapshot(handler, operator, epoch).await {
+        std::result::Result::Ok(snapshot) => std::result::Result::Ok(snapshot),
+        std::result::Result::Err(_) => {
+            // If it doesn't exist, create it
+            create_operator_snapshot(handler, operator, epoch).await?;
+            get_operator_snapshot(handler, operator, epoch).await
+        }
     }
-    get_operator_snapshot(handler, operator, epoch).await
 }
 
 #[allow(clippy::large_stack_frames)]
@@ -1623,9 +1543,6 @@ pub async fn crank_test_vote(handler: &CliHandler, epoch: u64) -> Result<()> {
 pub async fn crank_close_epoch_accounts(handler: &CliHandler, epoch: u64) -> Result<()> {
     let ncn = *handler.ncn()?;
 
-    // Close NCN Reward Routers
-    let operators = get_all_operators_in_ncn(handler).await?;
-
     // Close Ballot Box
     let (ballot_box, _, _) = BallotBox::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
@@ -1640,22 +1557,7 @@ pub async fn crank_close_epoch_accounts(handler: &CliHandler, epoch: u64) -> Res
         );
     }
 
-    // Close Operator Snapshots
-    for operator in operators.iter() {
-        let (operator_snapshot, _, _) =
-            OperatorSnapshot::find_program_address(&handler.ncn_program_id, operator, &ncn, epoch);
-
-        let result = close_epoch_account(handler, ncn, epoch, operator_snapshot).await;
-
-        if let Err(err) = result {
-            log::error!(
-                "Failed to close operator snapshot: {:?} in epoch: {:?} with error: {:?}",
-                operator_snapshot,
-                epoch,
-                err
-            );
-        }
-    }
+    // Note: Operator snapshots are now part of the epoch snapshot and cannot be closed individually
 
     // Close Epoch Snapshot
     let (epoch_snapshot, _, _) =
@@ -1718,704 +1620,6 @@ pub async fn crank_post_vote_cooldown(handler: &CliHandler, epoch: u64) -> Resul
         "\n\n--- Consensus Result for epoch {} is: \n {} ---",
         epoch, result
     );
-    Ok(())
-}
-
-pub async fn crank_distribute(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let operators = get_all_operators_in_ncn(handler).await?;
-
-    let ncn_reward_router = get_or_create_ncn_reward_router(handler, epoch).await?;
-
-    let ncn_reward_receiver_rewards = get_ncn_reward_receiver_rewards(handler, epoch).await?;
-    info!(
-        "NCN Reward Receiver Rewards for epoch {}: {}",
-        epoch, ncn_reward_receiver_rewards
-    );
-    if ncn_reward_receiver_rewards > 0 {
-        route_ncn_rewards(handler, epoch).await?;
-    }
-
-    // NCN Rewards Distribution
-    {
-        let result = distribute_ncn_rewards(handler, epoch).await;
-
-        if let Err(err) = result {
-            log::error!(
-                "Failed to distribute base rewards for  in epoch: {:?} with error: {:?}",
-                epoch,
-                err
-            );
-        }
-    }
-
-    // Protocol Rewards Distribution
-    {
-        let result = distribute_protocol_rewards(handler, epoch).await;
-        if let Err(err) = result {
-            log::error!(
-                "Failed to distribute protocol rewards for in epoch: {:?} with error: {:?}",
-                epoch,
-                err
-            );
-        }
-    }
-
-    for operator in operators.iter() {
-        let result = get_or_create_operator_vault_reward_router(handler, operator, epoch).await;
-        if let Err(err) = result {
-            log::info!(
-                "Skipping ncn reward router: {:?} in epoch: {:?} ( {:?} )",
-                operator,
-                epoch,
-                err
-            );
-            continue;
-        }
-
-        let operator_route_result = ncn_reward_router.oprtator_vault_reward_route(operator);
-        if operator_route_result.is_err() {
-            log::info!(
-                "Skipping route for operator: {:?} for in epoch: {:?} (No Route)",
-                operator,
-                epoch,
-            );
-            continue;
-        }
-
-        let operator_route = operator_route_result.unwrap();
-        let has_rewards = operator_route.has_rewards().unwrap_or(false);
-
-        if has_rewards {
-            let result = distribute_operator_vault_rewards(handler, operator, epoch).await;
-
-            if let Err(err) = result {
-                log::error!(
-                    "Failed to distribute base ncn rewards for operator: {:?} in epoch: {:?} with error: {:?}",
-                    operator,
-                    epoch,
-                    err
-                );
-                continue;
-            }
-        }
-
-        let operator_vault_reward_receiver_rewards =
-            get_operator_vault_reward_receiver_rewards(handler, operator, epoch).await?;
-
-        if operator_vault_reward_receiver_rewards > 0 {
-            let result = route_operator_vault_rewards(handler, operator, epoch).await;
-
-            if let Err(err) = result {
-                log::error!(
-                    "Failed to route ncn rewards for operator: {:?} in epoch: {:?} with error: {:?}",
-                    operator,
-                    epoch,
-                    err
-                );
-                continue;
-            }
-        }
-
-        let result = get_or_create_operator_vault_reward_router(handler, operator, epoch).await;
-        if let Err(err) = result {
-            log::info!(
-                "Skipping ncn reward router: {:?} in epoch: {:?} ( {:?} )",
-                operator,
-                epoch,
-                err
-            );
-            continue;
-        }
-        let operator_vault_reward_router = result?;
-
-        if operator_vault_reward_router.operator_rewards() != 0 {
-            let result = distribute_ncn_operator_rewards(handler, operator, epoch).await;
-
-            if let Err(err) = result {
-                log::error!(
-                    "Failed to distribute ncn operator rewards for operator: {:?} in epoch: {:?} with error: {:?}",
-                    operator,
-                    epoch,
-                    err
-                );
-                continue;
-            }
-        }
-
-        let vaults_to_route = operator_vault_reward_router
-            .vault_reward_routes()
-            .iter()
-            .filter(|route| !route.is_empty() && route.has_rewards())
-            .map(|route| route.vault())
-            .collect::<Vec<Pubkey>>();
-
-        for vault in vaults_to_route {
-            let result: std::result::Result<(), anyhow::Error> =
-                distribute_ncn_vault_rewards(handler, &vault, operator, epoch).await;
-
-            if let Err(err) = result {
-                log::error!(
-                        "Failed to distribute ncn vault rewards for vault: {:?} and operator: {:?} in epoch: {:?} with error: {:?}",
-                        vault,
-                        operator,
-                        epoch,
-                        err
-                    );
-            }
-        }
-    }
-
-    Ok(())
-}
-
-// --------------------- Reward Routing Functions ------------------------------
-
-pub async fn create_ncn_reward_router(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_router, _, _) =
-        NCNRewardRouter::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_receiver, _, _) =
-        NCNRewardReceiver::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
-
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-
-    let ncn_reward_router_account = get_account(handler, &ncn_reward_router).await?;
-
-    // Skip if reward router already exists
-    if ncn_reward_router_account.is_none() {
-        // Initialize reward router
-        let initialize_ncn_reward_router_ix = InitializeNCNRewardRouterBuilder::new()
-            .epoch_marker(epoch_marker)
-            .epoch_state(epoch_state)
-            .ncn_reward_router(ncn_reward_router)
-            .ncn_reward_receiver(ncn_reward_receiver)
-            .ncn(ncn)
-            .epoch(epoch)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        send_and_log_transaction(
-            handler,
-            &[initialize_ncn_reward_router_ix],
-            &[],
-            "Initialized NCN Reward Router",
-            &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
-        )
-        .await?;
-    }
-
-    // Number of reallocations needed based on NCNRewardRouter::SIZE
-    let num_reallocs = (NCNRewardRouter::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    // Realloc reward router
-    let realloc_ncn_reward_router_ix = ReallocNCNRewardRouterBuilder::new()
-        .ncn_reward_router(ncn_reward_router)
-        .config(config)
-        .ncn(ncn)
-        .epoch_state(epoch_state)
-        .epoch(epoch)
-        .account_payer(account_payer)
-        .system_program(system_program::id())
-        .instruction();
-
-    let mut realloc_ixs = Vec::with_capacity(num_reallocs as usize);
-    realloc_ixs.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
-    for _ in 0..num_reallocs {
-        realloc_ixs.push(realloc_ncn_reward_router_ix.clone());
-    }
-
-    send_and_log_transaction(
-        handler,
-        &realloc_ixs,
-        &[],
-        "Reallocated NCN Reward Router",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Epoch: {:?}", epoch),
-            format!("Number of reallocations: {:?}", num_reallocs),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn create_operator_vault_reward_router(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let operator = *operator;
-
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, &operator, &ncn, epoch);
-
-    let (operator_vault_reward_router, _, _) = OperatorVaultRewardRouter::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-
-    let operator_vault_reward_router_account =
-        get_account(handler, &operator_vault_reward_router).await?;
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (operator_vault_reward_receiver, _, _) = OperatorVaultRewardReceiver::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    // Skip if reward router already exists
-    if operator_vault_reward_router_account.is_none() {
-        // Initialize reward router
-        let initialize_operator_vault_reward_router_ix =
-            InitializeOperatorVaultRewardRouterBuilder::new()
-                .epoch_marker(epoch_marker)
-                .epoch_state(epoch_state)
-                .operator_snapshot(operator_snapshot)
-                .operator_vault_reward_router(operator_vault_reward_router)
-                .operator_vault_reward_receiver(operator_vault_reward_receiver)
-                .ncn(ncn)
-                .operator(operator)
-                .epoch(epoch)
-                .account_payer(account_payer)
-                .system_program(system_program::id())
-                .instruction();
-
-        send_and_log_transaction(
-            handler,
-            &[initialize_operator_vault_reward_router_ix],
-            &[],
-            "Initialized Operator Vault Reward Router",
-            &[
-                format!("NCN: {:?}", ncn),
-                format!("Operator: {:?}", operator),
-                format!("Epoch: {:?}", epoch),
-            ],
-        )
-        .await?;
-    }
-
-    Ok(())
-}
-
-pub async fn route_ncn_rewards(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let mut still_routing = true;
-
-    while still_routing {
-        process_route_ncn_rewards(handler, epoch).await?;
-
-        let ncn_reward_router_account = get_ncn_reward_router(handler, epoch).await?;
-
-        still_routing = ncn_reward_router_account.still_routing();
-    }
-
-    Ok(())
-}
-
-pub async fn process_route_ncn_rewards(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_router, _, _) =
-        NCNRewardRouter::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_receiver, _, _) =
-        NCNRewardReceiver::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ballot_box, _, _) = BallotBox::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (epoch_snapshot, _, _) =
-        EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let route_ncn_rewards_ix = RouteNCNRewardsBuilder::new()
-        .epoch_state(epoch_state)
-        .config(config)
-        .ncn(ncn)
-        .epoch_snapshot(epoch_snapshot)
-        .ballot_box(ballot_box)
-        .ncn_reward_router(ncn_reward_router)
-        .ncn_reward_receiver(ncn_reward_receiver)
-        .max_iterations(NCNRewardRouter::MAX_ROUTE_BASE_ITERATIONS)
-        .epoch(epoch)
-        .instruction();
-
-    let cul_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_400_000);
-
-    send_and_log_transaction(
-        handler,
-        &[cul_ix, route_ncn_rewards_ix],
-        &[],
-        "Routed NCN Rewards",
-        &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn distribute_ncn_rewards(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (ncn_config_address, _, _) =
-        NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_router, _, _) =
-        NCNRewardRouter::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_receiver, _, _) =
-        NCNRewardReceiver::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let ncn_config = get_ncn_program_config(handler).await?;
-
-    let distribute_ncn_rewards_ix = DistributeNCNRewardsBuilder::new()
-        .epoch_state(epoch_state)
-        .config(ncn_config_address)
-        .ncn(ncn)
-        .ncn_reward_router(ncn_reward_router)
-        .ncn_reward_receiver(ncn_reward_receiver)
-        .ncn_fee_wallet(*ncn_config.fee_config.ncn_fee_wallet())
-        .epoch(epoch)
-        .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[distribute_ncn_rewards_ix],
-        &[],
-        "Distributed NCN Rewards",
-        &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn distribute_protocol_rewards(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (ncn_config_address, _, _) =
-        NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_router, _, _) =
-        NCNRewardRouter::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_receiver, _, _) =
-        NCNRewardReceiver::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let ncn_config = get_ncn_program_config(handler).await?;
-
-    let distribute_protocol_rewards_ix = DistributeProtocolRewardsBuilder::new()
-        .epoch_state(epoch_state)
-        .config(ncn_config_address)
-        .ncn(ncn)
-        .ncn_reward_router(ncn_reward_router)
-        .ncn_reward_receiver(ncn_reward_receiver)
-        .protocol_fee_wallet(*ncn_config.fee_config.protocol_fee_wallet())
-        .epoch(epoch)
-        .system_program(system_program::id())
-        .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[distribute_protocol_rewards_ix],
-        &[],
-        "Distributed Protocol Rewards",
-        &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn route_operator_vault_rewards(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<()> {
-    let mut still_routing = true;
-
-    while still_routing {
-        process_route_operator_vault_rewards(handler, operator, epoch).await?;
-
-        let ncn_reward_router_account =
-            get_operator_vault_reward_router(handler, operator, epoch).await?;
-
-        still_routing = ncn_reward_router_account.still_routing();
-    }
-
-    Ok(())
-}
-
-pub async fn process_route_operator_vault_rewards(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let operator = *operator;
-
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, &operator, &ncn, epoch);
-
-    let (operator_vault_reward_router, _, _) = OperatorVaultRewardRouter::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let (operator_vault_reward_receiver, _, _) = OperatorVaultRewardReceiver::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let route_operator_vault_rewards_ix = RouteOperatorVaultRewardsBuilder::new()
-        .ncn(ncn)
-        .epoch_state(epoch_state)
-        .operator(operator)
-        .operator_snapshot(operator_snapshot)
-        .operator_vault_reward_router(operator_vault_reward_router)
-        .operator_vault_reward_receiver(operator_vault_reward_receiver)
-        .epoch(epoch)
-        .max_iterations(OperatorVaultRewardRouter::MAX_ROUTE_NCN_ITERATIONS)
-        .instruction();
-
-    let cul_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_400_000);
-
-    send_and_log_transaction(
-        handler,
-        &[cul_ix, route_operator_vault_rewards_ix],
-        &[],
-        "Routed Operator Vault Rewards",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Operator: {:?}", operator),
-            format!("Epoch: {:?}", epoch),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn distribute_operator_vault_rewards(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let operator = *operator;
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (ncn_reward_router, _, _) =
-        NCNRewardRouter::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_reward_receiver, _, _) =
-        NCNRewardReceiver::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (operator_vault_reward_router, _, _) = OperatorVaultRewardRouter::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let (operator_vault_reward_receiver, _, _) = OperatorVaultRewardReceiver::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let distribute_operator_vault_reward_route_ix =
-        DistributeOperatorVaultRewardRouteBuilder::new()
-            .epoch_state(epoch_state)
-            .ncn(ncn)
-            .operator(operator)
-            .config(config)
-            .ncn_reward_router(ncn_reward_router)
-            .ncn_reward_receiver(ncn_reward_receiver)
-            .operator_vault_reward_router(operator_vault_reward_router)
-            .operator_vault_reward_receiver(operator_vault_reward_receiver)
-            .system_program(system_program::id())
-            .epoch(epoch)
-            .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[distribute_operator_vault_reward_route_ix],
-        &[],
-        "Distributed Operator Vault Reward Route",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Operator: {:?}", operator),
-            format!("Epoch: {:?}", epoch),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn distribute_ncn_operator_rewards(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let operator = *operator;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, &operator, &ncn, epoch);
-
-    let (operator_vault_reward_router, _, _) = OperatorVaultRewardRouter::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let (operator_vault_reward_receiver, _, _) = OperatorVaultRewardReceiver::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let distribute_operator_rewards_ix = DistributeOperatorRewardsBuilder::new()
-        .epoch_state(epoch_state)
-        .config(config)
-        .ncn(ncn)
-        .operator(operator)
-        .operator_snapshot(operator_snapshot)
-        .operator_vault_reward_router(operator_vault_reward_router)
-        .operator_vault_reward_receiver(operator_vault_reward_receiver)
-        .system_program(system_program::id())
-        .epoch(epoch)
-        .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[distribute_operator_rewards_ix],
-        &[],
-        "Distributed Operator Rewards",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Operator: {:?}", operator),
-            format!("Epoch: {:?}", epoch),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn distribute_ncn_vault_rewards(
-    handler: &CliHandler,
-    vault: &Pubkey,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let vault = *vault;
-    let operator = *operator;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (operator_snapshot, _, _) =
-        OperatorSnapshot::find_program_address(&handler.ncn_program_id, &operator, &ncn, epoch);
-
-    let (operator_vault_reward_router, _, _) = OperatorVaultRewardRouter::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let (operator_vault_reward_receiver, _, _) = OperatorVaultRewardReceiver::find_program_address(
-        &handler.ncn_program_id,
-        &operator,
-        &ncn,
-        epoch,
-    );
-
-    let distribute_vault_rewards_ix = DistributeVaultRewardsBuilder::new()
-        .epoch_state(epoch_state)
-        .config(config)
-        .ncn(ncn)
-        .operator(operator)
-        .vault(vault)
-        .operator_snapshot(operator_snapshot)
-        .operator_vault_reward_router(operator_vault_reward_router)
-        .operator_vault_reward_receiver(operator_vault_reward_receiver)
-        .epoch(epoch)
-        .system_program(system_program::id())
-        .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[distribute_vault_rewards_ix],
-        &[],
-        "Distributed Vault Rewards",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Vault: {:?}", vault),
-            format!("Operator: {:?}", operator),
-            format!("Epoch: {:?}", epoch),
-        ],
-    )
-    .await?;
-
     Ok(())
 }
 

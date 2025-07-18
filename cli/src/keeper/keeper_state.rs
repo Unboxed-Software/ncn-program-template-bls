@@ -1,8 +1,5 @@
 use crate::{
-    getters::{
-        get_account, get_is_epoch_completed, get_ncn_program_config,
-        get_total_rewards_to_be_distributed,
-    },
+    getters::{get_account, get_is_epoch_completed, get_ncn_program_config},
     handler::CliHandler,
 };
 use anyhow::{anyhow, Ok, Result};
@@ -189,7 +186,7 @@ impl KeeperState {
     ///
     /// # Returns
     /// `true` if the epoch should be progressed to the next one, `false` otherwise
-    pub async fn detect_stall(&mut self, handler: &CliHandler) -> Result<bool> {
+    pub async fn detect_stall(&mut self, _handler: &CliHandler) -> Result<bool> {
         // If epoch is completed, it's considered stalled (should move to next epoch)
         if self.is_epoch_completed {
             return Ok(true);
@@ -200,16 +197,6 @@ impl KeeperState {
         // Vote and PostVoteCooldown states can stall waiting for operator actions
         if current_state == State::Vote || current_state == State::PostVoteCooldown {
             return Ok(true);
-        }
-
-        if current_state == State::Distribute {
-            let total_rewards_to_be_distributed =
-                get_total_rewards_to_be_distributed(handler, self.epoch).await?;
-
-            // If dust rewards, then stall
-            if total_rewards_to_be_distributed < 10_000 {
-                return Ok(true);
-            }
         }
 
         Ok(false)

@@ -153,7 +153,6 @@ pub enum ProgramCommand {
     CrankUpdateAllVaults {},
     CrankRegisterVaults {},
     CrankSnapshot {},
-    CrankDistribute {},
     CrankCloseEpochAccounts {},
     SetEpochWeights {},
 
@@ -250,25 +249,6 @@ pub enum ProgramCommand {
         weather_status: u8,
     },
 
-    CreateNCNRewardRouter,
-
-    CreateOperatorVaultRewardRouter {
-        #[arg(long, help = "Operator address")]
-        operator: String,
-    },
-
-    RouteNCNRewards,
-
-    RouteOperatorVaultRewards {
-        #[arg(long, help = "Operator address")]
-        operator: String,
-    },
-
-    DistributeBaseOperatorVaultRewards {
-        #[arg(long, help = "Operator address")]
-        operator: String,
-    },
-
     /// Getters
     GetNcn,
     GetNcnOperatorState {
@@ -309,14 +289,6 @@ pub enum ProgramCommand {
     GetOperatorStakes,
     GetVaultStakes,
     GetVaultOperatorStakes,
-
-    GetNCNRewardRouter,
-    GetNCNRewardReceiverAddress,
-    GetOperatorVaultRewardRouter {
-        #[arg(long, env = "OPERATOR", help = "Operator Account Address")]
-        operator: String,
-    },
-    GetAllOperatorVaultRewardRouters,
 
     // GetAllOptedInValidators,
     FullUpdateVaults {
