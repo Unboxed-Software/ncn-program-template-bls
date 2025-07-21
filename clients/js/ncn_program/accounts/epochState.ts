@@ -53,15 +53,12 @@ export type EpochState = {
   epoch: bigint;
   bump: number;
   slotCreated: bigint;
-  wasTieBreakerSet: number;
-  slotConsensusReached: bigint;
   operatorCount: bigint;
   vaultCount: bigint;
   accountStatus: EpochAccountStatus;
   setWeightProgress: Progress;
   epochSnapshotProgress: Progress;
   operatorSnapshotProgress: Array<Progress>;
-  votingProgress: Progress;
   totalDistributionProgress: Progress;
   ncnDistributionProgress: Progress;
   protocolDistributionProgress: Progress;
@@ -76,15 +73,12 @@ export type EpochStateArgs = {
   epoch: number | bigint;
   bump: number;
   slotCreated: number | bigint;
-  wasTieBreakerSet: number;
-  slotConsensusReached: number | bigint;
   operatorCount: number | bigint;
   vaultCount: number | bigint;
   accountStatus: EpochAccountStatusArgs;
   setWeightProgress: ProgressArgs;
   epochSnapshotProgress: ProgressArgs;
   operatorSnapshotProgress: Array<ProgressArgs>;
-  votingProgress: ProgressArgs;
   totalDistributionProgress: ProgressArgs;
   ncnDistributionProgress: ProgressArgs;
   protocolDistributionProgress: ProgressArgs;
@@ -100,8 +94,6 @@ export function getEpochStateEncoder(): Encoder<EpochStateArgs> {
     ['epoch', getU64Encoder()],
     ['bump', getU8Encoder()],
     ['slotCreated', getU64Encoder()],
-    ['wasTieBreakerSet', getBoolEncoder()],
-    ['slotConsensusReached', getU64Encoder()],
     ['operatorCount', getU64Encoder()],
     ['vaultCount', getU64Encoder()],
     ['accountStatus', getEpochAccountStatusEncoder()],
@@ -111,7 +103,6 @@ export function getEpochStateEncoder(): Encoder<EpochStateArgs> {
       'operatorSnapshotProgress',
       getArrayEncoder(getProgressEncoder(), { size: 256 }),
     ],
-    ['votingProgress', getProgressEncoder()],
     ['totalDistributionProgress', getProgressEncoder()],
     ['ncnDistributionProgress', getProgressEncoder()],
     ['protocolDistributionProgress', getProgressEncoder()],
@@ -131,8 +122,6 @@ export function getEpochStateDecoder(): Decoder<EpochState> {
     ['epoch', getU64Decoder()],
     ['bump', getU8Decoder()],
     ['slotCreated', getU64Decoder()],
-    ['wasTieBreakerSet', getBoolDecoder()],
-    ['slotConsensusReached', getU64Decoder()],
     ['operatorCount', getU64Decoder()],
     ['vaultCount', getU64Decoder()],
     ['accountStatus', getEpochAccountStatusDecoder()],
@@ -142,7 +131,6 @@ export function getEpochStateDecoder(): Decoder<EpochState> {
       'operatorSnapshotProgress',
       getArrayDecoder(getProgressDecoder(), { size: 256 }),
     ],
-    ['votingProgress', getProgressDecoder()],
     ['totalDistributionProgress', getProgressDecoder()],
     ['ncnDistributionProgress', getProgressDecoder()],
     ['protocolDistributionProgress', getProgressDecoder()],

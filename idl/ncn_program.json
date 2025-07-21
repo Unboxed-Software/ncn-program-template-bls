@@ -780,106 +780,6 @@
       }
     },
     {
-      "name": "InitializeBallotBox",
-      "accounts": [
-        {
-          "name": "epochMarker",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ballotBox",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "consensusResult",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 16
-      }
-    },
-    {
-      "name": "ReallocBallotBox",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ballotBox",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 17
-      }
-    },
-    {
       "name": "CastVote",
       "accounts": [
         {
@@ -900,11 +800,6 @@
         {
           "name": "epochSnapshot",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "consensusResult",
-          "isMut": true,
           "isSigner": false
         }
       ],
@@ -947,7 +842,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 18
+        "value": 16
       }
     },
     {
@@ -1009,7 +904,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 19
+        "value": 17
       }
     },
     {
@@ -1065,7 +960,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 20
+        "value": 18
       }
     },
     {
@@ -1102,51 +997,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 21
-      }
-    },
-    {
-      "name": "AdminSetTieBreaker",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ballotBox",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tieBreakerAdmin",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "weatherStatus",
-          "type": "u8"
-        },
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 22
+        "value": 19
       }
     },
     {
@@ -1189,7 +1040,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 23
+        "value": 20
       }
     },
     {
@@ -1231,7 +1082,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 24
+        "value": 21
       }
     },
     {
@@ -1272,85 +1123,11 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 25
+        "value": 22
       }
     }
   ],
   "accounts": [
-    {
-      "name": "BallotBox",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "slotConsensusReached",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorsVoted",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "uniqueBallots",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "winningBallot",
-            "type": {
-              "defined": "Ballot"
-            }
-          },
-          {
-            "name": "operatorVotes",
-            "type": {
-              "array": [
-                {
-                  "defined": "OperatorVote"
-                },
-                256
-              ]
-            }
-          },
-          {
-            "name": "ballotTallies",
-            "type": {
-              "array": [
-                {
-                  "defined": "BallotTally"
-                },
-                256
-              ]
-            }
-          }
-        ]
-      }
-    },
     {
       "name": "Config",
       "type": {
@@ -1403,50 +1180,6 @@
             "type": {
               "defined": "StakeWeights"
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ConsensusResult",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "voteWeight",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "totalVoteWeight",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "consensusSlot",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "weatherStatus",
-            "type": "u8"
           }
         ]
       }
@@ -1585,18 +1318,6 @@
             }
           },
           {
-            "name": "wasTieBreakerSet",
-            "type": {
-              "defined": "PodBool"
-            }
-          },
-          {
-            "name": "slotConsensusReached",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
             "name": "operatorCount",
             "type": {
               "defined": "PodU64"
@@ -1635,12 +1356,6 @@
                 },
                 256
               ]
-            }
-          },
-          {
-            "name": "votingProgress",
-            "type": {
-              "defined": "Progress"
             }
           },
           {
@@ -1811,86 +1526,6 @@
   ],
   "types": [
     {
-      "name": "Ballot",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "weatherStatus",
-            "type": "u8"
-          },
-          {
-            "name": "isValid",
-            "type": {
-              "defined": "PodBool"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "BallotTally",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "index",
-            "type": {
-              "defined": "PodU16"
-            }
-          },
-          {
-            "name": "ballot",
-            "type": {
-              "defined": "Ballot"
-            }
-          },
-          {
-            "name": "stakeWeights",
-            "type": {
-              "defined": "StakeWeights"
-            }
-          },
-          {
-            "name": "tally",
-            "type": {
-              "defined": "PodU64"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OperatorVote",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "operator",
-            "type": "publicKey"
-          },
-          {
-            "name": "slotVoted",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "stakeWeights",
-            "type": {
-              "defined": "StakeWeights"
-            }
-          },
-          {
-            "name": "ballotIndex",
-            "type": {
-              "defined": "PodU16"
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "OperatorSnapshot",
       "type": {
         "kind": "struct",
@@ -2019,10 +1654,6 @@
           },
           {
             "name": "epochSnapshot",
-            "type": "u8"
-          },
-          {
-            "name": "ballotBox",
             "type": "u8"
           }
         ]

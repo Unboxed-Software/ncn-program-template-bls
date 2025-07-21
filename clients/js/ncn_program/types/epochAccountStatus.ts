@@ -21,7 +21,6 @@ export type EpochAccountStatus = {
   epochState: number;
   weightTable: number;
   epochSnapshot: number;
-  ballotBox: number;
 };
 
 export type EpochAccountStatusArgs = EpochAccountStatus;
@@ -31,7 +30,6 @@ export function getEpochAccountStatusEncoder(): Encoder<EpochAccountStatusArgs> 
     ['epochState', getU8Encoder()],
     ['weightTable', getU8Encoder()],
     ['epochSnapshot', getU8Encoder()],
-    ['ballotBox', getU8Encoder()],
   ]);
 }
 
@@ -40,7 +38,6 @@ export function getEpochAccountStatusDecoder(): Decoder<EpochAccountStatus> {
     ['epochState', getU8Decoder()],
     ['weightTable', getU8Decoder()],
     ['epochSnapshot', getU8Decoder()],
-    ['ballotBox', getU8Decoder()],
   ]);
 }
 

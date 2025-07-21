@@ -34,7 +34,6 @@ pub struct EpochAccountStatus {
     epoch_state: u8,
     weight_table: u8,
     epoch_snapshot: u8,
-    ballot_box: u8,
 }
 
 impl EpochAccountStatus {
@@ -62,10 +61,6 @@ impl EpochAccountStatus {
         Self::get_account_status(self.epoch_snapshot)
     }
 
-    pub const fn ballot_box(&self) -> Result<AccountStatus, NCNProgramError> {
-        Self::get_account_status(self.ballot_box)
-    }
-
     pub fn set_epoch_state(&mut self, status: AccountStatus) {
         self.epoch_state = status as u8;
     }
@@ -78,10 +73,6 @@ impl EpochAccountStatus {
         self.epoch_snapshot = status as u8;
     }
 
-    pub fn set_ballot_box(&mut self, status: AccountStatus) {
-        self.ballot_box = status as u8;
-    }
-
     pub fn are_all_closed(&self) -> bool {
         // We don't need to check epoch state since it's the account we are closing
 
@@ -90,10 +81,6 @@ impl EpochAccountStatus {
         }
 
         if self.epoch_snapshot != AccountStatus::Closed as u8 {
-            return false;
-        }
-
-        if self.ballot_box != AccountStatus::Closed as u8 {
             return false;
         }
 
@@ -191,12 +178,6 @@ pub struct EpochState {
     /// The time this snapshot was created
     slot_created: PodU64,
 
-    /// Was tie breaker set
-    was_tie_breaker_set: PodBool,
-
-    /// The time consensus was reached
-    slot_consensus_reached: PodU64,
-
     /// The number of operators
     operator_count: PodU64,
 
@@ -214,9 +195,6 @@ pub struct EpochState {
 
     /// Progress on Snapshotting Operators
     operator_snapshot_progress: [Progress; 256],
-
-    /// Progress on voting
-    voting_progress: Progress,
 
     /// Total Distribution progress
     total_distribution_progress: Progress,
@@ -251,15 +229,12 @@ impl EpochState {
             epoch: PodU64::from(epoch),
             bump,
             slot_created: PodU64::from(slot_created),
-            slot_consensus_reached: PodU64::from(DEFAULT_CONSENSUS_REACHED_SLOT),
             operator_count: PodU64::from(0),
             vault_count: PodU64::from(0),
             account_status: EpochAccountStatus::default(),
-            was_tie_breaker_set: PodBool::from(false),
             set_weight_progress: Progress::default(),
             epoch_snapshot_progress: Progress::default(),
             operator_snapshot_progress: [Progress::default(); MAX_OPERATORS],
-            voting_progress: Progress::default(),
             total_distribution_progress: Progress::default(),
             ncn_distribution_progress: Progress::default(),
             protocol_distribution_progress: Progress::default(),
@@ -275,7 +250,6 @@ impl EpochState {
         self.bump = bump;
         self.epoch = PodU64::from(epoch);
         self.slot_created = PodU64::from(slot_created);
-        self.slot_consensus_reached = PodU64::from(DEFAULT_CONSENSUS_REACHED_SLOT);
     }
 
     pub fn seeds(ncn: &Pubkey, epoch: u64) -> Vec<Vec<u8>> {
@@ -374,38 +348,8 @@ impl EpochState {
         self.slot_created.into()
     }
 
-    pub fn was_tie_breaker_set(&self) -> bool {
-        self.was_tie_breaker_set.into()
-    }
-
-    pub fn is_consensus_reached(&self) -> bool {
-        self.slot_consensus_reached() != DEFAULT_CONSENSUS_REACHED_SLOT
-    }
-
-    pub fn slot_consensus_reached(&self) -> u64 {
-        self.slot_consensus_reached.into()
-    }
-
     pub fn is_closing(&self) -> bool {
         self.is_closing.into()
-    }
-
-    pub fn get_slot_consensus_reached(&self) -> Result<u64, NCNProgramError> {
-        if self.slot_consensus_reached() == DEFAULT_CONSENSUS_REACHED_SLOT {
-            Err(NCNProgramError::ConsensusNotReached)
-        } else {
-            Ok(self.slot_consensus_reached.into())
-        }
-    }
-
-    pub fn get_epoch_consensus_reached(
-        &self,
-        epoch_schedule: &EpochSchedule,
-    ) -> Result<u64, ProgramError> {
-        let slot_consensus_reached = self.get_slot_consensus_reached()?;
-        let epoch_consensus_reached = epoch_schedule.get_epoch(slot_consensus_reached);
-
-        Ok(epoch_consensus_reached)
     }
 
     pub fn operator_count(&self) -> u64 {
@@ -430,10 +374,6 @@ impl EpochState {
 
     pub const fn operator_snapshot_progress(&self, ncn_operator_index: usize) -> Progress {
         self.operator_snapshot_progress[ncn_operator_index]
-    }
-
-    pub const fn voting_progress(&self) -> Progress {
-        self.voting_progress
     }
 
     pub const fn total_distribution_progress(&self) -> Progress {
@@ -515,36 +455,19 @@ impl EpochState {
         Ok(())
     }
 
-    pub fn update_realloc_ballot_box(&mut self) {
-        self.account_status.set_ballot_box(AccountStatus::Created);
-        self.voting_progress = Progress::new(self.operator_count());
-    }
+    // Ballot box functionality removed
 
     pub fn update_cast_vote(
         &mut self,
         operators_voted: u64,
-        is_consensus_reached: bool,
         current_slot: u64,
     ) -> Result<(), NCNProgramError> {
-        if is_consensus_reached && !self.is_consensus_reached() {
-            self.slot_consensus_reached = PodU64::from(current_slot);
-        }
-
-        self.voting_progress.set_tally(operators_voted);
+        self.total_distribution_progress.set_tally(operators_voted);
 
         Ok(())
     }
 
-    pub fn update_set_tie_breaker(
-        &mut self,
-        is_consensus_reached: bool,
-        current_slot: u64,
-    ) -> Result<(), NCNProgramError> {
-        if is_consensus_reached && !self.is_consensus_reached() {
-            self.slot_consensus_reached = PodU64::from(current_slot);
-            self.was_tie_breaker_set = PodBool::from(true);
-        }
-
+    pub fn update_set_tie_breaker(&mut self, current_slot: u64) -> Result<(), NCNProgramError> {
         Ok(())
     }
 
@@ -614,27 +537,7 @@ impl EpochState {
             .set_epoch_snapshot(AccountStatus::Closed);
     }
 
-    pub fn close_ballot_box(&mut self) {
-        self.account_status.set_ballot_box(AccountStatus::Closed);
-    }
-
     // ------------ STATE ------------
-    pub fn can_start_routing(
-        &self,
-        valid_slots_after_consensus: u64,
-        current_slot: u64,
-    ) -> Result<bool, ProgramError> {
-        if !self.is_consensus_reached() {
-            return Ok(false);
-        }
-
-        let slot_consensus_reached = self.get_slot_consensus_reached()?;
-        let slot_can_start_routing = slot_consensus_reached
-            .checked_add(valid_slots_after_consensus)
-            .ok_or(NCNProgramError::ArithmeticOverflow)?;
-
-        Ok(current_slot >= slot_can_start_routing)
-    }
 
     pub fn can_close_epoch_accounts(
         &self,
@@ -642,9 +545,8 @@ impl EpochState {
         epochs_after_consensus_before_close: u64,
         current_slot: u64,
     ) -> Result<bool, ProgramError> {
-        let epoch_consensus_reached = self.get_epoch_consensus_reached(epoch_schedule)?;
         let current_epoch = epoch_schedule.get_epoch(current_slot);
-        let epoch_delta = current_epoch.saturating_sub(epoch_consensus_reached);
+        let epoch_delta = current_epoch.saturating_sub(self.epoch());
         let can_close_epoch_accounts = epoch_delta >= epochs_after_consensus_before_close;
         Ok(can_close_epoch_accounts)
     }
@@ -673,17 +575,8 @@ impl EpochState {
 
         if self.account_status.epoch_snapshot()? == AccountStatus::DNE
             || !self.epoch_snapshot_progress.is_complete()
-            || self.account_status.ballot_box()? == AccountStatus::DNE
         {
             return Ok(State::Snapshot);
-        }
-
-        if !self.is_consensus_reached() {
-            return Ok(State::Vote);
-        }
-
-        if !self.can_start_routing(valid_slots_after_consensus, current_slot)? {
-            return Ok(State::PostVoteCooldown);
         }
 
         Ok(State::PostVoteCooldown)
@@ -714,17 +607,8 @@ impl EpochState {
 
         if self.account_status.epoch_snapshot()? == AccountStatus::DNE
             || !self.epoch_snapshot_progress.is_complete()
-            || self.account_status.ballot_box()? == AccountStatus::DNE
         {
             return Ok(State::Snapshot);
-        }
-
-        if !self.is_consensus_reached() {
-            return Ok(State::Vote);
-        }
-
-        if !self.can_start_routing(valid_slots_after_consensus, current_slot)? {
-            return Ok(State::PostVoteCooldown);
         }
 
         Ok(State::PostVoteCooldown)
@@ -749,8 +633,6 @@ impl fmt::Display for EpochState {
        writeln!(f, "  Epoch:                        {}", self.epoch())?;
        writeln!(f, "  Bump:                         {}", self.bump)?;
        writeln!(f, "  Slot Created:                 {}", self.slot_created())?;
-       writeln!(f, "  Was Tie Breaker Set:          {}", self.was_tie_breaker_set())?;
-       writeln!(f, "  Slot Consensus Reached:       {}", self.slot_consensus_reached())?;
        writeln!(f, "  Operator Count:               {}", self.operator_count())?;
        writeln!(f, "  Vault Count:                  {}", self.vault_count())?;
 
@@ -758,7 +640,6 @@ impl fmt::Display for EpochState {
        writeln!(f, "  Epoch State:                  {:?}", self.account_status.epoch_state().unwrap())?;
        writeln!(f, "  Weight Table:                 {:?}", self.account_status.weight_table().unwrap())?;
        writeln!(f, "  Epoch Snapshot:               {:?}", self.account_status.epoch_snapshot().unwrap())?;
-       writeln!(f, "  Ballot Box:                   {:?}", self.account_status.ballot_box().unwrap())?;
        
 
 
@@ -772,9 +653,6 @@ impl fmt::Display for EpochState {
                 writeln!(f, "  Operator {}:                   {}/{}", i, self.operator_snapshot_progress(i).tally(), self.operator_snapshot_progress(i).total())?;                
             }
        }
-
-       writeln!(f, "\nVoting Progress:                {}/{}", self.voting_progress.tally(), self.voting_progress.total())?;
-
 
        writeln!(f, "\n")?;
        Ok(())

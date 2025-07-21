@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
 
-    use ncn_program_core::ballot_box::BallotBox;
     use ncn_program_core::epoch_snapshot::EpochSnapshot;
     use ncn_program_core::weight_table::WeightTable;
     use ncn_program_core::{epoch_state::EpochState, error::NCNProgramError};
@@ -305,33 +304,6 @@ mod tests {
             assert!(result.is_none());
         }
 
-        // Close Ballot Box
-        {
-            let (ballot_box, _, _) =
-                BallotBox::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, ballot_box)
-                .await?;
-
-            let result = fixture.get_account(&ballot_box).await?;
-            assert!(result.is_none());
-        }
-        // Try To Create Ballot Box again
-        {
-            let (ballot_box, _, _) =
-                BallotBox::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            let result = ncn_program_client
-                .do_initialize_ballot_box(ncn, epoch_to_close)
-                .await;
-
-            assert_ncn_program_error(result, NCNProgramError::EpochIsClosingDown, Some(1));
-
-            let result = fixture.get_account(&ballot_box).await?;
-            assert!(result.is_none());
-        }
-
         // Close Epoch State
         {
             let (epoch_state, _, _) =
@@ -463,31 +435,6 @@ mod tests {
 
             ncn_program_client
                 .do_close_epoch_account(ncn, epoch_to_close, good_epoch_snapshot)
-                .await?;
-        }
-
-        // Try Close Bad Ballot Box
-        {
-            let (bad_epoch_ballot_box, _, _) =
-                BallotBox::find_program_address(&ncn_program::id(), &ncn, epoch_to_close + 1);
-            let (bad_ncn_ballot_box, _, _) =
-                BallotBox::find_program_address(&ncn_program::id(), &bad_ncn, epoch_to_close);
-            let (good_ballot_box, _, _) =
-                BallotBox::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            let bad_epoch_result = ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, bad_epoch_ballot_box)
-                .await;
-
-            let bad_ncn_result = ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, bad_ncn_ballot_box)
-                .await;
-
-            assert!(bad_epoch_result.is_err());
-            assert!(bad_ncn_result.is_err());
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, good_ballot_box)
                 .await?;
         }
 

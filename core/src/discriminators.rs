@@ -1,4 +1,4 @@
-#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Discriminators {
     // Configs
     Config = 0x01,
@@ -10,9 +10,7 @@ pub enum Discriminators {
     EpochSnapshot = 0x11,
     OperatorSnapshot = 0x12,
 
-    // Voting
-    BallotBox = 0x20,
-    ConsensusResult = 0x21,
+    // Voting - removed
 
     // Distribution
     NCNRewardRouter = 0x40,

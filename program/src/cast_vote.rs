@@ -2,7 +2,6 @@ use jito_bytemuck::AccountDeserialize;
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
     config::Config as NcnConfig,
-    consensus_result::ConsensusResult,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE},
     epoch_snapshot::EpochSnapshot,
     epoch_state::EpochState,
@@ -32,7 +31,6 @@ use solana_program::{
 /// 2. `[]` config: NCN configuration account (named `ncn_config` in code)
 /// 4. `[]` ncn: The NCN account
 /// 5. `[]` epoch_snapshot: Epoch snapshot containing stake weights and operator snapshots
-/// 8. `[writable]` consensus_result: Account for storing the consensus result
 pub fn process_cast_vote(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -52,12 +50,6 @@ pub fn process_cast_vote(
     NcnConfig::load(program_id, ncn_config, ncn.key, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, false)?;
-
-    // let valid_slots_after_consensus = {
-    //     let ncn_config_data = ncn_config.data.borrow();
-    //     let ncn_config = NcnConfig::try_from_slice_unchecked(&ncn_config_data)?;
-    //     ncn_config.valid_slots_after_consensus()
-    // };
 
     let epoch_snapshot_data = epoch_snapshot.data.borrow();
     let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
@@ -164,16 +156,6 @@ pub fn process_cast_vote(
             .verify_agg_signature::<Sha256Normalized, &[u8], G1Point>(signature, &message, apk1)
             .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
     }
-    // Update Epoch State
-    // {
-    //     let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
-    //     let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
-    //     epoch_state_account.update_cast_vote(
-    //         ballot_box.operators_voted(),
-    //         ballot_box.is_consensus_reached(),
-    //         slot,
-    //     )?;
-    // }
 
     Ok(())
 }

@@ -2,9 +2,9 @@ use jito_bytemuck::{AccountDeserialize, Discriminator};
 use jito_jsm_core::loader::load_system_program;
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
-    account_payer::AccountPayer, ballot_box::BallotBox, config::Config as NcnConfig,
-    epoch_marker::EpochMarker, epoch_snapshot::EpochSnapshot, epoch_state::EpochState,
-    error::NCNProgramError, weight_table::WeightTable,
+    account_payer::AccountPayer, config::Config as NcnConfig, epoch_marker::EpochMarker,
+    epoch_snapshot::EpochSnapshot, epoch_state::EpochState, error::NCNProgramError,
+    weight_table::WeightTable,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult,
@@ -123,12 +123,6 @@ pub fn process_close_epoch_account(
                     EpochSnapshot::load_to_close(program_id, account_to_close, ncn.key, epoch)?;
                     msg!("Closing epoch snapshot");
                     epoch_state_account.close_epoch_snapshot();
-                }
-
-                BallotBox::DISCRIMINATOR => {
-                    BallotBox::load_to_close(program_id, account_to_close, ncn.key, epoch)?;
-                    msg!("Closing ballot box");
-                    epoch_state_account.close_ballot_box();
                 }
 
                 _ => {

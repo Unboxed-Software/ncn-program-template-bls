@@ -2,14 +2,11 @@ use std::time::Duration;
 
 use crate::{
     getters::{
-        get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault, get_all_vaults,
-        get_all_vaults_in_ncn, get_ballot_box, get_consensus_result, get_current_slot,
-        get_epoch_snapshot, get_ncn_program_config, get_operator, get_operator_snapshot,
-        get_or_create_vault_registry, get_vault, get_vault_config, get_vault_registry,
-        get_vault_update_state_tracker, get_weight_table,
+        get_all_operators_in_ncn, get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot,
+        get_epoch_state, get_ncn_program_config, get_operator_snapshot, get_vault_registry,
+        get_weight_table,
     },
     handler::CliHandler,
-    log::boring_progress_bar,
 };
 use anyhow::{anyhow, Ok, Result};
 use jito_restaking_core::{
@@ -44,15 +41,8 @@ use ncn_program_client::{
     types::ConfigAdminRole,
 };
 use ncn_program_core::{
-    account_payer::AccountPayer,
-    ballot_box::{BallotBox, WeatherStatus},
-    config::Config as NCNProgramConfig,
-    consensus_result::ConsensusResult,
-    constants::MAX_REALLOC_BYTES,
-    epoch_marker::EpochMarker,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
-    epoch_state::EpochState,
-    vault_registry::VaultRegistry,
+    account_payer::AccountPayer, config::Config as NCNProgramConfig, epoch_marker::EpochMarker,
+    epoch_snapshot::EpochSnapshot, epoch_state::EpochState, vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
 use solana_client::rpc_config::RpcSendTransactionConfig;
@@ -807,84 +797,6 @@ pub async fn snapshot_vault_operator_delegation(
             format!("Vault: {:?}", vault),
             format!("Operator: {:?}", operator),
             format!("Epoch: {:?}", epoch),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn create_ballot_box(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ballot_box, _, _) = BallotBox::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-    let (consensus_result, _, _) =
-        ConsensusResult::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let ballot_box_account = get_account(handler, &ballot_box).await?;
-
-    // Skip if ballot box already exists
-    if ballot_box_account.is_none() {
-        // Initialize ballot box
-        let initialize_ballot_box_ix = InitializeBallotBoxBuilder::new()
-            .epoch_marker(epoch_marker)
-            .config(config)
-            .epoch_state(epoch_state)
-            .ballot_box(ballot_box)
-            .ncn(ncn)
-            .epoch(epoch)
-            .account_payer(account_payer)
-            .consensus_result(consensus_result)
-            .system_program(system_program::id())
-            .instruction();
-
-        send_and_log_transaction(
-            handler,
-            &[initialize_ballot_box_ix],
-            &[],
-            "Initialized Ballot Box",
-            &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
-        )
-        .await?;
-    }
-
-    // Number of reallocations needed based on BallotBox::SIZE
-    let num_reallocs = (BallotBox::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-
-    // Realloc ballot box
-    let realloc_ballot_box_ix = ReallocBallotBoxBuilder::new()
-        .config(config)
-        .epoch_state(epoch_state)
-        .ballot_box(ballot_box)
-        .ncn(ncn)
-        .epoch(epoch)
-        .account_payer(account_payer)
-        .system_program(system_program::id())
-        .instruction();
-
-    let mut realloc_ixs = Vec::with_capacity(num_reallocs as usize);
-    realloc_ixs.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
-    for _ in 0..num_reallocs {
-        realloc_ixs.push(realloc_ballot_box_ix.clone());
-    }
-
-    send_and_log_transaction(
-        handler,
-        &realloc_ixs,
-        &[],
-        "Reallocated Ballot Box",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Epoch: {:?}", epoch),
-            format!("Number of reallocations: {:?}", num_reallocs),
         ],
     )
     .await?;

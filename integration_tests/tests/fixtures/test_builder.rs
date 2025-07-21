@@ -2,7 +2,6 @@ use std::fmt::{Debug, Formatter};
 
 use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
 use ncn_program_core::{
-    ballot_box::{BallotBox, WeatherStatus},
     constants::WEIGHT,
     epoch_snapshot::EpochSnapshot,
     epoch_state::EpochState,
@@ -17,7 +16,6 @@ use solana_sdk::{
     account::Account,
     clock::DEFAULT_SLOTS_PER_EPOCH,
     epoch_schedule::EpochSchedule,
-    msg,
     signature::{Keypair, Signer},
 };
 
@@ -673,22 +671,6 @@ impl TestBuilder {
         Ok(())
     }
 
-    /// Initializes the BallotBox account for the current epoch for the given TestNcn.
-    // 10 - Initialize Ballot Box
-    pub async fn add_ballot_box_to_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
-        let mut ncn_program_client = self.ncn_program_client();
-
-        let clock = self.clock().await;
-        let epoch = clock.epoch;
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-
-        ncn_program_client
-            .do_full_initialize_ballot_box(ncn, epoch)
-            .await?;
-
-        Ok(())
-    }
-
     /// Casts votes (default WeatherStatus) for all active operators in the TestNcn for the current epoch.
     // 11 - Cast all votes for active operators
     pub async fn cast_votes_for_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
@@ -698,8 +680,7 @@ impl TestBuilder {
         let epoch = clock.epoch;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        let weather_status = WeatherStatus::default() as u8;
-
+        // TODO: fix cast vote
         for operator_root in test_ncn.operators.iter() {
             let operator = operator_root.operator_pubkey;
             let operator_snapshot = ncn_program_client
@@ -726,7 +707,6 @@ impl TestBuilder {
     /// Initializes the ballot box and casts votes for all active operators.
     // Intermission 3 - come to consensus
     pub async fn vote_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
-        self.add_ballot_box_to_test_ncn(test_ncn).await?;
         self.cast_votes_for_test_ncn(test_ncn).await?;
 
         Ok(())
@@ -756,19 +736,6 @@ impl TestBuilder {
         }
 
         // Close Accounts in reverse order of creation
-
-        // Ballot Box
-        {
-            let (ballot_box, _, _) =
-                BallotBox::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, ballot_box)
-                .await?;
-
-            let result = self.get_account(&ballot_box).await?;
-            assert!(result.is_none());
-        }
 
         // Epoch Snapshot
         {

@@ -1,9 +1,10 @@
-use solana_program::{program_error::ProgramError, pubkey::Pubkey};
+use solana_program::program_error::ProgramError;
 
+use crate::constants::MODULUS;
 use crate::{
-    ballot_box::BallotBox, constants::MAX_REALLOC_BYTES, epoch_snapshot::OperatorSnapshot,
-    error::NCNProgramError,
+    constants::MAX_REALLOC_BYTES, epoch_snapshot::OperatorSnapshot, error::NCNProgramError,
 };
+use dashu::integer::UBig;
 
 /// Calculate new size for reallocation, capped at target size
 /// Returns the minimum of (current_size + MAX_REALLOC_BYTES) and target_size
@@ -37,23 +38,11 @@ pub fn assert_ncn_program_error<T>(
 ///
 /// # Returns
 /// * `bool` - True if operator can vote, false otherwise
-pub fn can_operator_vote(
-    ballot_box: BallotBox,
-    operator_snapshot: OperatorSnapshot,
-    operator: &Pubkey,
-) -> bool {
+pub fn can_operator_vote(operator_snapshot: OperatorSnapshot) -> bool {
     // Check if operator has already voted in this epoch
-    let did_operator_vote = ballot_box.did_operator_vote(operator);
 
-    // If operator already voted, they cannot vote again
-    if did_operator_vote {
-        return false;
-    }
-
-    operator_snapshot.is_active()
+    operator_snapshot.is_active() && operator_snapshot.has_minimum_stake_weight()
 }
-use crate::constants::MODULUS;
-use dashu::integer::UBig;
 
 /// Computes a scalar alpha by hashing together all prover-controlled inputs and reducing modulo the curve order.
 /// Inputs should be provided as byte slices or arrays (e.g., message, signature, agg_pubkey, apk2).

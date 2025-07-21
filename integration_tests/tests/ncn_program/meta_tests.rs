@@ -36,7 +36,6 @@ mod tests {
         fixture
             .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
             .await?;
-        fixture.add_ballot_box_to_test_ncn(&test_ncn).await?;
         fixture.cast_votes_for_test_ncn(&test_ncn).await?;
         fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
@@ -67,12 +66,6 @@ mod tests {
 
         fixture.vote_test_ncn(&test_ncn).await?;
 
-        let ballot_box = ncn_program_client
-            .get_ballot_box(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        assert!(ballot_box.has_winning_ballot());
-
         Ok(())
     }
 
@@ -98,12 +91,6 @@ mod tests {
         assert!(epoch_snapshot.finalized());
 
         fixture.vote_test_ncn(&test_ncn).await?;
-
-        let ballot_box = ncn_program_client
-            .get_ballot_box(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        assert!(ballot_box.has_winning_ballot());
 
         fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
@@ -134,12 +121,6 @@ mod tests {
 
         fixture.vote_test_ncn(&test_ncn).await?;
 
-        let ballot_box = ncn_program_client
-            .get_ballot_box(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        assert!(ballot_box.has_winning_ballot());
-
         fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
         Ok(())
@@ -168,12 +149,6 @@ mod tests {
         assert!(epoch_snapshot.finalized());
 
         fixture.vote_test_ncn(&test_ncn).await?;
-
-        let ballot_box = ncn_program_client
-            .get_ballot_box(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        assert!(ballot_box.has_winning_ballot());
 
         fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 

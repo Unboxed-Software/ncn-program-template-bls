@@ -9,31 +9,27 @@ use jito_vault_core::{
 use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
-        AdminSetStMintBuilder, AdminSetTieBreakerBuilder, AdminSetWeightBuilder, CastVoteBuilder,
-        CloseEpochAccountBuilder, InitializeBallotBoxBuilder, InitializeConfigBuilder,
-        InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
+        AdminSetStMintBuilder, AdminSetWeightBuilder, CastVoteBuilder, CloseEpochAccountBuilder,
+        InitializeConfigBuilder, InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
         InitializeOperatorRegistryBuilder, InitializeOperatorSnapshotBuilder,
-        InitializeVaultRegistryBuilder, InitializeWeightTableBuilder, ReallocBallotBoxBuilder,
-        ReallocEpochSnapshotBuilder, ReallocOperatorRegistryBuilder, ReallocVaultRegistryBuilder,
-        ReallocWeightTableBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
-        SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
-        UpdateOperatorBN128KeysBuilder,
+        InitializeVaultRegistryBuilder, InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder,
+        ReallocOperatorRegistryBuilder, ReallocVaultRegistryBuilder, ReallocWeightTableBuilder,
+        RegisterOperatorBuilder, RegisterVaultBuilder, SetEpochWeightsBuilder,
+        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
 };
 use ncn_program_core::{
     account_payer::AccountPayer,
-    ballot_box::BallotBox,
     config::Config as NcnConfig,
-    consensus_result::ConsensusResult,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE, MAX_REALLOC_BYTES},
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
-    g1_point::{G1CompressedPoint, G1Point},
-    g2_point::{G2CompressedPoint, G2Point},
+    g1_point::G1CompressedPoint,
+    g2_point::G2CompressedPoint,
     operator_registry::OperatorRegistry,
     privkey::PrivKey,
     schemes::Sha256Normalized,
@@ -216,26 +212,6 @@ impl NCNProgramClient {
             ));
         }
         Ok(*operator_snapshot.unwrap())
-    }
-
-    /// Fetches the BallotBox account for a given NCN and epoch.
-    pub async fn get_ballot_box(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<BallotBox> {
-        let address = BallotBox::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let raw_account = self.banks_client.get_account(address).await?.unwrap();
-        Ok(*BallotBox::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
-    }
-
-    /// Fetches the ConsensusResult account for a given NCN and epoch.
-    pub async fn get_consensus_result(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-    ) -> TestResult<ConsensusResult> {
-        let address = ConsensusResult::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let raw_account = self.banks_client.get_account(address).await?.unwrap();
-
-        Ok(*ConsensusResult::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
     }
 
     /// Initializes the NCN config account and airdrops funds to the account payer.
@@ -976,131 +952,6 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Initializes and fully reallocates the ballot box account for a given NCN and epoch.
-    pub async fn do_full_initialize_ballot_box(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-    ) -> TestResult<()> {
-        self.do_initialize_ballot_box(ncn, epoch).await?;
-        let num_reallocs = (BallotBox::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-        self.do_realloc_ballot_box(ncn, epoch, num_reallocs).await?;
-        Ok(())
-    }
-
-    /// Initializes the ballot box account for a given NCN and epoch.
-    pub async fn do_initialize_ballot_box(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-    ) -> Result<(), TestError> {
-        let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-
-        let ballot_box = ncn_program_core::ballot_box::BallotBox::find_program_address(
-            &ncn_program::id(),
-            &ncn,
-            epoch,
-        )
-        .0;
-
-        self.initialize_ballot_box(ncn_config, ballot_box, ncn, epoch)
-            .await
-    }
-
-    /// Sends a transaction to initialize the ballot box account.
-    pub async fn initialize_ballot_box(
-        &mut self,
-        config: Pubkey,
-        ballot_box: Pubkey,
-        ncn: Pubkey,
-        epoch: u64,
-    ) -> Result<(), TestError> {
-        let (epoch_marker, _, _) =
-            EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let (consensus_result, _, _) =
-            ConsensusResult::find_program_address(&ncn_program::id(), &ncn, epoch);
-
-        let ix = InitializeBallotBoxBuilder::new()
-            .epoch_marker(epoch_marker)
-            .epoch_state(epoch_state)
-            .config(config)
-            .ballot_box(ballot_box)
-            .ncn(ncn)
-            .epoch(epoch)
-            .account_payer(account_payer)
-            .consensus_result(consensus_result)
-            .instruction();
-
-        let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[compute_budget_ix, ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
-    /// Reallocates the ballot box account multiple times.
-    pub async fn do_realloc_ballot_box(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-        num_reallocations: u64,
-    ) -> Result<(), TestError> {
-        let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-
-        let ballot_box = ncn_program_core::ballot_box::BallotBox::find_program_address(
-            &ncn_program::id(),
-            &ncn,
-            epoch,
-        )
-        .0;
-
-        self.realloc_ballot_box(ncn_config, ballot_box, ncn, epoch, num_reallocations)
-            .await
-    }
-
-    /// Sends transactions to reallocate the ballot box account.
-    pub async fn realloc_ballot_box(
-        &mut self,
-        config: Pubkey,
-        ballot_box: Pubkey,
-        ncn: Pubkey,
-        epoch: u64,
-        num_reallocations: u64,
-    ) -> Result<(), TestError> {
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let ix = ReallocBallotBoxBuilder::new()
-            .epoch_state(epoch_state)
-            .config(config)
-            .ballot_box(ballot_box)
-            .ncn(ncn)
-            .epoch(epoch)
-            .account_payer(account_payer)
-            .instruction();
-
-        let ixs = vec![ix; num_reallocations as usize];
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &ixs,
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
     /// Casts a vote using BLS signature aggregation for a given epoch.
     pub async fn do_cast_vote(
         &mut self,
@@ -1140,8 +991,6 @@ impl NCNProgramClient {
         message: [u8; 32],
     ) -> Result<(), TestError> {
         let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let consensus_result =
-            ConsensusResult::find_program_address(&ncn_program::id(), &ncn, epoch).0;
 
         let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(2_000_000);
 
@@ -1150,7 +999,6 @@ impl NCNProgramClient {
             .config(ncn_config)
             .ncn(ncn)
             .epoch_snapshot(epoch_snapshot)
-            .consensus_result(consensus_result)
             .epoch(epoch)
             .agg_sig(agg_sig)
             .apk2(apk2)
@@ -1191,61 +1039,6 @@ impl NCNProgramClient {
 
         self.do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
             .await
-    }
-
-    /// Sets the tie-breaker weather status for an epoch (admin operation).
-    pub async fn do_admin_set_tie_breaker(
-        &mut self,
-        ncn: Pubkey,
-        weather_status: u8,
-        epoch: u64,
-    ) -> Result<(), TestError> {
-        let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let ballot_box = BallotBox::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let tie_breaker_admin = self.payer.pubkey();
-
-        self.admin_set_tie_breaker(
-            ncn_config,
-            ballot_box,
-            ncn,
-            tie_breaker_admin,
-            weather_status,
-            epoch,
-        )
-        .await
-    }
-
-    /// Sends a transaction to set the tie-breaker weather status (admin operation).
-    pub async fn admin_set_tie_breaker(
-        &mut self,
-        ncn_config: Pubkey,
-        ballot_box: Pubkey,
-        ncn: Pubkey,
-        tie_breaker_admin: Pubkey,
-        weather_status: u8,
-        epoch: u64,
-    ) -> Result<(), TestError> {
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let ix = AdminSetTieBreakerBuilder::new()
-            .epoch_state(epoch_state)
-            .config(ncn_config)
-            .ballot_box(ballot_box)
-            .ncn(ncn)
-            .tie_breaker_admin(tie_breaker_admin)
-            .weather_status(weather_status)
-            .epoch(epoch)
-            .instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
     }
 
     /// Reallocates the weight table account multiple times.

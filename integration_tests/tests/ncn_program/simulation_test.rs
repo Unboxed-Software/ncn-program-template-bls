@@ -2,7 +2,6 @@
 mod tests {
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
     use ncn_program_core::{
-        ballot_box::WeatherStatus,
         constants::WEIGHT,
         g1_point::{G1CompressedPoint, G1Point},
         g2_point::{G2CompressedPoint, G2Point},
@@ -250,14 +249,7 @@ mod tests {
             fixture
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
-
-            // 5.g. Initialize the ballot box - creates the voting container for this epoch
-            fixture.add_ballot_box_to_test_ncn(&test_ncn).await?;
         }
-
-        // Define which weather status we expect to win in the vote
-        // In this example, operators will vote on a simulated weather status
-        let winning_weather_status = WeatherStatus::Sunny as u8;
 
         // 6. Cast votes from operators
         {
@@ -271,11 +263,8 @@ mod tests {
 
             // Create a message for voting on Sunny weather status
             // This message represents what operators are collectively agreeing on
-            let sunny_vote_message = solana_nostd_sha256::hashv(&[
-                b"weather_vote",
-                &[winning_weather_status],
-                &epoch.to_le_bytes(),
-            ]);
+            let sunny_vote_message =
+                solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
 
             // Most operators vote for Sunny (will be the winning vote)
             // Skip the first operator to create a minority that doesn't participate in this vote
@@ -323,11 +312,8 @@ mod tests {
                 .await?;
 
             // Create a minority vote for Cloudy (just the first operator)
-            let cloudy_vote_message = solana_nostd_sha256::hashv(&[
-                b"weather_vote",
-                &[WeatherStatus::Cloudy as u8],
-                &epoch.to_le_bytes(),
-            ]);
+            let cloudy_vote_message =
+                solana_nostd_sha256::hashv(&[b"weather_vote", b"Cloudy", &epoch.to_le_bytes()]);
 
             let first_operator = &test_ncn.operators[0];
             let cloudy_signature = first_operator
@@ -341,7 +327,7 @@ mod tests {
                 .0;
 
             // Create signers bitmap where only operator 0 signed, others didn't
-            let mut cloudy_non_signers: Vec<usize> = (1..test_ncn.operators.len()).collect();
+            let cloudy_non_signers: Vec<usize> = (1..test_ncn.operators.len()).collect();
             let cloudy_signers_bitmap =
                 create_signer_bitmap(&cloudy_non_signers, test_ncn.operators.len());
 

@@ -17,11 +17,9 @@ import {
   type ParsedAdminSetNewAdminInstruction,
   type ParsedAdminSetParametersInstruction,
   type ParsedAdminSetStMintInstruction,
-  type ParsedAdminSetTieBreakerInstruction,
   type ParsedAdminSetWeightInstruction,
   type ParsedCastVoteInstruction,
   type ParsedCloseEpochAccountInstruction,
-  type ParsedInitializeBallotBoxInstruction,
   type ParsedInitializeConfigInstruction,
   type ParsedInitializeEpochSnapshotInstruction,
   type ParsedInitializeEpochStateInstruction,
@@ -29,7 +27,6 @@ import {
   type ParsedInitializeOperatorSnapshotInstruction,
   type ParsedInitializeVaultRegistryInstruction,
   type ParsedInitializeWeightTableInstruction,
-  type ParsedReallocBallotBoxInstruction,
   type ParsedReallocEpochSnapshotInstruction,
   type ParsedReallocOperatorRegistryInstruction,
   type ParsedReallocVaultRegistryInstruction,
@@ -45,9 +42,7 @@ export const NCN_PROGRAM_PROGRAM_ADDRESS =
   '5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf' as Address<'5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf'>;
 
 export enum NcnProgramAccount {
-  BallotBox,
   Config,
-  ConsensusResult,
   EpochMarker,
   EpochSnapshot,
   EpochState,
@@ -73,13 +68,10 @@ export enum NcnProgramInstruction {
   ReallocEpochSnapshot,
   InitializeOperatorSnapshot,
   SnapshotVaultOperatorDelegation,
-  InitializeBallotBox,
-  ReallocBallotBox,
   CastVote,
   CloseEpochAccount,
   AdminSetParameters,
   AdminSetNewAdmin,
-  AdminSetTieBreaker,
   AdminSetWeight,
   AdminRegisterStMint,
   AdminSetStMint,
@@ -138,33 +130,24 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
   if (containsBytes(data, getU8Encoder().encode(16), 0)) {
-    return NcnProgramInstruction.InitializeBallotBox;
-  }
-  if (containsBytes(data, getU8Encoder().encode(17), 0)) {
-    return NcnProgramInstruction.ReallocBallotBox;
-  }
-  if (containsBytes(data, getU8Encoder().encode(18), 0)) {
     return NcnProgramInstruction.CastVote;
   }
-  if (containsBytes(data, getU8Encoder().encode(19), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(17), 0)) {
     return NcnProgramInstruction.CloseEpochAccount;
   }
-  if (containsBytes(data, getU8Encoder().encode(20), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(18), 0)) {
     return NcnProgramInstruction.AdminSetParameters;
   }
-  if (containsBytes(data, getU8Encoder().encode(21), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(19), 0)) {
     return NcnProgramInstruction.AdminSetNewAdmin;
   }
-  if (containsBytes(data, getU8Encoder().encode(22), 0)) {
-    return NcnProgramInstruction.AdminSetTieBreaker;
-  }
-  if (containsBytes(data, getU8Encoder().encode(23), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(20), 0)) {
     return NcnProgramInstruction.AdminSetWeight;
   }
-  if (containsBytes(data, getU8Encoder().encode(24), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(21), 0)) {
     return NcnProgramInstruction.AdminRegisterStMint;
   }
-  if (containsBytes(data, getU8Encoder().encode(25), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(22), 0)) {
     return NcnProgramInstruction.AdminSetStMint;
   }
   throw new Error(
@@ -224,12 +207,6 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.SnapshotVaultOperatorDelegation;
     } & ParsedSnapshotVaultOperatorDelegationInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.InitializeBallotBox;
-    } & ParsedInitializeBallotBoxInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.ReallocBallotBox;
-    } & ParsedReallocBallotBoxInstruction<TProgram>)
-  | ({
       instructionType: NcnProgramInstruction.CastVote;
     } & ParsedCastVoteInstruction<TProgram>)
   | ({
@@ -241,9 +218,6 @@ export type ParsedNcnProgramInstruction<
   | ({
       instructionType: NcnProgramInstruction.AdminSetNewAdmin;
     } & ParsedAdminSetNewAdminInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.AdminSetTieBreaker;
-    } & ParsedAdminSetTieBreakerInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.AdminSetWeight;
     } & ParsedAdminSetWeightInstruction<TProgram>)

@@ -222,36 +222,11 @@ pub enum NCNProgramInstruction {
     // ---------------------------------------------------- //
     //                         VOTE                         //
     // ---------------------------------------------------- //
-    /// Initializes the ballot box for an NCN
-    #[account(0, name = "epoch_marker")]
-    #[account(1, name = "epoch_state")]
-    #[account(2, name = "config")]
-    #[account(3, writable, name = "ballot_box")]
-    #[account(4, name = "ncn")]
-    #[account(5, writable, name = "account_payer")]
-    #[account(6, name = "system_program")]
-    #[account(7, writable, name = "consensus_result")]
-    InitializeBallotBox {
-        epoch: u64,
-    },
-
-    /// Resizes the ballot box account
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "config")]
-    #[account(2, writable, name = "ballot_box")]
-    #[account(3, name = "ncn")]
-    #[account(4, writable, name = "account_payer")]
-    #[account(5, name = "system_program")]
-    ReallocBallotBox {
-        epoch: u64,
-    },
-
     /// Cast a vote for a merkle root
     #[account(0, writable, name = "epoch_state")]
     #[account(1, name = "config")]
     #[account(2, name = "ncn")]
     #[account(3, name = "epoch_snapshot")]
-    #[account(4, writable, name = "consensus_result")]
     CastVote {
         epoch: u64,
         agg_sig: [u8; 32],
@@ -297,17 +272,6 @@ pub enum NCNProgramInstruction {
     #[account(3, name = "new_admin")]
     AdminSetNewAdmin {
         role: ConfigAdminRole,
-    },
-
-    /// Set tie breaker in case of stalled voting
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "config")]
-    #[account(2, writable, name = "ballot_box")]
-    #[account(3, name = "ncn")]
-    #[account(4, signer, name = "tie_breaker_admin")]
-    AdminSetTieBreaker {
-        weather_status: u8,
-        epoch: u64,
     },
 
     /// Sets a weight

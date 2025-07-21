@@ -6,8 +6,6 @@
  * @see https://github.com/kinobi-so/kinobi
  */
 
-export * from './ballot';
-export * from './ballotTally';
 export * from './configAdminRole';
 export * from './epochAccountStatus';
 export * from './fee';
@@ -15,7 +13,6 @@ export * from './feeConfig';
 export * from './fees';
 export * from './operatorEntry';
 export * from './operatorSnapshot';
-export * from './operatorVote';
 export * from './progress';
 export * from './stakeWeights';
 export * from './stMintEntry';

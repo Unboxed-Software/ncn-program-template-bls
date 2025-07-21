@@ -38,7 +38,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const CAST_VOTE_DISCRIMINATOR = 18;
+export const CAST_VOTE_DISCRIMINATOR = 16;
 
 export function getCastVoteDiscriminatorBytes() {
   return getU8Encoder().encode(CAST_VOTE_DISCRIMINATOR);
@@ -50,7 +50,6 @@ export type CastVoteInstruction<
   TAccountConfig extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
-  TAccountConsensusResult extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -66,9 +65,6 @@ export type CastVoteInstruction<
       TAccountEpochSnapshot extends string
         ? ReadonlyAccount<TAccountEpochSnapshot>
         : TAccountEpochSnapshot,
-      TAccountConsensusResult extends string
-        ? WritableAccount<TAccountConsensusResult>
-        : TAccountConsensusResult,
       ...TRemainingAccounts,
     ]
   >;
@@ -133,13 +129,11 @@ export type CastVoteInput<
   TAccountConfig extends string = string,
   TAccountNcn extends string = string,
   TAccountEpochSnapshot extends string = string,
-  TAccountConsensusResult extends string = string,
 > = {
   epochState: Address<TAccountEpochState>;
   config: Address<TAccountConfig>;
   ncn: Address<TAccountNcn>;
   epochSnapshot: Address<TAccountEpochSnapshot>;
-  consensusResult: Address<TAccountConsensusResult>;
   epoch: CastVoteInstructionDataArgs['epoch'];
   aggSig: CastVoteInstructionDataArgs['aggSig'];
   apk2: CastVoteInstructionDataArgs['apk2'];
@@ -152,15 +146,13 @@ export function getCastVoteInstruction<
   TAccountConfig extends string,
   TAccountNcn extends string,
   TAccountEpochSnapshot extends string,
-  TAccountConsensusResult extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
   input: CastVoteInput<
     TAccountEpochState,
     TAccountConfig,
     TAccountNcn,
-    TAccountEpochSnapshot,
-    TAccountConsensusResult
+    TAccountEpochSnapshot
   >,
   config?: { programAddress?: TProgramAddress }
 ): CastVoteInstruction<
@@ -168,8 +160,7 @@ export function getCastVoteInstruction<
   TAccountEpochState,
   TAccountConfig,
   TAccountNcn,
-  TAccountEpochSnapshot,
-  TAccountConsensusResult
+  TAccountEpochSnapshot
 > {
   // Program address.
   const programAddress = config?.programAddress ?? NCN_PROGRAM_PROGRAM_ADDRESS;
@@ -180,7 +171,6 @@ export function getCastVoteInstruction<
     config: { value: input.config ?? null, isWritable: false },
     ncn: { value: input.ncn ?? null, isWritable: false },
     epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: false },
-    consensusResult: { value: input.consensusResult ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -197,7 +187,6 @@ export function getCastVoteInstruction<
       getAccountMeta(accounts.config),
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.epochSnapshot),
-      getAccountMeta(accounts.consensusResult),
     ],
     programAddress,
     data: getCastVoteInstructionDataEncoder().encode(
@@ -208,8 +197,7 @@ export function getCastVoteInstruction<
     TAccountEpochState,
     TAccountConfig,
     TAccountNcn,
-    TAccountEpochSnapshot,
-    TAccountConsensusResult
+    TAccountEpochSnapshot
   >;
 
   return instruction;
@@ -225,7 +213,6 @@ export type ParsedCastVoteInstruction<
     config: TAccountMetas[1];
     ncn: TAccountMetas[2];
     epochSnapshot: TAccountMetas[3];
-    consensusResult: TAccountMetas[4];
   };
   data: CastVoteInstructionData;
 };
@@ -238,7 +225,7 @@ export function parseCastVoteInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedCastVoteInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -255,7 +242,6 @@ export function parseCastVoteInstruction<
       config: getNextAccount(),
       ncn: getNextAccount(),
       epochSnapshot: getNextAccount(),
-      consensusResult: getNextAccount(),
     },
     data: getCastVoteInstructionDataDecoder().decode(instruction.data),
   };

@@ -19,9 +19,7 @@ use jito_vault_core::{
 use log::{info, warn};
 use ncn_program_core::{
     account_payer::AccountPayer,
-    ballot_box::BallotBox,
     config::Config as NCNProgramConfig,
-    consensus_result::ConsensusResult,
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
@@ -219,36 +217,6 @@ pub async fn get_operator_snapshot(
         .find_operator_snapshot(operator)
         .ok_or_else(|| anyhow::anyhow!("Operator snapshot not found for operator: {}", operator))?;
     Ok(*operator_snapshot)
-}
-
-pub async fn get_ballot_box(handler: &CliHandler, epoch: u64) -> Result<BallotBox> {
-    let (address, _, _) =
-        BallotBox::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
-
-    let account = get_account(handler, &address).await?;
-
-    if account.is_none() {
-        return Err(anyhow::anyhow!("Account not found"));
-    }
-    let account = account.unwrap();
-
-    let account = BallotBox::try_from_slice_unchecked(account.data.as_slice())?;
-    Ok(*account)
-}
-
-pub async fn get_consensus_result(handler: &CliHandler, epoch: u64) -> Result<ConsensusResult> {
-    let (address, _, _) =
-        ConsensusResult::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
-
-    let account = get_account(handler, &address).await?;
-
-    if account.is_none() {
-        return Err(anyhow::anyhow!("Account not found"));
-    }
-    let account = account.unwrap();
-
-    let account = ConsensusResult::try_from_slice_unchecked(account.data.as_slice())?;
-    Ok(*account)
 }
 
 pub async fn get_account_payer(handler: &CliHandler) -> Result<Account> {

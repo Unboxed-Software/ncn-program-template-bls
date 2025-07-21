@@ -204,7 +204,6 @@ mod tests {
     #[tokio::test]
     async fn test_all_test_ncn_functions_pt4() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
-        let mut ncn_program_client = fixture.ncn_program_client();
 
         const OPERATOR_COUNT: usize = 2;
         const VAULT_COUNT: usize = 3;
@@ -212,8 +211,6 @@ mod tests {
         let test_ncn = fixture
             .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(100))
             .await?;
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch = fixture.clock().await.epoch;
 
         fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
         fixture.add_admin_weights_for_test_ncn(&test_ncn).await?;
@@ -225,29 +222,7 @@ mod tests {
             .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
             .await?;
 
-        {
-            fixture.add_ballot_box_to_test_ncn(&test_ncn).await?;
-            fixture.cast_votes_for_test_ncn(&test_ncn).await?;
-
-            let epoch_state = ncn_program_client.get_epoch_state(ncn, epoch).await?;
-
-            let clock = fixture.clock().await;
-            let epoch_schedule = fixture.epoch_schedule().await;
-
-            assert!(!epoch_state.was_tie_breaker_set());
-            assert_eq!(epoch_state.voting_progress().tally(), OPERATOR_COUNT as u64);
-            assert_eq!(
-                epoch_state.get_slot_consensus_reached().unwrap(),
-                clock.slot
-            );
-            assert_eq!(
-                epoch_state
-                    .get_epoch_consensus_reached(&epoch_schedule)
-                    .unwrap(),
-                clock.epoch
-            );
-            assert!(epoch_state.voting_progress().is_complete());
-        }
+        fixture.cast_votes_for_test_ncn(&test_ncn).await?;
 
         Ok(())
     }

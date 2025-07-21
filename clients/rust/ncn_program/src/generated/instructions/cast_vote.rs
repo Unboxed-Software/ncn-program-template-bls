@@ -17,8 +17,6 @@ pub struct CastVote {
     pub ncn: solana_program::pubkey::Pubkey,
 
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
-
-    pub consensus_result: solana_program::pubkey::Pubkey,
 }
 
 impl CastVote {
@@ -34,7 +32,7 @@ impl CastVote {
         args: CastVoteInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_state,
             false,
@@ -48,10 +46,6 @@ impl CastVote {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.epoch_snapshot,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.consensus_result,
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
@@ -74,7 +68,7 @@ pub struct CastVoteInstructionData {
 
 impl CastVoteInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 18 }
+        Self { discriminator: 16 }
     }
 }
 
@@ -102,14 +96,12 @@ pub struct CastVoteInstructionArgs {
 ///   1. `[]` config
 ///   2. `[]` ncn
 ///   3. `[]` epoch_snapshot
-///   4. `[writable]` consensus_result
 #[derive(Clone, Debug, Default)]
 pub struct CastVoteBuilder {
     epoch_state: Option<solana_program::pubkey::Pubkey>,
     config: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
-    consensus_result: Option<solana_program::pubkey::Pubkey>,
     epoch: Option<u64>,
     agg_sig: Option<[u8; 32]>,
     apk2: Option<[u8; 64]>,
@@ -140,14 +132,6 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn epoch_snapshot(&mut self, epoch_snapshot: solana_program::pubkey::Pubkey) -> &mut Self {
         self.epoch_snapshot = Some(epoch_snapshot);
-        self
-    }
-    #[inline(always)]
-    pub fn consensus_result(
-        &mut self,
-        consensus_result: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.consensus_result = Some(consensus_result);
         self
     }
     #[inline(always)]
@@ -200,7 +184,6 @@ impl CastVoteBuilder {
             config: self.config.expect("config is not set"),
             ncn: self.ncn.expect("ncn is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
-            consensus_result: self.consensus_result.expect("consensus_result is not set"),
         };
         let args = CastVoteInstructionArgs {
             epoch: self.epoch.clone().expect("epoch is not set"),
@@ -226,8 +209,6 @@ pub struct CastVoteCpiAccounts<'a, 'b> {
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub consensus_result: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `cast_vote` CPI instruction.
@@ -242,8 +223,6 @@ pub struct CastVoteCpi<'a, 'b> {
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub consensus_result: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: CastVoteInstructionArgs,
 }
@@ -260,7 +239,6 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             config: accounts.config,
             ncn: accounts.ncn,
             epoch_snapshot: accounts.epoch_snapshot,
-            consensus_result: accounts.consensus_result,
             __args: args,
         }
     }
@@ -297,7 +275,7 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.epoch_state.key,
             false,
@@ -312,10 +290,6 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.epoch_snapshot.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.consensus_result.key,
             false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -334,13 +308,12 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.epoch_state.clone());
         account_infos.push(self.config.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.epoch_snapshot.clone());
-        account_infos.push(self.consensus_result.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -361,7 +334,6 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
 ///   1. `[]` config
 ///   2. `[]` ncn
 ///   3. `[]` epoch_snapshot
-///   4. `[writable]` consensus_result
 #[derive(Clone, Debug)]
 pub struct CastVoteCpiBuilder<'a, 'b> {
     instruction: Box<CastVoteCpiBuilderInstruction<'a, 'b>>,
@@ -375,7 +347,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
             config: None,
             ncn: None,
             epoch_snapshot: None,
-            consensus_result: None,
             epoch: None,
             agg_sig: None,
             apk2: None,
@@ -412,14 +383,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.epoch_snapshot = Some(epoch_snapshot);
-        self
-    }
-    #[inline(always)]
-    pub fn consensus_result(
-        &mut self,
-        consensus_result: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.consensus_result = Some(consensus_result);
         self
     }
     #[inline(always)]
@@ -523,11 +486,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
                 .instruction
                 .epoch_snapshot
                 .expect("epoch_snapshot is not set"),
-
-            consensus_result: self
-                .instruction
-                .consensus_result
-                .expect("consensus_result is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -544,7 +502,6 @@ struct CastVoteCpiBuilderInstruction<'a, 'b> {
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    consensus_result: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch: Option<u64>,
     agg_sig: Option<[u8; 32]>,
     apk2: Option<[u8; 64]>,

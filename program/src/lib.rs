@@ -3,18 +3,15 @@ mod admin_register_st_mint;
 mod admin_set_new_admin;
 mod admin_set_parameters;
 mod admin_set_st_mint;
-mod admin_set_tie_breaker;
 mod admin_set_weight;
 mod cast_vote;
 mod close_epoch_account;
-mod initialize_ballot_box;
 mod initialize_epoch_snapshot;
 mod initialize_epoch_state;
 mod initialize_operator_registry;
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
 mod initialize_weight_table;
-mod realloc_ballot_box;
 mod realloc_epoch_snapshot;
 mod realloc_operator_registry;
 mod realloc_vault_registry;
@@ -40,17 +37,13 @@ use crate::{
     admin_initialize_config::process_admin_initialize_config,
     admin_register_st_mint::process_admin_register_st_mint,
     admin_set_parameters::process_admin_set_parameters,
-    admin_set_st_mint::process_admin_set_st_mint,
-    admin_set_tie_breaker::process_admin_set_tie_breaker,
-    admin_set_weight::process_admin_set_weight, cast_vote::process_cast_vote,
-    close_epoch_account::process_close_epoch_account,
-    initialize_ballot_box::process_initialize_ballot_box,
+    admin_set_st_mint::process_admin_set_st_mint, admin_set_weight::process_admin_set_weight,
+    cast_vote::process_cast_vote, close_epoch_account::process_close_epoch_account,
     initialize_epoch_snapshot::process_initialize_epoch_snapshot,
     initialize_operator_registry::process_initialize_operator_registry,
     initialize_operator_snapshot::process_initialize_operator_snapshot,
     initialize_vault_registry::process_initialize_vault_registry,
     initialize_weight_table::process_initialize_weight_table,
-    realloc_ballot_box::process_realloc_ballot_box,
     realloc_epoch_snapshot::process_realloc_epoch_snapshot,
     realloc_operator_registry::process_realloc_operator_registry,
     realloc_vault_registry::process_realloc_vault_registry,
@@ -189,14 +182,6 @@ pub fn process_instruction(
         // ---------------------------------------------------- //
         //                         VOTE                         //
         // ---------------------------------------------------- //
-        NCNProgramInstruction::InitializeBallotBox { epoch } => {
-            msg!("Instruction: InitializeBallotBox");
-            process_initialize_ballot_box(program_id, accounts, epoch)
-        }
-        NCNProgramInstruction::ReallocBallotBox { epoch } => {
-            msg!("Instruction: ReallocBallotBox");
-            process_realloc_ballot_box(program_id, accounts, epoch)
-        }
         NCNProgramInstruction::CastVote {
             epoch,
             apk2,
@@ -248,13 +233,6 @@ pub fn process_instruction(
         NCNProgramInstruction::AdminSetNewAdmin { role } => {
             msg!("Instruction: AdminSetNewAdmin");
             process_admin_set_new_admin(program_id, accounts, role)
-        }
-        NCNProgramInstruction::AdminSetTieBreaker {
-            weather_status,
-            epoch,
-        } => {
-            msg!("Instruction: AdminSetTieBreaker");
-            process_admin_set_tie_breaker(program_id, accounts, weather_status, epoch)
         }
         NCNProgramInstruction::AdminSetWeight {
             st_mint,

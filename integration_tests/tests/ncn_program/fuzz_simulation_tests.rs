@@ -2,7 +2,7 @@
 mod fuzz_tests {
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
-    use ncn_program_core::{ballot_box::WeatherStatus, constants::WEIGHT};
+    use ncn_program_core::constants::WEIGHT;
     use solana_sdk::{msg, native_token::sol_to_lamports, signature::Keypair, signer::Signer};
     use std::collections::HashMap;
 
@@ -453,17 +453,11 @@ mod fuzz_tests {
                 cost_tracker.add_transaction_cost("Snapshot Vault-Operator Delegation", 1);
             }
 
-            // 4.g. Initialize the ballot box - creates the voting container for this epoch
-            fixture.add_ballot_box_to_test_ncn(&test_ncn).await?;
-            cost_tracker.add_account_cost("Ballot Box", 4000);
-            cost_tracker.add_transaction_cost("Initialize Ballot Box", 1);
-
             println!("  ✅ Epoch preparation completed");
         }
 
         // Define which weather status we expect to win in the vote
         // In this example, operators will vote on a simulated weather status
-        let winning_weather_status = WeatherStatus::Sunny as u8;
 
         // 5. Cast votes from operators
         {
@@ -487,48 +481,7 @@ mod fuzz_tests {
             //     cost_tracker.add_compute_cost(5000); // Estimated compute units for vote processing
             // }
 
-            // 6. Verify voting results
-            let ballot_box = ncn_program_client.get_ballot_box(ncn_pubkey, epoch).await?;
-            assert!(ballot_box.has_winning_ballot());
-            assert!(ballot_box.is_consensus_reached());
-            assert_eq!(
-                ballot_box.get_winning_ballot().unwrap().weather_status(),
-                winning_weather_status
-            );
-
             println!("  ✅ Voting completed (votes commented out for this test)");
-        }
-
-        // 8. Fetch and verify the consensus result account
-        {
-            let epoch = fixture.clock().await.epoch;
-            let consensus_result = ncn_program_client
-                .get_consensus_result(ncn_pubkey, epoch)
-                .await?;
-
-            // Verify consensus_result account exists and has correct values
-            assert!(consensus_result.is_consensus_reached());
-            assert_eq!(consensus_result.epoch(), epoch);
-            assert_eq!(consensus_result.weather_status(), winning_weather_status);
-
-            // Get ballot box to compare values
-            let ballot_box = ncn_program_client.get_ballot_box(ncn_pubkey, epoch).await?;
-            msg!("Ballot Box: {}", ballot_box);
-            msg!("consensus_result: {}", consensus_result);
-            let winning_ballot_tally = ballot_box.get_winning_ballot_tally().unwrap();
-
-            // Verify vote weights match between ballot box and consensus result
-            assert_eq!(
-                consensus_result.vote_weight(),
-                winning_ballot_tally.stake_weights().stake_weight() as u64
-            );
-
-            println!(
-                "✅ Consensus Result Verified - Weather Status: {}, Vote Weight: {}, Total Weight: {}",
-                consensus_result.weather_status(),
-                consensus_result.vote_weight(),
-                consensus_result.total_vote_weight(),
-            );
         }
 
         // 9. Close epoch accounts but keep consensus result
@@ -541,17 +494,6 @@ mod fuzz_tests {
             5 + config.operator_count + (test_ncn.vaults.len() * config.operator_count);
         for _ in 0..accounts_to_close {
             cost_tracker.add_transaction_cost("Close Epoch Account", 1);
-        }
-
-        // Verify that consensus_result account is not closed (it should persist)
-        {
-            let consensus_result = ncn_program_client
-                .get_consensus_result(ncn_pubkey, epoch_before_closing_account)
-                .await?;
-
-            // Verify consensus_result account exists and has correct values
-            assert!(consensus_result.is_consensus_reached());
-            assert_eq!(consensus_result.epoch(), epoch_before_closing_account);
         }
 
         // Generate and print cost report
