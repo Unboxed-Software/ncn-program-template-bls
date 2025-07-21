@@ -6,10 +6,9 @@ use solana_sdk::{clock::DEFAULT_SLOTS_PER_EPOCH, native_token::lamports_to_sol};
 use crate::{
     getters::{
         get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
-        get_ballot_box, get_current_epoch_and_slot, get_epoch_snapshot, get_epoch_state,
-        get_is_epoch_completed, get_ncn_program_config, get_operator, get_operator_snapshot,
-        get_vault, get_vault_config, get_vault_operator_delegation, get_vault_registry,
-        get_weight_table,
+        get_current_epoch_and_slot, get_epoch_snapshot, get_epoch_state, get_is_epoch_completed,
+        get_ncn_program_config, get_operator, get_operator_snapshot, get_vault, get_vault_config,
+        get_vault_operator_delegation, get_vault_registry, get_weight_table,
     },
     handler::CliHandler,
 };
@@ -310,18 +309,11 @@ pub async fn emit_ncn_metrics_vault_operator_delegation(handler: &CliHandler) ->
 pub async fn emit_ncn_metrics_operators(handler: &CliHandler) -> Result<()> {
     let (current_epoch, current_slot) = get_current_epoch_and_slot(handler).await?;
     let all_operators = get_all_operators_in_ncn(handler).await?;
-    let ballot_box_result = get_ballot_box(handler, current_epoch).await;
-
     for operator in all_operators {
         let operator_account = get_operator(handler, &operator).await?;
 
-        // Check if the operator has voted in the current epoch
-        // This is emitted for all operators to avoid NoData issues in alerting
-        let operator_has_voted = ballot_box_result.as_ref().map_or(false, |ballot_box| {
-            ballot_box.operator_votes().iter().any(|operator_vote| {
-                operator_vote.operator() == &operator && !operator_vote.is_empty()
-            })
-        });
+        // Voting functionality has been removed
+        let operator_has_voted = false;
 
         datapoint_info!(
             "ncn-program-keeper-em-operator",
@@ -483,135 +475,8 @@ pub async fn emit_epoch_metrics(handler: &CliHandler, epoch: u64) -> Result<()> 
 /// overall voting state for the epoch.
 #[allow(clippy::large_stack_frames)]
 pub async fn emit_epoch_metrics_ballot_box(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let (current_epoch, current_slot) = get_current_epoch_and_slot(handler).await?;
-    let is_current_epoch = current_epoch == epoch;
-
-    let valid_slots_after_consensus = {
-        let config = get_ncn_program_config(handler).await?;
-
-        config.valid_slots_after_consensus()
-    };
-
-    let ballot_box_result = get_ballot_box(handler, epoch).await;
-    let epoch_snapshot_result = get_epoch_snapshot(handler, epoch).await;
-
-    if let Ok(ballot_box) = ballot_box_result {
-        if let Ok(epoch_snapshot) = epoch_snapshot_result {
-            let total_stake_weight = epoch_snapshot.minimum_stake_weight().stake_weight();
-
-            // Emit metrics for individual operator votes
-            for operator_vote in ballot_box.operator_votes() {
-                if operator_vote.is_empty() {
-                    continue;
-                }
-
-                let ballot_index = operator_vote.ballot_index();
-                let ballot_tally = ballot_box.ballot_tallies()[ballot_index as usize];
-                let vote = format!("{:?}", ballot_tally.ballot().status());
-
-                emit_epoch_datapoint!(
-                    "ncn-program-keeper-ee-ballot-box-votes",
-                    is_current_epoch,
-                    ("current-epoch", current_epoch, i64),
-                    ("current-slot", current_slot, i64),
-                    ("keeper-epoch", epoch, i64),
-                    ("operator", operator_vote.operator().to_string(), String),
-                    ("slot-voted", operator_vote.slot_voted(), i64),
-                    ("ballot-index", ballot_index, i64),
-                    (
-                        "operator-stake-weight",
-                        format_stake_weight(operator_vote.stake_weights().stake_weight()),
-                        f64
-                    ),
-                    (
-                        "ballot-stake-weight",
-                        format_stake_weight(ballot_tally.stake_weights().stake_weight()),
-                        f64
-                    ),
-                    (
-                        "total-stake-weight",
-                        format_stake_weight(total_stake_weight),
-                        f64
-                    ),
-                    ("vote", vote, String)
-                );
-            }
-
-            // Emit metrics for ballot tallies (aggregated vote results)
-            for tally in ballot_box.ballot_tallies() {
-                if !tally.is_valid() {
-                    continue;
-                }
-
-                let vote = format!("{:?}", tally.ballot().status());
-
-                emit_epoch_datapoint!(
-                    "ncn-program-keeper-ee-ballot-box-tally",
-                    is_current_epoch,
-                    ("current-epoch", current_epoch, i64),
-                    ("current-slot", current_slot, i64),
-                    ("keeper-epoch", epoch, i64),
-                    ("ballot-index", tally.index(), i64),
-                    ("tally", tally.tally(), i64),
-                    (
-                        "stake-weight",
-                        format_stake_weight(tally.stake_weights().stake_weight()),
-                        f64
-                    ),
-                    (
-                        "total-stake-weight",
-                        format_stake_weight(total_stake_weight),
-                        f64
-                    ),
-                    ("vote", vote, String)
-                );
-            }
-
-            // Determine winning ballot information
-            let (winning_ballot_string, winning_stake_weight, winning_tally) = {
-                if ballot_box.has_winning_ballot() {
-                    let ballot_tally = ballot_box.get_winning_ballot_tally().unwrap();
-                    (
-                        format!("{:?}", ballot_tally.ballot().status()),
-                        ballot_tally.stake_weights().stake_weight(),
-                        ballot_tally.tally(),
-                    )
-                } else {
-                    ("None".to_string(), 0, 0)
-                }
-            };
-
-            // Emit overall ballot box state
-            emit_epoch_datapoint!(
-                "ncn-program-keeper-ee-ballot-box",
-                is_current_epoch,
-                ("current-epoch", current_epoch, i64),
-                ("current-slot", current_slot, i64),
-                ("keeper-epoch", epoch, i64),
-                ("unique-ballots", ballot_box.unique_ballots(), i64),
-                ("operators-voted", ballot_box.operators_voted(), i64),
-                ("has-winning-ballot", ballot_box.has_winning_ballot(), bool),
-                ("winning-ballot", winning_ballot_string, String),
-                (
-                    "winning-stake-weight",
-                    format_stake_weight(winning_stake_weight),
-                    f64
-                ),
-                ("winning-tally", winning_tally, i64),
-                (
-                    "total-stake-weight",
-                    format_stake_weight(total_stake_weight),
-                    f64
-                ),
-                (
-                    "is-voting-valid",
-                    ballot_box.is_voting_valid(current_slot, valid_slots_after_consensus)?,
-                    bool
-                )
-            );
-        }
-    }
-
+    // Ballot box functionality has been removed
+    log::info!("Ballot box metrics not available - functionality has been removed");
     Ok(())
 }
 
@@ -843,11 +708,7 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         ("current-state", current_state as u8, i64),
         ("operator-count", state.operator_count(), i64),
         ("vault-count", state.vault_count(), i64),
-        (
-            "slot-consensus-reached",
-            state.slot_consensus_reached(),
-            i64
-        ),
+        ("slot-created", state.slot_created(), i64),
         // Progress tracking for each phase
         (
             "set-weight-progress-tally",
@@ -869,16 +730,9 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
             state.epoch_snapshot_progress().total(),
             i64
         ),
-        (
-            "voting-progress-tally",
-            state.voting_progress().tally(),
-            i64
-        ),
-        (
-            "voting-progress-total",
-            state.voting_progress().total(),
-            i64
-        ),
+        // Voting phase has been removed - replaced with BLS signatures
+        ("voting-progress-tally", 0, i64),
+        ("voting-progress-total", 0, i64),
         // Account status tracking
         (
             "epoch-state-account-status",
@@ -897,7 +751,7 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         ),
         (
             "ballot-box-account-status",
-            state.account_status().ballot_box()?,
+            0, // ballot_box functionality removed
             i64
         ),
         ("operator-snapshot-account-dne", operator_snapshot_dne, i64),

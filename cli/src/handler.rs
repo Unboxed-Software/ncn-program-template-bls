@@ -4,17 +4,19 @@ use std::{collections::HashMap, mem::size_of, str::FromStr};
 use crate::{
     args::{Args, ProgramCommand},
     getters::{
-        get_all_operators_in_ncn, get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot,
-        get_epoch_state, get_ncn_program_config, get_operator_snapshot, get_vault_registry,
-        get_weight_table,
+        get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults,
+        get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot, get_epoch_state,
+        get_is_epoch_completed, get_ncn, get_ncn_operator_state, get_ncn_program_config,
+        get_ncn_vault_ticket, get_operator_snapshot, get_total_epoch_rent_cost,
+        get_vault_ncn_ticket, get_vault_operator_delegation, get_vault_registry, get_weight_table,
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
-        admin_set_parameters, admin_set_tie_breaker, admin_set_weight, crank_close_epoch_accounts,
-        crank_register_vaults, crank_snapshot, create_ballot_box, create_epoch_snapshot,
-        create_epoch_state, create_operator_snapshot, create_vault_registry, create_weight_table,
-        full_vault_update, operator_cast_vote, register_vault, set_epoch_weights,
-        snapshot_vault_operator_delegation, update_all_vaults_in_network,
+        admin_set_parameters, admin_set_weight, crank_close_epoch_accounts, crank_register_vaults,
+        crank_snapshot, create_epoch_snapshot, create_epoch_state, create_operator_snapshot,
+        create_vault_registry, create_weight_table, full_vault_update, operator_cast_vote,
+        register_vault, set_epoch_weights, snapshot_vault_operator_delegation,
+        update_all_vaults_in_network,
     },
     keeper::keeper_loop::startup_ncn_keeper,
     operator::operator_loop::startup_operator_loop,
@@ -236,7 +238,9 @@ impl CliHandler {
                 admin_set_weight(self, &vault, self.epoch, weight).await
             }
             ProgramCommand::AdminSetTieBreaker { weather_status } => {
-                admin_set_tie_breaker(self, self.epoch, weather_status).await
+                // Tie breaker functionality has been removed
+                log::info!("Tie breaker functionality has been removed");
+                Ok(())
             }
             ProgramCommand::AdminSetParameters {
                 epochs_before_stall,
@@ -301,15 +305,18 @@ impl CliHandler {
                 snapshot_vault_operator_delegation(self, &vault, &operator, self.epoch).await
             }
 
-            ProgramCommand::CreateBallotBox {} => create_ballot_box(self, self.epoch).await,
+            ProgramCommand::CreateBallotBox {} => {
+                // Ballot box functionality has been removed
+                log::info!("Ballot box functionality has been removed");
+                Ok(())
+            }
             ProgramCommand::OperatorCastVote {
                 operator,
                 weather_status,
             } => {
-                let operator = Pubkey::from_str(&operator)
-                    .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
-
-                operator_cast_vote(self, &operator, self.epoch, weather_status).await
+                // Voting functionality has been replaced with BLS signatures
+                log::info!("Voting functionality has been replaced with BLS signatures");
+                Ok(())
             }
 
             // Getters
@@ -442,8 +449,8 @@ impl CliHandler {
                 Ok(())
             }
             ProgramCommand::GetBallotBox {} => {
-                let ballot_box = get_ballot_box(self, self.epoch).await?;
-                info!("{}", ballot_box);
+                // Ballot box functionality has been removed
+                log::info!("Ballot box functionality has been removed");
                 Ok(())
             }
             ProgramCommand::GetAccountPayer {} => {
@@ -466,12 +473,8 @@ impl CliHandler {
                 Ok(())
             }
             ProgramCommand::GetConsensusResult {} => {
-                let result = get_consensus_result(self, self.epoch).await?;
-
-                info!(
-                    "\n\n--- Consensus Result for epoch {} is: \n {} ---",
-                    self.epoch, result
-                );
+                // Consensus result functionality has been removed
+                log::info!("Consensus result functionality has been removed");
                 Ok(())
             }
 

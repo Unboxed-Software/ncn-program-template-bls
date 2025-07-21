@@ -627,9 +627,8 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
     //     .get_minimum_balance_for_rent_exemption(OperatorSnapshot::SIZE)
     //     .await?
     //     * operator_count;
-    rent_cost += client
-        .get_minimum_balance_for_rent_exemption(BallotBox::SIZE)
-        .await?;
+
+    // BallotBox functionality has been removed
 
     Ok(rent_cost)
 }

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::{
-    getters::{get_ballot_box, get_guaranteed_epoch_and_slot, get_operator_snapshot},
+    getters::{get_guaranteed_epoch_and_slot, get_operator_snapshot},
     handler::CliHandler,
     instructions::{operator_crank_post_vote, operator_crank_vote},
     operator::{
@@ -165,13 +165,12 @@ pub async fn startup_operator_loop(
                 // Vote state - operator casts a vote if eligible
                 State::Vote => {
                     // Get the ballot box and operator snapshot for the current epoch
-                    let ballot_box = get_ballot_box(handler, state.epoch).await?;
+                    // Ballot box functionality has been removed
                     let operator_snapshot =
                         get_operator_snapshot(handler, &operator, state.epoch).await?;
 
                     // Check if this operator is eligible to vote in this epoch
-                    let can_operator_vote =
-                        can_operator_vote(ballot_box, operator_snapshot, &operator);
+                    let can_operator_vote = can_operator_vote(operator_snapshot);
 
                     if can_operator_vote {
                         // If operator can vote:

@@ -22,7 +22,6 @@ A CLI for creating and managing the ncn program
 * `crank-update-all-vaults` — Crank Functions
 * `crank-register-vaults` — 
 * `crank-snapshot` — 
-* `crank-distribute` — 
 * `crank-close-epoch-accounts` — 
 * `set-epoch-weights` — 
 * `admin-create-config` — Admin
@@ -41,11 +40,6 @@ A CLI for creating and managing the ncn program
 * `snapshot-vault-operator-delegation` — 
 * `create-ballot-box` — 
 * `operator-cast-vote` — 
-* `create-ncn-reward-router` — 
-* `create-operator-vault-reward-router` — 
-* `route-ncn-rewards` — 
-* `route-operator-vault-rewards` — 
-* `distribute-base-operator-vault-rewards` — 
 * `get-ncn` — Getters
 * `get-ncn-operator-state` — 
 * `get-vault-ncn-ticket` — 
@@ -67,10 +61,6 @@ A CLI for creating and managing the ncn program
 * `get-operator-stakes` — 
 * `get-vault-stakes` — 
 * `get-vault-operator-stakes` — 
-* `get-ncn-reward-router` — 
-* `get-ncn-reward-receiver-address` — 
-* `get-operator-vault-reward-router` — 
-* `get-all-operator-vault-reward-routers` — 
 * `full-update-vaults` — 
 
 ###### **Options:**
@@ -109,16 +99,16 @@ A CLI for creating and managing the ncn program
 
 ## `ncn-program-cli run-keeper`
 
-NCN Keeper - Automates the epoch lifecycle including set weights, snapshots, voting, distribution, and closing
+NCN Keeper
 
 **Usage:** `ncn-program-cli run-keeper [OPTIONS]`
 
 ###### **Options:**
 
-* `--loop-timeout-ms <LOOP_TIMEOUT_MS>` — Keeper error timeout in milliseconds
+* `--loop-timeout-ms <LOOP_TIMEOUT_MS>` — Maximum time in milliseconds between keeper loop iterations
 
   Default value: `600000`
-* `--error-timeout-ms <ERROR_TIMEOUT_MS>` — Keeper error timeout in milliseconds
+* `--error-timeout-ms <ERROR_TIMEOUT_MS>` — Timeout in milliseconds when an error occurs before retrying
 
   Default value: `10000`
 
@@ -133,10 +123,10 @@ Operator Keeper
 ###### **Options:**
 
 * `--operator <OPERATOR>` — Operator address
-* `--loop-timeout-ms <LOOP_TIMEOUT_MS>` — Keeper error timeout in milliseconds
+* `--loop-timeout-ms <LOOP_TIMEOUT_MS>` — Maximum time in milliseconds between keeper loop iterations
 
   Default value: `600000`
-* `--error-timeout-ms <ERROR_TIMEOUT_MS>` — Keeper error timeout in milliseconds
+* `--error-timeout-ms <ERROR_TIMEOUT_MS>` — Timeout in milliseconds when an error occurs before retrying
 
   Default value: `10000`
 
@@ -159,14 +149,6 @@ Crank Functions
 ## `ncn-program-cli crank-snapshot`
 
 **Usage:** `ncn-program-cli crank-snapshot`
-
-
-
-## `ncn-program-cli crank-distribute`
-
-Handles the distribution of rewards after consensus is reached
-
-**Usage:** `ncn-program-cli crank-distribute`
 
 
 
@@ -233,7 +215,7 @@ Admin
 
 ###### **Options:**
 
-* `--weather-status <WEATHER_STATUS>` — tir breaker for voting
+* `--weather-status <WEATHER_STATUS>` — tie breaker for voting
 
 
 
@@ -342,48 +324,6 @@ Instructions
 
 * `--operator <OPERATOR>` — Operator address
 * `--weather-status <WEATHER_STATUS>` — weather status at solana beach
-
-
-
-## `ncn-program-cli create-ncn-reward-router`
-
-**Usage:** `ncn-program-cli create-ncn-reward-router`
-
-
-
-## `ncn-program-cli create-operator-vault-reward-router`
-
-**Usage:** `ncn-program-cli create-operator-vault-reward-router --operator <OPERATOR>`
-
-###### **Options:**
-
-* `--operator <OPERATOR>` — Operator address
-
-
-
-## `ncn-program-cli route-ncn-rewards`
-
-**Usage:** `ncn-program-cli route-ncn-rewards`
-
-
-
-## `ncn-program-cli route-operator-vault-rewards`
-
-**Usage:** `ncn-program-cli route-operator-vault-rewards --operator <OPERATOR>`
-
-###### **Options:**
-
-* `--operator <OPERATOR>` — Operator address
-
-
-
-## `ncn-program-cli distribute-base-operator-vault-rewards`
-
-**Usage:** `ncn-program-cli distribute-base-operator-vault-rewards --operator <OPERATOR>`
-
-###### **Options:**
-
-* `--operator <OPERATOR>` — Operator address
 
 
 
@@ -533,34 +473,6 @@ Getters
 ## `ncn-program-cli get-vault-operator-stakes`
 
 **Usage:** `ncn-program-cli get-vault-operator-stakes`
-
-
-
-## `ncn-program-cli get-ncn-reward-router`
-
-**Usage:** `ncn-program-cli get-ncn-reward-router`
-
-
-
-## `ncn-program-cli get-ncn-reward-receiver-address`
-
-**Usage:** `ncn-program-cli get-ncn-reward-receiver-address`
-
-
-
-## `ncn-program-cli get-operator-vault-reward-router`
-
-**Usage:** `ncn-program-cli get-operator-vault-reward-router --operator <OPERATOR>`
-
-###### **Options:**
-
-* `--operator <OPERATOR>` — Operator Account Address
-
-
-
-## `ncn-program-cli get-all-operator-vault-reward-routers`
-
-**Usage:** `ncn-program-cli get-all-operator-vault-reward-routers`
 
 
 

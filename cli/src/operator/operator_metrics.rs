@@ -1,12 +1,9 @@
 use anyhow::Result;
-use ncn_program_core::ballot_box::Ballot;
+// Ballot functionality has been removed
 use solana_metrics::datapoint_info;
 use solana_sdk::pubkey::Pubkey;
 
-use crate::{
-    getters::{get_ballot_box, get_current_epoch_and_slot},
-    handler::CliHandler,
-};
+use crate::{getters::get_current_epoch_and_slot, handler::CliHandler};
 
 /// Macro for emitting epoch-specific metrics
 ///
@@ -99,8 +96,6 @@ pub async fn emit_ncn_metrics_operator_vote(
 ///
 /// Collects and reports detailed information about:
 /// - The operator's vote status
-/// - Ballot box state
-/// - Consensus status
 /// - Vote weights
 ///
 /// # Arguments
@@ -115,78 +110,5 @@ pub async fn emit_ncn_metrics_operator_post_vote(
     epoch: u64,
     operator: &Pubkey,
 ) -> Result<()> {
-    let (current_epoch, current_slot) = get_current_epoch_and_slot(handler).await?;
-
-    // Get the ballot box to determine vote status and outcomes
-    let ballot_box = get_ballot_box(handler, epoch).await?;
-
-    // Check if this operator has voted
-    let did_operator_vote = ballot_box.did_operator_vote(operator);
-    let operator_vote = if did_operator_vote {
-        ballot_box
-            .operator_votes()
-            .iter()
-            .find(|v| v.operator().eq(&operator))
-    } else {
-        None
-    };
-
-    let is_current_epoch = current_epoch == epoch;
-
-    // Emit detailed metrics about the voting process
-    emit_epoch_datapoint!(
-        "ncn-operator-keeper-vote",
-        is_current_epoch,
-        ("current-epoch", current_epoch, i64),
-        ("current-slot", current_slot, i64),
-        ("keeper-epoch", epoch, i64),
-        ("operator", operator.to_string(), String),
-        ("has-voted", did_operator_vote as i64, i64),
-        (
-            "slot-voted",
-            operator_vote.map_or(-1, |v| v.slot_voted() as i64),
-            i64
-        ),
-        (
-            "ballot-index",
-            operator_vote.map_or(-1, |v| v.ballot_index() as i64),
-            i64
-        ),
-        (
-            "operator-weight",
-            operator_vote.map_or(-1.0, |v| { v.stake_weights().stake_weight() as f64 }),
-            f64
-        ),
-        (
-            "ballot-weight",
-            operator_vote.map_or(-1.0, |v| {
-                let ballot = ballot_box.ballot_tallies()[v.ballot_index() as usize];
-                ballot.stake_weights().stake_weight() as f64
-            }),
-            f64
-        ),
-        (
-            "ballot-value",
-            operator_vote.map_or(-1, |v| {
-                let ballot = ballot_box.ballot_tallies()[v.ballot_index() as usize];
-                ballot.ballot().weather_status() as i64
-            }),
-            i64
-        ),
-        (
-            "consensus-reached",
-            ballot_box.is_consensus_reached() as i64,
-            i64
-        ),
-        (
-            "winning-ballot",
-            ballot_box
-                .get_winning_ballot()
-                .unwrap_or(&Ballot::default())
-                .weather_status() as i64,
-            i64
-        )
-    );
-
     Ok(())
 }

@@ -2,11 +2,14 @@ use std::time::Duration;
 
 use crate::{
     getters::{
-        get_all_operators_in_ncn, get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot,
-        get_epoch_state, get_ncn_program_config, get_operator_snapshot, get_vault_registry,
+        get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault, get_all_vaults,
+        get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot, get_epoch_state,
+        get_ncn_program_config, get_operator, get_operator_snapshot, get_or_create_vault_registry,
+        get_vault, get_vault_config, get_vault_registry, get_vault_update_state_tracker,
         get_weight_table,
     },
     handler::CliHandler,
+    log::boring_progress_bar,
 };
 use anyhow::{anyhow, Ok, Result};
 use jito_restaking_core::{
@@ -29,20 +32,23 @@ use log::info;
 use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
-        AdminSetTieBreakerBuilder, AdminSetWeightBuilder, CastVoteBuilder,
-        CloseEpochAccountBuilder, InitializeBallotBoxBuilder,
+        AdminSetWeightBuilder, CastVoteBuilder, CloseEpochAccountBuilder,
         InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
         InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
         InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
-        InitializeWeightTableBuilder, ReallocBallotBoxBuilder, ReallocVaultRegistryBuilder,
-        ReallocWeightTableBuilder, RegisterVaultBuilder, SetEpochWeightsBuilder,
-        SnapshotVaultOperatorDelegationBuilder,
+        InitializeWeightTableBuilder, ReallocVaultRegistryBuilder, ReallocWeightTableBuilder,
+        RegisterVaultBuilder, SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
     },
     types::ConfigAdminRole,
 };
 use ncn_program_core::{
-    account_payer::AccountPayer, config::Config as NCNProgramConfig, epoch_marker::EpochMarker,
-    epoch_snapshot::EpochSnapshot, epoch_state::EpochState, vault_registry::VaultRegistry,
+    account_payer::AccountPayer,
+    config::Config as NCNProgramConfig,
+    constants::MAX_REALLOC_BYTES,
+    epoch_marker::EpochMarker,
+    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
+    epoch_state::EpochState,
+    vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
 use solana_client::rpc_config::RpcSendTransactionConfig;
@@ -225,47 +231,7 @@ pub async fn admin_set_weight_with_st_mint(
     Ok(())
 }
 
-pub async fn admin_set_tie_breaker(
-    handler: &CliHandler,
-    epoch: u64,
-    weather_status: u8,
-) -> Result<()> {
-    let keypair = handler.keypair()?;
-
-    let ncn = *handler.ncn()?;
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (ncn_config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (ballot_box, _, _) = BallotBox::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let set_tie_breaker_ix = AdminSetTieBreakerBuilder::new()
-        .epoch_state(epoch_state)
-        .config(ncn_config)
-        .ballot_box(ballot_box)
-        .ncn(ncn)
-        .tie_breaker_admin(keypair.pubkey())
-        .weather_status(weather_status)
-        .epoch(epoch)
-        .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[set_tie_breaker_ix],
-        &[],
-        "Set Tie Breaker",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("weather_status: {:?}", weather_status),
-            format!("Epoch: {:?}", epoch),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
+// Tie breaker functionality has been removed from the program
 
 pub async fn admin_set_new_admin(
     handler: &CliHandler,
@@ -863,36 +829,31 @@ pub async fn operator_cast_vote(
     handler: &CliHandler,
     operator: &Pubkey,
     epoch: u64,
-    weather_status: u8,
+    agg_sig: [u8; 32],
+    apk2: [u8; 64],
+    signers_bitmap: Vec<u8>,
+    message: [u8; 32],
 ) -> Result<()> {
-    let keypair = handler.keypair()?;
-
     let ncn = *handler.ncn()?;
-
     let operator = *operator;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (epoch_state, _, _) =
         EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
-    let (ballot_box, _, _) = BallotBox::find_program_address(&handler.ncn_program_id, &ncn, epoch);
+    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (epoch_snapshot, _, _) =
         EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
-    let (consensus_result, _, _) =
-        ConsensusResult::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
     let cast_vote_ix = CastVoteBuilder::new()
         .epoch_state(epoch_state)
-        .ballot_box(ballot_box)
+        .config(config)
         .ncn(ncn)
         .epoch_snapshot(epoch_snapshot)
-        .operator(operator)
-        .operator_voter(keypair.pubkey())
-        .consensus_result(consensus_result)
-        .weather_status(weather_status)
+        .agg_sig(agg_sig)
+        .apk2(apk2)
+        .signers_bitmap(signers_bitmap)
+        .message(message)
         .epoch(epoch)
         .instruction();
 
@@ -904,10 +865,6 @@ pub async fn operator_cast_vote(
         &[
             format!("NCN: {:?}", ncn),
             format!("Operator: {:?}", operator),
-            format!(
-                "Weather Status: {:?}",
-                WeatherStatus::from_u8(weather_status)
-            ),
             format!("Epoch: {:?}", epoch),
         ],
     )
@@ -918,16 +875,7 @@ pub async fn operator_cast_vote(
 
 // --------------------- MIDDLEWARE ------------------------------
 
-pub async fn get_consensus_result_instruction(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let consensus_result = get_consensus_result(handler, epoch).await?;
-
-    info!(
-        "Consensus Result for epoch {}: {:?}",
-        epoch, consensus_result
-    );
-
-    Ok(())
-}
+// Consensus result functionality has been removed from the program
 
 pub const CREATE_TIMEOUT_MS: u64 = 2000;
 pub const CREATE_GET_RETRIES: u64 = 3;
@@ -1169,20 +1117,7 @@ pub async fn get_or_create_operator_snapshot(
     }
 }
 
-#[allow(clippy::large_stack_frames)]
-pub async fn get_or_create_ballot_box(handler: &CliHandler, epoch: u64) -> Result<BallotBox> {
-    let ncn = *handler.ncn()?;
-    let (ballot_box, _, _) = BallotBox::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    if get_account(handler, &ballot_box)
-        .await?
-        .map_or(true, |ballot_box| ballot_box.data.len() < BallotBox::SIZE)
-    {
-        create_ballot_box(handler, epoch).await?;
-        check_created(handler, &ballot_box).await?;
-    }
-    get_ballot_box(handler, epoch).await
-}
+// Ballot box functionality has been removed from the program
 
 // --------------------- CRANKERS ------------------------------
 
@@ -1277,14 +1212,7 @@ pub async fn crank_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
         }
     }
 
-    let result = get_or_create_ballot_box(handler, epoch).await;
-    if let Err(err) = result {
-        log::error!(
-            "Failed to get or create ballot box for epoch: {:?} with error: {:?}",
-            epoch,
-            err
-        );
-    }
+    // Ballot box functionality has been removed
 
     Ok(())
 }
@@ -1332,19 +1260,10 @@ pub async fn operator_crank_vote(
     epoch: u64,
     operator: &Pubkey,
 ) -> Result<u8> {
-    // Get API key for weather service
-    let api_key = handler.open_weather_api_key()?;
-
-    // Fetch current weather status from OpenWeather API
-    let weather_value = get_weather_status(&api_key, "Solana Beach").await?;
-    info!(
-        "Current weather in Solana Beach (0:Sunny, 1:Other, 2:Rain/Snow): {}",
-        weather_value
-    );
-
-    // Cast the vote with the weather value
-    operator_cast_vote(handler, operator, epoch, weather_value).await?;
-    Ok(weather_value)
+    // Weather voting has been replaced with BLS signature aggregation
+    // This function is disabled until BLS signature implementation is complete
+    log::info!("Weather voting functionality has been replaced with BLS signatures");
+    Ok(0)
 }
 
 /// Logs detailed information about an operator's vote and ballot box state
@@ -1367,107 +1286,27 @@ pub async fn operator_crank_post_vote(
     epoch: u64,
     operator: &Pubkey,
 ) -> Result<()> {
-    // Get the ballot box for the current epoch
-    let ballot_box = get_ballot_box(handler, epoch).await?;
-
-    // Check if operator voted and get their vote details
-    let did_operator_vote = ballot_box.did_operator_vote(operator);
-    let operator_vote = if did_operator_vote {
-        ballot_box
-            .operator_votes()
-            .iter()
-            .find(|v| v.operator().eq(&operator))
-    } else {
-        None
-    };
-
-    // Build detailed log message
-    let mut log_message = format!("\n----- Post Vote Status -----\n");
-    log_message.push_str(&format!("Epoch: {}\n", epoch));
-    log_message.push_str(&format!("Did Operator Vote: {}\n", did_operator_vote));
-
-    // Add operator vote details if they voted
-    if let Some(vote) = operator_vote {
-        let operator_ballot = ballot_box.ballot_tallies()[vote.ballot_index() as usize];
-        let operator_ballot_weight = operator_ballot.stake_weights();
-        log_message.push_str("Operator Vote Details:\n");
-        log_message.push_str(&format!("  Operator: {}\n", vote.operator()));
-        log_message.push_str(&format!("  Slot Voted: {}\n", vote.slot_voted()));
-        log_message.push_str(&format!("  Ballot Index: {}\n", vote.ballot_index()));
-        log_message.push_str(&format!(
-            "  Operator Ballot Weight: {}\n",
-            operator_ballot_weight.stake_weight()
-        ));
-        log_message.push_str(&format!("  Operator Vote: {}\n", operator_ballot.ballot()));
-    } else {
-        log_message.push_str("No operator vote found\n");
-    }
-
-    // Add consensus information
-    log_message.push_str(&format!(
-        "Consensus Reached: {}\n",
-        ballot_box.is_consensus_reached()
-    ));
-
-    // Add winning ballot if consensus is reached
-    if ballot_box.is_consensus_reached() {
-        log_message.push_str(&format!(
-            "Winning Ballot: {}\n",
-            ballot_box.get_winning_ballot()?
-        ));
-    }
-    log_message.push_str("--------------------------\n");
-
-    // Log the complete message
-    log::info!("{}", log_message);
-
+    // Post vote functionality has been replaced with BLS signature aggregation
+    log::info!(
+        "Post vote status check for operator {} in epoch {}",
+        operator,
+        epoch
+    );
     Ok(())
 }
 
 #[allow(clippy::large_stack_frames)]
 pub async fn crank_test_vote(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let voter = handler.keypair()?.pubkey();
-    let weather_status = 0;
-    let operators = get_all_operators_in_ncn(handler).await?;
-
-    for operator in operators.iter() {
-        let operator_account = get_operator(handler, operator).await?;
-
-        if operator_account.voter.ne(&voter) {
-            continue;
-        }
-
-        let result = operator_cast_vote(handler, operator, epoch, weather_status).await;
-
-        if let Err(err) = result {
-            log::error!(
-                "Failed to cast vote for operator: {:?} in epoch: {:?} with error: {:?}",
-                operator,
-                epoch,
-                err
-            );
-        }
-    }
-
+    // Test voting has been replaced with BLS signature aggregation
+    // This function is disabled until BLS signature implementation is complete
+    log::info!("Test voting functionality has been replaced with BLS signatures");
     Ok(())
 }
 
 pub async fn crank_close_epoch_accounts(handler: &CliHandler, epoch: u64) -> Result<()> {
     let ncn = *handler.ncn()?;
 
-    // Close Ballot Box
-    let (ballot_box, _, _) = BallotBox::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let result = close_epoch_account(handler, ncn, epoch, ballot_box).await;
-
-    if let Err(err) = result {
-        log::error!(
-            "Failed to close ballot box: {:?} in epoch: {:?} with error: {:?}",
-            ballot_box,
-            epoch,
-            err
-        );
-    }
+    // Ballot box functionality has been removed
 
     // Note: Operator snapshots are now part of the epoch snapshot and cannot be closed individually
 
@@ -1526,12 +1365,8 @@ pub async fn crank_set_weight(handler: &CliHandler, epoch: u64) -> Result<()> {
 }
 
 pub async fn crank_post_vote_cooldown(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let result = get_consensus_result(handler, epoch).await?;
-
-    info!(
-        "\n\n--- Consensus Result for epoch {} is: \n {} ---",
-        epoch, result
-    );
+    // Consensus result functionality has been removed
+    log::info!("Post vote cooldown for epoch {}", epoch);
     Ok(())
 }
 
