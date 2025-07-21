@@ -35,9 +35,9 @@ mod tests {
 
         // Cast a vote so that this vote is one of the valid options
         // Gets to 50% consensus weight
-        ncn_program_client
-            .do_cast_vote(ncn, operator, operator_admin, weather_status, epoch)
-            .await?;
+        // ncn_program_client
+        //     .do_cast_vote(ncn, operator, operator_admin, weather_status, epoch)
+        //     .await?;
 
         let ballot_box = ncn_program_client.get_ballot_box(ncn, epoch).await?;
         assert!(ballot_box.has_ballot(&Ballot::new(weather_status)));

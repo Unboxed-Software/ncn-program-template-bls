@@ -3902,6 +3902,7 @@ dependencies = [
  "ncn-program-core",
  "rand 0.9.1",
  "shank",
+ "solana-nostd-sha256",
  "solana-program",
  "solana-program-test",
  "solana-sdk",

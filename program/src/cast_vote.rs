@@ -1,13 +1,15 @@
 use jito_bytemuck::AccountDeserialize;
-use jito_jsm_core::loader::load_signer;
-use jito_restaking_core::{ncn::Ncn, operator::Operator};
+use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
-    ballot_box::{Ballot, BallotBox},
     config::Config as NcnConfig,
     consensus_result::ConsensusResult,
+    constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE},
     epoch_snapshot::EpochSnapshot,
     epoch_state::EpochState,
     error::NCNProgramError,
+    g1_point::{G1CompressedPoint, G1Point},
+    g2_point::{G2CompressedPoint, G2Point},
+    schemes::Sha256Normalized,
     stake_weight::StakeWeights,
 };
 use solana_program::{
@@ -28,62 +30,39 @@ use solana_program::{
 /// ### Accounts:
 /// 1. `[writable]` epoch_state: The epoch state account for the target epoch
 /// 2. `[]` config: NCN configuration account (named `ncn_config` in code)
-/// 3. `[writable]` ballot_box: The ballot box for recording votes
 /// 4. `[]` ncn: The NCN account
 /// 5. `[]` epoch_snapshot: Epoch snapshot containing stake weights and operator snapshots
-/// 6. `[]` operator: The operator account casting the vote
-/// 7. `[signer]` operator_admin: The account authorized to vote on behalf of the operator (referred to as `operator_voter` in some docs)
 /// 8. `[writable]` consensus_result: Account for storing the consensus result
 pub fn process_cast_vote(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    weather_status: u8,
     epoch: u64,
+    apk2: [u8; G2_COMPRESSED_POINT_SIZE],
+    agg_sig: [u8; G1_COMPRESSED_POINT_SIZE],
+    non_signers_bitmap: Vec<u8>,
+    message: [u8; 32],
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let epoch_state = next_account_info(account_info_iter)?;
     let ncn_config = next_account_info(account_info_iter)?;
-    let ballot_box = next_account_info(account_info_iter)?;
     let ncn = next_account_info(account_info_iter)?;
     let epoch_snapshot = next_account_info(account_info_iter)?;
-    let operator = next_account_info(account_info_iter)?;
-    let operator_admin = next_account_info(account_info_iter)?;
-    let consensus_result = next_account_info(account_info_iter)?;
 
-    load_signer(operator_admin, false)?;
     EpochState::load(program_id, epoch_state, ncn.key, epoch, false)?;
     NcnConfig::load(program_id, ncn_config, ncn.key, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
-    Operator::load(&jito_restaking_program::id(), operator, false)?;
-    BallotBox::load(program_id, ballot_box, ncn.key, epoch, true)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, false)?;
-    ConsensusResult::load(program_id, consensus_result, ncn.key, epoch, true)?;
 
-    let operator_data = operator.data.borrow();
-    let operator_account = Operator::try_from_slice_unchecked(&operator_data)?;
+    // let valid_slots_after_consensus = {
+    //     let ncn_config_data = ncn_config.data.borrow();
+    //     let ncn_config = NcnConfig::try_from_slice_unchecked(&ncn_config_data)?;
+    //     ncn_config.valid_slots_after_consensus()
+    // };
 
-    if *operator_admin.key != operator_account.voter {
-        msg!(
-            "Error: Invalid operator voter. Expected: {}, got: {}",
-            operator_account.voter,
-            operator_admin.key
-        );
-        return Err(NCNProgramError::InvalidOperatorVoter.into());
-    }
-
-    let valid_slots_after_consensus = {
-        let ncn_config_data = ncn_config.data.borrow();
-        let ncn_config = NcnConfig::try_from_slice_unchecked(&ncn_config_data)?;
-        ncn_config.valid_slots_after_consensus()
-    };
-
-    let mut ballot_box_data = ballot_box.data.borrow_mut();
-    let ballot_box = BallotBox::try_from_slice_unchecked_mut(&mut ballot_box_data)?;
+    let epoch_snapshot_data = epoch_snapshot.data.borrow();
+    let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
 
     let total_stake_weights = {
-        let epoch_snapshot_data = epoch_snapshot.data.borrow();
-        let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
-
         if !epoch_snapshot.finalized() {
             msg!("Error: Epoch snapshot not finalized for epoch: {}", epoch);
             return Err(NCNProgramError::EpochSnapshotNotFinalized.into());
@@ -91,65 +70,110 @@ pub fn process_cast_vote(
 
         StakeWeights::new(epoch_snapshot.operators_can_vote_count() as u128)
     };
+
     msg!("Total operators: {}", total_stake_weights.stake_weight());
 
-    let operator_stake_weights = StakeWeights::new(1);
+    // let operator_stake_weights = StakeWeights::new(1);
 
     let slot = Clock::get()?.slot;
     msg!("Current slot: {}", slot);
 
-    let ballot = Ballot::new(weather_status);
-
-    ballot_box.cast_vote(
-        operator.key,
-        &ballot,
-        &operator_stake_weights,
-        slot,
-        valid_slots_after_consensus,
-    )?;
+    // Check bitmap size
+    let required_bitmap_bytes = (epoch_snapshot.operators_registered() + 7) / 8;
+    if non_signers_bitmap.len() as u64 != required_bitmap_bytes {
+        msg!("Invalid bitmap size");
+        return Err(NCNProgramError::InvalidInputLength.into());
+    }
 
     msg!(
-        "Tallying votes with total stake weight: {}, current slot: {}",
-        total_stake_weights.stake_weight(),
-        slot
+        "Bitmap is: {:?} , {:?}",
+        non_signers_bitmap.len(),
+        epoch_snapshot.operators_registered()
     );
-    ballot_box.tally_votes(total_stake_weights.stake_weight(), slot)?;
 
-    // If consensus is reached, update the consensus result account
-    if ballot_box.is_consensus_reached() {
-        let winning_ballot_tally = ballot_box.get_winning_ballot_tally()?;
-        msg!(
-            "Consensus reached for epoch {} with ballot weather status: {}, stake weight: {}",
-            epoch,
-            winning_ballot_tally.ballot().weather_status(),
-            winning_ballot_tally.stake_weights().stake_weight()
-        );
+    // Convert apk2 to G2Point
+    let apk2_compressed_point = G2CompressedPoint::from(apk2);
+    let apk2_point = G2Point::try_from(apk2_compressed_point)
+        .map_err(|_| NCNProgramError::G2PointDecompressionError)?;
 
-        // Update the consensus result account
-        let mut consensus_result_data = consensus_result.try_borrow_mut_data()?;
-        let consensus_result_account =
-            ConsensusResult::try_from_slice_unchecked_mut(&mut consensus_result_data)?;
+    // Aggregate the G1 public keys of operators who signed
+    let mut aggregated_nonsigners_pubkey: Option<G1Point> = None;
+    let mut non_signers_count = 0;
 
-        consensus_result_account.record_consensus(
-            winning_ballot_tally.ballot().weather_status(),
-            winning_ballot_tally.stake_weights().stake_weight() as u64,
-            total_stake_weights.stake_weight() as u64,
-            slot,
-        )?;
+    for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumerate() {
+        if i >= epoch_snapshot.operators_registered() as usize {
+            break;
+        }
+
+        let byte_index = i / 8;
+        let bit_index = i % 8;
+        let signed = (non_signers_bitmap[byte_index] >> bit_index) & 1 == 1;
+
+        if !signed {
+            non_signers_count += 1;
+            // msg!("Operator {} didn't signed", i);
+
+            // Convert bytes to G1Point
+            let g1_compressed = G1CompressedPoint::from(operator_snapshot.g1_pubkey());
+            let g1_point = G1Point::try_from(&g1_compressed)
+                .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
+
+            if aggregated_nonsigners_pubkey.is_none() {
+                aggregated_nonsigners_pubkey = Some(g1_point);
+            } else {
+                // Add this G1 pubkey to the aggregate using G1Point addition
+                let current = aggregated_nonsigners_pubkey.unwrap();
+                aggregated_nonsigners_pubkey = Some(current + g1_point);
+            }
+        } else {
+            // msg!("Operator {} did not sign", i);
+        }
+    }
+
+    let total_agg_g1_pubkey_compressed =
+        G1CompressedPoint::from(epoch_snapshot.total_agg_g1_pubkey());
+    let total_agg_g1_pubkey = G1Point::try_from(&total_agg_g1_pubkey_compressed)
+        .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
+
+    let signature_compressed = G1CompressedPoint(agg_sig);
+    let signature = G1Point::try_from(&signature_compressed)
+        .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
+
+    if non_signers_count == 0 {
+        msg!("All operators signed, verifying aggregate signature with total G1 pubkey");
+        apk2_point
+            .verify_agg_signature::<Sha256Normalized, &[u8], G1Point>(
+                signature,
+                &message,
+                total_agg_g1_pubkey,
+            )
+            .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
     } else {
-        msg!("Consensus not yet reached for epoch: {}", epoch);
-    }
+        msg!("Total non signers: {}", non_signers_count);
+        let aggregated_nonsigners_pubkey =
+            aggregated_nonsigners_pubkey.ok_or(NCNProgramError::NoNonSignersAggregatedPubkey)?;
 
-    // Update Epoch State
-    {
-        let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
-        let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
-        epoch_state_account.update_cast_vote(
-            ballot_box.operators_voted(),
-            ballot_box.is_consensus_reached(),
-            slot,
-        )?;
+        let apk1 = total_agg_g1_pubkey + aggregated_nonsigners_pubkey.negate();
+
+        msg!("Aggreged non-signers G1 pubkeys {:?}", apk1.0);
+        msg!("Aggreged G2 {:?}", apk2_point.0);
+
+        // One Pairing attempt
+        msg!("Verifying aggregate signature one pairing");
+        apk2_point
+            .verify_agg_signature::<Sha256Normalized, &[u8], G1Point>(signature, &message, apk1)
+            .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
     }
+    // Update Epoch State
+    // {
+    //     let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
+    //     let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
+    //     epoch_state_account.update_cast_vote(
+    //         ballot_box.operators_voted(),
+    //         ballot_box.is_consensus_reached(),
+    //         slot,
+    //     )?;
+    // }
 
     Ok(())
 }

@@ -893,11 +893,6 @@
           "isSigner": false
         },
         {
-          "name": "ballotBox",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "ncn",
           "isMut": false,
           "isSigner": false
@@ -908,16 +903,6 @@
           "isSigner": false
         },
         {
-          "name": "operator",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operatorVoter",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
           "name": "consensusResult",
           "isMut": true,
           "isSigner": false
@@ -925,12 +910,39 @@
       ],
       "args": [
         {
-          "name": "weatherStatus",
-          "type": "u8"
-        },
-        {
           "name": "epoch",
           "type": "u64"
+        },
+        {
+          "name": "aggSig",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "apk2",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        },
+        {
+          "name": "signersBitmap",
+          "type": "bytes"
+        },
+        {
+          "name": "message",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ],
       "discriminant": {
@@ -2813,6 +2825,21 @@
       "code": 8802,
       "name": "InvalidMinimumStakeWeight",
       "msg": "Invalid Minimum Stake Weight"
+    },
+    {
+      "code": 8803,
+      "name": "MissingRequiredSignature",
+      "msg": "Missing required signature"
+    },
+    {
+      "code": 8804,
+      "name": "SignatureVerificationFailed",
+      "msg": "Signature verification failed"
+    },
+    {
+      "code": 8805,
+      "name": "NoNonSignersAggregatedPubkey",
+      "msg": "No non signers aggregated pubkey"
     }
   ],
   "metadata": {

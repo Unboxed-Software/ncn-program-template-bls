@@ -249,15 +249,15 @@ pub enum NCNProgramInstruction {
     /// Cast a vote for a merkle root
     #[account(0, writable, name = "epoch_state")]
     #[account(1, name = "config")]
-    #[account(2, writable, name = "ballot_box")]
-    #[account(3, name = "ncn")]
-    #[account(4, name = "epoch_snapshot")]
-    #[account(5, name = "operator")]
-    #[account(6, signer, name = "operator_voter")]
-    #[account(7, writable, name = "consensus_result")]
+    #[account(2, name = "ncn")]
+    #[account(3, name = "epoch_snapshot")]
+    #[account(4, writable, name = "consensus_result")]
     CastVote {
-        weather_status: u8,
         epoch: u64,
+        agg_sig: [u8; 32],
+        apk2: [u8; 64],
+        signers_bitmap: Vec<u8>,
+        message: [u8; 32],
     },
 
     /// Close an epoch account

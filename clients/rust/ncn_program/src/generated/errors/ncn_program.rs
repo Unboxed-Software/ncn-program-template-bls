@@ -337,6 +337,15 @@ pub enum NcnProgramError {
     /// 8802 - Invalid Minimum Stake Weight
     #[error("Invalid Minimum Stake Weight")]
     InvalidMinimumStakeWeight = 0x2262,
+    /// 8803 - Missing required signature
+    #[error("Missing required signature")]
+    MissingRequiredSignature = 0x2263,
+    /// 8804 - Signature verification failed
+    #[error("Signature verification failed")]
+    SignatureVerificationFailed = 0x2264,
+    /// 8805 - No non signers aggregated pubkey
+    #[error("No non signers aggregated pubkey")]
+    NoNonSignersAggregatedPubkey = 0x2265,
 }
 
 impl solana_program::program_error::PrintProgramError for NcnProgramError {

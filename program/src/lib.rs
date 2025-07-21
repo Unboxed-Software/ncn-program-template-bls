@@ -198,11 +198,22 @@ pub fn process_instruction(
             process_realloc_ballot_box(program_id, accounts, epoch)
         }
         NCNProgramInstruction::CastVote {
-            weather_status,
             epoch,
+            apk2,
+            agg_sig,
+            message,
+            signers_bitmap,
         } => {
             msg!("Instruction: CastVote");
-            process_cast_vote(program_id, accounts, weather_status, epoch)
+            process_cast_vote(
+                program_id,
+                accounts,
+                epoch,
+                apk2,
+                agg_sig,
+                signers_bitmap,
+                message,
+            )
         }
 
         // ---------------------------------------------------- //

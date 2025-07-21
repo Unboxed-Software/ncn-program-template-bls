@@ -232,6 +232,12 @@ export const NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH = 0x2260; // 8800
 export const NCN_PROGRAM_ERROR__INVALID_G1_PUBKEY = 0x2261; // 8801
 /** InvalidMinimumStakeWeight: Invalid Minimum Stake Weight */
 export const NCN_PROGRAM_ERROR__INVALID_MINIMUM_STAKE_WEIGHT = 0x2262; // 8802
+/** MissingRequiredSignature: Missing required signature */
+export const NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE = 0x2263; // 8803
+/** SignatureVerificationFailed: Signature verification failed */
+export const NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED = 0x2264; // 8804
+/** NoNonSignersAggregatedPubkey: No non signers aggregated pubkey */
+export const NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY = 0x2265; // 8805
 
 export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -300,10 +306,12 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__MARKER_EXISTS
   | typeof NCN_PROGRAM_ERROR__MINT_ENTRY_NOT_FOUND
   | typeof NCN_PROGRAM_ERROR__MINT_IN_TABLE
+  | typeof NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE
   | typeof NCN_PROGRAM_ERROR__MODULO_OVERFLOW
   | typeof NCN_PROGRAM_ERROR__NCN_REWARD_ROUTE_NOT_FOUND
   | typeof NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR
   | typeof NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE
+  | typeof NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY
   | typeof NCN_PROGRAM_ERROR__NO_OPERATORS
   | typeof NCN_PROGRAM_ERROR__NO_REWARDS
   | typeof NCN_PROGRAM_ERROR__NO_VALID_BALLOTS
@@ -320,6 +328,7 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ROUTER_STILL_ROUTING
   | typeof NCN_PROGRAM_ERROR__SECRET_KEY_ERROR
   | typeof NCN_PROGRAM_ERROR__SERIALIZATION_ERROR
+  | typeof NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED
   | typeof NCN_PROGRAM_ERROR__TABLE_NOT_INITIALIZED
   | typeof NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID
   | typeof NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES
@@ -413,10 +422,12 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__MARKER_EXISTS]: `Marker exists`,
     [NCN_PROGRAM_ERROR__MINT_ENTRY_NOT_FOUND]: `Mint Entry not found`,
     [NCN_PROGRAM_ERROR__MINT_IN_TABLE]: `Mint is already in the table`,
+    [NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE]: `Missing required signature`,
     [NCN_PROGRAM_ERROR__MODULO_OVERFLOW]: `Modulo Overflow`,
     [NCN_PROGRAM_ERROR__NCN_REWARD_ROUTE_NOT_FOUND]: `Ncn reward route not found`,
     [NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR]: `New precise number error`,
     [NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE]: `There are no mints in the table`,
+    [NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY]: `No non signers aggregated pubkey`,
     [NCN_PROGRAM_ERROR__NO_OPERATORS]: `No operators in ncn`,
     [NCN_PROGRAM_ERROR__NO_REWARDS]: `No rewards to distribute`,
     [NCN_PROGRAM_ERROR__NO_VALID_BALLOTS]: `No valid Ballot`,
@@ -433,6 +444,7 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__ROUTER_STILL_ROUTING]: `Router still routing`,
     [NCN_PROGRAM_ERROR__SECRET_KEY_ERROR]: `Secret key error`,
     [NCN_PROGRAM_ERROR__SERIALIZATION_ERROR]: `Serialization error`,
+    [NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED]: `Signature verification failed`,
     [NCN_PROGRAM_ERROR__TABLE_NOT_INITIALIZED]: `Table not initialized`,
     [NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID]: `Tie breaker admin invalid`,
     [NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES]: `Tie breaking ballot must be one of the prior votes`,

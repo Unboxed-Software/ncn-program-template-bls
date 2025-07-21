@@ -15,6 +15,7 @@ ncn-program = { workspace = true }
 ncn-program-client = { workspace = true }
 ncn-program-core = { workspace = true }
 rand = "0.9.1"
+solana-nostd-sha256 = { workspace = true }
 
 [dev-dependencies]
 anchor-lang = { workspace = true }

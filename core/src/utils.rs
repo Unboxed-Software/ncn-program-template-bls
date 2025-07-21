@@ -88,3 +88,36 @@ pub fn compute_alpha(
     }
     alpha_bytes
 }
+
+/// Creates a bitmap representing which operators have signed, given their indices and the total number of operators.
+/// Each bit in the bitmap corresponds to an operator: bit set to 1 means the operator at that index has signed.
+///
+/// # Arguments
+/// * `signer_indices` - A slice of indices (usize) indicating which operators have signed.
+/// * `total_operators` - The total number of operators (determines the bitmap length).
+///
+/// # Returns
+/// A vector of bytes (`Vec<u8>`) where each bit represents the signing status of an operator.
+pub fn create_signer_bitmap(non_signer_indices: &[usize], total_operators: usize) -> Vec<u8> {
+    // Calculate the number of bytes needed to represent all operators (1 bit per operator).
+    // Add 7 before dividing by 8 to ensure rounding up for any remainder bits.
+    let bitmap_size = (total_operators + 7) / 8;
+    // Initialize the bitmap with all bits set to 1 (all operators have signed).
+    let mut bitmap = vec![255u8; bitmap_size];
+
+    // Iterate over each index in non_signer_indices, setting the corresponding bit in the bitmap.
+    for &index in non_signer_indices {
+        // Determine which byte in the bitmap this operator's bit falls into.
+        let byte_index = index / 8;
+        // Determine the bit position within the byte (0 = least significant bit).
+        let bit_index = index % 8;
+        // Only set the bit if the byte_index is within the bitmap bounds.
+        if byte_index < bitmap.len() {
+            // Set the bit at bit_index in the byte at byte_index to 0.
+            bitmap[byte_index] &= !(1 << bit_index);
+        }
+    }
+
+    // Return the constructed bitmap.
+    bitmap
+}

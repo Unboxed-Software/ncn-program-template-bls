@@ -124,7 +124,7 @@ mod tests {
 
         assert_eq!(
             epoch_snapshot.total_agg_g1_pubkey(),
-            &agg_g1_pubkey_compressed.0
+            agg_g1_pubkey_compressed.0
         );
 
         Ok(())
@@ -239,12 +239,12 @@ mod tests {
 
         assert_eq!(
             epoch_snapshot.total_agg_g1_pubkey(),
-            &agg_g1_pubkey_compressed.0
+            agg_g1_pubkey_compressed.0
         );
 
         assert_ne!(
             epoch_snapshot.total_agg_g1_pubkey(),
-            &all_agg_g1_pubkey_compressed.0
+            all_agg_g1_pubkey_compressed.0
         );
 
         assert_ne!(&agg_g1_pubkey_compressed.0, &all_agg_g1_pubkey_compressed.0);

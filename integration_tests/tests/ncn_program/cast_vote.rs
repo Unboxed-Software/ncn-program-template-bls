@@ -1,19 +1,230 @@
 #[cfg(test)]
 mod tests {
     use ncn_program_core::{
-        ballot_box::{Ballot, WeatherStatus},
         constants::MAX_OPERATORS,
         error::NCNProgramError,
+        g1_point::{G1CompressedPoint, G1Point},
+        g2_point::{G2CompressedPoint, G2Point},
+        schemes::Sha256Normalized,
+        utils::create_signer_bitmap,
     };
     use rand::Rng;
-    use solana_sdk::msg;
+    use std::collections::HashSet;
 
     use crate::fixtures::{
         ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,
     };
 
+    pub fn get_random_none_signers_indecies(
+        total_operators: usize,
+        none_signers_count: usize,
+    ) -> Vec<usize> {
+        assert!(
+            none_signers_count <= total_operators,
+            "Cannot have more non-signers than total operators"
+        );
+
+        let mut rng = rand::rng();
+        let mut none_signers_indices = HashSet::new();
+
+        // Generate unique random indices
+        while none_signers_indices.len() < none_signers_count {
+            let index = rng.random_range(0..total_operators);
+            none_signers_indices.insert(index);
+        }
+
+        // Convert to vector and sort for consistent output
+        let mut result: Vec<usize> = none_signers_indices.into_iter().collect();
+        result.sort();
+        result
+    }
+
     #[tokio::test]
-    async fn test_cast_vote() -> TestResult<()> {
+    async fn test_cast_vote_multiple_signers() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(100, 1, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let clock = fixture.clock().await;
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+        let epoch = clock.epoch;
+
+        // Create a test message to sign
+        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 10); // Let's say these operators didn't sign
+
+        let mut signitures: Vec<G1Point> = vec![];
+        let mut apk2_pubkeys: Vec<G2Point> = vec![];
+        for (i, operator) in test_ncn.operators.iter().enumerate() {
+            if !none_signers_indecies.contains(&i) {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .unwrap();
+                signitures.push(signature);
+            }
+        }
+
+        let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+        let agg_sig = signitures.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+        // Create signers bitmap - all operators signed (bit 0 = 0 means they signed)
+        let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
+
+        // print the signers_bitmap as a binary string
+        let mut binary_string = String::new();
+        for byte in signers_bitmap.clone() {
+            binary_string.push_str(&format!("{:08b}", byte));
+        }
+        println!("signers_bitmap: {}", binary_string);
+        println!("apk2: {:?}", apk2);
+
+        ncn_program_client
+            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .await?;
+
+        Ok(())
+    }
+
+    #[ignore = "takes too long"]
+    #[tokio::test]
+    async fn test_cast_vote_multiple_signers_max_limits() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture
+            .create_initial_test_ncn(MAX_OPERATORS, 10, None)
+            .await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let clock = fixture.clock().await;
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+        let epoch = clock.epoch;
+
+        // Create a test message to sign
+        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 100); // Let's say these operators didn't sign
+
+        let mut signitures: Vec<G1Point> = vec![];
+        let mut apk2_pubkeys: Vec<G2Point> = vec![];
+        for (i, operator) in test_ncn.operators.iter().enumerate() {
+            if !none_signers_indecies.contains(&i) {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .unwrap();
+                signitures.push(signature);
+            }
+        }
+
+        let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+        let agg_sig = signitures.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+        // Create signers bitmap - all operators signed (bit 0 = 0 means they signed)
+        let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
+
+        // print the signers_bitmap as a binary string
+        let mut binary_string = String::new();
+        for byte in signers_bitmap.clone() {
+            binary_string.push_str(&format!("{:08b}", byte));
+        }
+        println!("signers_bitmap: {}", binary_string);
+        println!("apk2: {:?}", apk2);
+
+        ncn_program_client
+            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_multiple_signers_passing_wrong_bitmap() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let clock = fixture.clock().await;
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+        let epoch = clock.epoch;
+
+        // Create a test message to sign
+        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 5); // Let's say these operators didn't sign
+
+        let mut signitures: Vec<G1Point> = vec![];
+        let mut apk2_pubkeys: Vec<G2Point> = vec![];
+        for (i, operator) in test_ncn.operators.iter().enumerate() {
+            if !none_signers_indecies.contains(&i) {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .unwrap();
+                signitures.push(signature);
+            }
+        }
+
+        let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+        let agg_sig = signitures.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+        // create a wrong bitmap
+        let wrong_none_signers_indecies =
+            get_random_none_signers_indecies(test_ncn.operators.len(), 2); // Let's say these operators didn't sign
+        let wrong_signers_bitmap =
+            create_signer_bitmap(&wrong_none_signers_indecies, test_ncn.operators.len());
+
+        // print the signers_bitmap as a binary string
+        let mut binary_string = String::new();
+        for byte in wrong_signers_bitmap.clone() {
+            binary_string.push_str(&format!("{:08b}", byte));
+        }
+
+        let result = ncn_program_client
+            .do_cast_vote(ncn, epoch, agg_sig, apk2, wrong_signers_bitmap, message)
+            .await;
+
+        assert_ncn_program_error(
+            result,
+            NCNProgramError::SignatureVerificationFailed,
+            Some(1),
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_invalid_signature_fails() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
@@ -21,151 +232,47 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-
-        fixture.snapshot_test_ncn(&test_ncn).await?;
-        //////
-
-        let clock = fixture.clock().await;
-        let slot = clock.slot;
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let operator = test_ncn.operators[0].operator_pubkey;
-        let epoch = clock.epoch;
-
-        ncn_program_client
-            .do_full_initialize_ballot_box(ncn, epoch)
-            .await?;
-
-        let weather_status = WeatherStatus::default() as u8;
-
-        let operator_admin = &test_ncn.operators[0].operator_admin;
-
-        ncn_program_client
-            .do_cast_vote(ncn, operator, operator_admin, weather_status, epoch)
-            .await?;
-
-        let ballot_box = ncn_program_client.get_ballot_box(ncn, epoch).await?;
-
-        assert!(ballot_box.has_ballot(&Ballot::new(weather_status)));
-        assert_eq!(ballot_box.slot_consensus_reached(), slot);
-        assert!(ballot_box.is_consensus_reached());
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_operator_cannot_vote_twice() -> TestResult<()> {
-        let mut fixture = TestBuilder::new().await;
-        let mut ncn_program_client = fixture.ncn_program_client();
-
-        let test_ncn = fixture.create_initial_test_ncn(3, 1, None).await?;
-
-        ///// NCNProgram Setup /////
-        fixture.warp_slot_incremental(1000).await?;
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
         let clock = fixture.clock().await;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let operator = test_ncn.operators[0].operator_pubkey;
-        let operator_admin = &test_ncn.operators[0].operator_admin;
         let epoch = clock.epoch;
 
-        // Initialize ballot box
-        ncn_program_client
-            .do_full_initialize_ballot_box(ncn, epoch)
-            .await?;
+        // Create a test message
+        let message = solana_nostd_sha256::hashv(&[b"test message"]);
 
-        // First vote should succeed
-        let first_weather_status = WeatherStatus::Sunny as u8;
-        ncn_program_client
-            .do_cast_vote(ncn, operator, operator_admin, first_weather_status, epoch)
-            .await?;
+        // Use correct operator key but create invalid signature
+        let operator_key = test_ncn.operators[0].bn128_privkey;
+        let apk2 = G2CompressedPoint::try_from(&operator_key).unwrap().0;
 
-        // Verify first vote was recorded
-        let ballot_box = ncn_program_client.get_ballot_box(ncn, epoch).await?;
-        assert!(ballot_box.has_ballot(&Ballot::new(first_weather_status)));
-        assert_eq!(ballot_box.operators_voted(), 1);
-        assert_eq!(ballot_box.unique_ballots(), 1);
+        // Create an invalid signature (just random bytes)
+        let agg_sig = [1u8; 32]; // Invalid signature
 
-        // Second vote should fail
-        let second_weather_status = WeatherStatus::Cloudy as u8;
-        let result = ncn_program_client
-            .do_cast_vote(ncn, operator, operator_admin, second_weather_status, epoch)
-            .await;
-
-        msg!("result: {:?}", result);
-        assert_ncn_program_error(result, NCNProgramError::OperatorAlreadyVoted, Some(1));
-
-        // Verify ballot box state remains unchanged
-        let ballot_box = ncn_program_client.get_ballot_box(ncn, epoch).await?;
-        assert!(ballot_box.has_ballot(&Ballot::new(first_weather_status)));
-        assert!(!ballot_box.has_ballot(&Ballot::new(second_weather_status)));
-        assert_eq!(ballot_box.operators_voted(), 1);
-        assert_eq!(ballot_box.unique_ballots(), 1);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_bad_ballot() -> TestResult<()> {
-        let mut fixture = TestBuilder::new().await;
-        let mut ncn_program_client = fixture.ncn_program_client();
-
-        let test_ncn = fixture.create_initial_test_ncn(3, 1, None).await?;
-
-        ///// NCNProgram Setup /////
-        fixture.warp_slot_incremental(1000).await?;
-
-        fixture.snapshot_test_ncn(&test_ncn).await?;
-        //////
-
-        let clock = fixture.clock().await;
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let operator = test_ncn.operators[0].operator_pubkey;
-        let epoch = clock.epoch;
-
-        // let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn, epoch).await?;
-        // msg!("epoch_snapshot before : {}", epoch_snapshot);
-        //
-        // fixture
-        //     .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
-        //     .await?;
-        //
-        // let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn, epoch).await?;
-        // msg!("epoch_snapshot after : {}", epoch_snapshot);
-
-        ncn_program_client
-            .do_full_initialize_ballot_box(ncn, epoch)
-            .await?;
-
-        let weather_status = 5;
-
-        let operator_admin = &test_ncn.operators[0].operator_admin;
+        let signers_bitmap = vec![0u8; 1]; // All signed
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, operator, operator_admin, weather_status, epoch)
+            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
             .await;
 
-        msg!("result: {:?}", result);
-
-        assert_ncn_program_error(result, NCNProgramError::BadBallot, Some(1));
+        assert_ncn_program_error(
+            result,
+            NCNProgramError::SignatureVerificationFailed,
+            Some(1),
+        );
 
         Ok(())
     }
 
-    #[ignore = "long test"]
     #[tokio::test]
-    async fn test_cast_vote_max_cu() -> TestResult<()> {
+    async fn test_cast_vote_invalid_bitmap_size_fails() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture
-            .create_initial_test_ncn(MAX_OPERATORS, 1, None)
-            .await?;
+        let test_ncn = fixture.create_initial_test_ncn(1, 1, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
@@ -173,32 +280,79 @@ mod tests {
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         let epoch = clock.epoch;
 
-        ncn_program_client
-            .do_full_initialize_ballot_box(ncn, epoch)
-            .await?;
+        let message = solana_nostd_sha256::hashv(&[b"test message"]);
+        let operator_key = test_ncn.operators[0].bn128_privkey;
+        let signature = operator_key
+            .sign::<Sha256Normalized, &[u8; 32]>(&message)
+            .unwrap();
+        let agg_sig = G1CompressedPoint::try_from(signature).unwrap().0;
+        let apk2 = G2CompressedPoint::try_from(&operator_key).unwrap().0;
 
-        for operator in test_ncn.operators {
-            let operator_admin = &operator.operator_admin;
+        // Wrong bitmap size - should be 1 byte for 1 operator, but provide 2 bytes
+        let signers_bitmap = vec![0u8; 2];
 
-            let weather_status = rand::rng().random_range(0..=2);
+        let result = ncn_program_client
+            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .await;
 
-            ncn_program_client
-                .do_cast_vote(
-                    ncn,
-                    operator.operator_pubkey,
-                    operator_admin,
-                    weather_status,
-                    epoch,
-                )
-                .await?;
+        assert_ncn_program_error(result, NCNProgramError::InvalidInputLength, Some(1));
 
-            let ballot_box = ncn_program_client.get_ballot_box(ncn, epoch).await?;
-            assert!(ballot_box.has_ballot(&Ballot::new(weather_status)));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_invalid_message_fails() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let clock = fixture.clock().await;
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+        let epoch = clock.epoch;
+
+        // Create a test message to sign
+        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 5); // Let's say these operators didn't sign
+
+        let mut signitures: Vec<G1Point> = vec![];
+        let mut apk2_pubkeys: Vec<G2Point> = vec![];
+        for (i, operator) in test_ncn.operators.iter().enumerate() {
+            if !none_signers_indecies.contains(&i) {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .unwrap();
+                signitures.push(signature);
+            }
         }
 
-        let ballot_box = ncn_program_client.get_ballot_box(ncn, epoch).await?;
-        msg!("ballot_box: {}", ballot_box);
-        assert!(!ballot_box.is_consensus_reached());
+        let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+        let agg_sig = signitures.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+        let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
+
+        let wrong_message = solana_nostd_sha256::hashv(&[b"wrong message"]);
+
+        let result = ncn_program_client
+            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, wrong_message)
+            .await;
+
+        assert_ncn_program_error(
+            result,
+            NCNProgramError::SignatureVerificationFailed,
+            Some(1),
+        );
 
         Ok(())
     }

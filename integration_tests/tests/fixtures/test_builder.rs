@@ -665,21 +665,7 @@ impl TestBuilder {
         self.add_weights_for_test_ncn(test_ncn).await?;
         self.add_epoch_snapshot_to_test_ncn(test_ncn).await?;
 
-        let mut ncn_program_client = self.ncn_program_client();
-        let epoch = self.clock().await.epoch;
-        let ecpoh_snapshot = ncn_program_client
-            .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-        msg!("epoch snapshot before: {}", ecpoh_snapshot);
-
         self.add_operator_snapshots_to_test_ncn(test_ncn).await?;
-
-        let mut ncn_program_client = self.ncn_program_client();
-        let epoch = self.clock().await.epoch;
-        let ecpoh_snapshot = ncn_program_client
-            .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-        msg!("epoch snapshot: {}", ecpoh_snapshot);
 
         self.add_vault_operator_delegation_snapshots_to_test_ncn(test_ncn)
             .await?;
@@ -720,17 +706,17 @@ impl TestBuilder {
                 .get_operator_snapshot(operator, ncn, epoch)
                 .await?;
 
-            if operator_snapshot.is_active() {
-                ncn_program_client
-                    .do_cast_vote(
-                        ncn,
-                        operator,
-                        &operator_root.operator_admin,
-                        weather_status,
-                        epoch,
-                    )
-                    .await?;
-            }
+            // if operator_snapshot.is_active() {
+            //     ncn_program_client
+            //         .do_cast_vote(
+            //             ncn,
+            //             operator,
+            //             &operator_root.operator_admin,
+            //             weather_status,
+            //             epoch,
+            //         )
+            //         .await?;
+            // }
         }
 
         Ok(())

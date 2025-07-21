@@ -32,7 +32,11 @@ use ncn_program_core::{
     epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
+    g1_point::{G1CompressedPoint, G1Point},
+    g2_point::{G2CompressedPoint, G2Point},
     operator_registry::OperatorRegistry,
+    privkey::PrivKey,
+    schemes::Sha256Normalized,
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
@@ -1097,84 +1101,96 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Casts a vote for a given operator in a specific epoch.
+    /// Casts a vote using BLS signature aggregation for a given epoch.
     pub async fn do_cast_vote(
         &mut self,
         ncn: Pubkey,
-        operator: Pubkey,
-        operator_admin: &Keypair,
-        weather_status: u8,
         epoch: u64,
+        agg_sig: [u8; 32],
+        apk2: [u8; 64],
+        signers_bitmap: Vec<u8>,
+        message: [u8; 32],
     ) -> Result<(), TestError> {
         let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-
-        let ballot_box = ncn_program_core::ballot_box::BallotBox::find_program_address(
-            &ncn_program::id(),
-            &ncn,
-            epoch,
-        )
-        .0;
-
-        let epoch_snapshot = ncn_program_core::epoch_snapshot::EpochSnapshot::find_program_address(
-            &ncn_program::id(),
-            &ncn,
-            epoch,
-        )
-        .0;
+        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
 
         self.cast_vote(
             ncn_config,
-            ballot_box,
             ncn,
             epoch_snapshot,
-            operator,
-            operator_admin,
-            weather_status,
             epoch,
+            agg_sig,
+            apk2,
+            signers_bitmap,
+            message,
         )
         .await
     }
 
-    /// Sends a transaction to cast a vote.
-    #[allow(clippy::too_many_arguments)]
+    /// Sends a transaction to cast a vote using BLS signature verification.
     pub async fn cast_vote(
         &mut self,
         ncn_config: Pubkey,
-        ballot_box: Pubkey,
         ncn: Pubkey,
         epoch_snapshot: Pubkey,
-        operator: Pubkey,
-        operator_voter: &Keypair,
-        weather_status: u8,
         epoch: u64,
+        agg_sig: [u8; 32],
+        apk2: [u8; 64],
+        signers_bitmap: Vec<u8>,
+        message: [u8; 32],
     ) -> Result<(), TestError> {
         let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let consensus_result =
             ConsensusResult::find_program_address(&ncn_program::id(), &ncn, epoch).0;
 
-        let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);
+        let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(2_000_000);
 
         let ix = CastVoteBuilder::new()
             .epoch_state(epoch_state)
             .config(ncn_config)
-            .ballot_box(ballot_box)
             .ncn(ncn)
             .epoch_snapshot(epoch_snapshot)
-            .operator(operator)
-            .operator_voter(operator_voter.pubkey())
-            .weather_status(weather_status)
             .consensus_result(consensus_result)
             .epoch(epoch)
+            .agg_sig(agg_sig)
+            .apk2(apk2)
+            .signers_bitmap(signers_bitmap)
+            .message(message)
             .instruction();
 
         let blockhash = self.banks_client.get_latest_blockhash().await?;
         self.process_transaction(&Transaction::new_signed_with_payer(
             &[compute_budget_ix, ix],
             Some(&self.payer.pubkey()),
-            &[&self.payer, operator_voter],
+            &[&self.payer],
             blockhash,
         ))
         .await
+    }
+
+    /// Helper method to create a simple single-operator BLS vote for testing.
+    /// This generates a basic signature from one operator for testing purposes.
+    pub async fn do_cast_simple_vote(
+        &mut self,
+        ncn: Pubkey,
+        epoch: u64,
+        operator_key: PrivKey,
+        message: [u8; 32],
+    ) -> Result<(), TestError> {
+        // Generate signature from the operator
+        let signature = operator_key
+            .sign::<Sha256Normalized, &[u8; 32]>(&message)
+            .unwrap();
+        let agg_sig = G1CompressedPoint::try_from(signature).unwrap().0;
+
+        // Get the G2 public key
+        let apk2 = G2CompressedPoint::try_from(&operator_key).unwrap().0;
+
+        // Create signers bitmap - single operator signed (all bits 0 = all signed)
+        let signers_bitmap = vec![0u8; 1];
+
+        self.do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .await
     }
 
     /// Sets the tie-breaker weather status for an epoch (admin operation).

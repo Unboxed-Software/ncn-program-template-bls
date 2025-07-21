@@ -122,8 +122,6 @@ pub fn process_snapshot_vault_operator_delegation(
             NCNProgramError::OperatorIsNotInSnapshot
         })?;
 
-    msg!("Operator snapshot: {}", operator_snapshot);
-
     let mut cloned_operator_snapshot = operator_snapshot.clone();
 
     if cloned_operator_snapshot.finalized() {

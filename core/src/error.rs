@@ -224,6 +224,12 @@ pub enum NCNProgramError {
     InvalidG1Pubkey,
     #[error("Invalid Minimum Stake Weight")]
     InvalidMinimumStakeWeight,
+    #[error("Missing required signature")]
+    MissingRequiredSignature,
+    #[error("Signature verification failed")]
+    SignatureVerificationFailed,
+    #[error("No non signers aggregated pubkey")]
+    NoNonSignersAggregatedPubkey,
 }
 
 impl<T> DecodeError<T> for NCNProgramError {

@@ -14,15 +14,9 @@ pub struct CastVote {
 
     pub config: solana_program::pubkey::Pubkey,
 
-    pub ballot_box: solana_program::pubkey::Pubkey,
-
     pub ncn: solana_program::pubkey::Pubkey,
 
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
-
-    pub operator: solana_program::pubkey::Pubkey,
-
-    pub operator_voter: solana_program::pubkey::Pubkey,
 
     pub consensus_result: solana_program::pubkey::Pubkey,
 }
@@ -40,7 +34,7 @@ impl CastVote {
         args: CastVoteInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_state,
             false,
@@ -49,24 +43,12 @@ impl CastVote {
             self.config,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.ballot_box,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.ncn, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.epoch_snapshot,
             false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.operator,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.operator_voter,
-            true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.consensus_result,
@@ -105,8 +87,11 @@ impl Default for CastVoteInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CastVoteInstructionArgs {
-    pub weather_status: u8,
     pub epoch: u64,
+    pub agg_sig: [u8; 32],
+    pub apk2: [u8; 64],
+    pub signers_bitmap: Vec<u8>,
+    pub message: [u8; 32],
 }
 
 /// Instruction builder for `CastVote`.
@@ -115,24 +100,21 @@ pub struct CastVoteInstructionArgs {
 ///
 ///   0. `[writable]` epoch_state
 ///   1. `[]` config
-///   2. `[writable]` ballot_box
-///   3. `[]` ncn
-///   4. `[]` epoch_snapshot
-///   5. `[]` operator
-///   6. `[signer]` operator_voter
-///   7. `[writable]` consensus_result
+///   2. `[]` ncn
+///   3. `[]` epoch_snapshot
+///   4. `[writable]` consensus_result
 #[derive(Clone, Debug, Default)]
 pub struct CastVoteBuilder {
     epoch_state: Option<solana_program::pubkey::Pubkey>,
     config: Option<solana_program::pubkey::Pubkey>,
-    ballot_box: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
-    operator: Option<solana_program::pubkey::Pubkey>,
-    operator_voter: Option<solana_program::pubkey::Pubkey>,
     consensus_result: Option<solana_program::pubkey::Pubkey>,
-    weather_status: Option<u8>,
     epoch: Option<u64>,
+    agg_sig: Option<[u8; 32]>,
+    apk2: Option<[u8; 64]>,
+    signers_bitmap: Option<Vec<u8>>,
+    message: Option<[u8; 32]>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -151,11 +133,6 @@ impl CastVoteBuilder {
         self
     }
     #[inline(always)]
-    pub fn ballot_box(&mut self, ballot_box: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.ballot_box = Some(ballot_box);
-        self
-    }
-    #[inline(always)]
     pub fn ncn(&mut self, ncn: solana_program::pubkey::Pubkey) -> &mut Self {
         self.ncn = Some(ncn);
         self
@@ -163,16 +140,6 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn epoch_snapshot(&mut self, epoch_snapshot: solana_program::pubkey::Pubkey) -> &mut Self {
         self.epoch_snapshot = Some(epoch_snapshot);
-        self
-    }
-    #[inline(always)]
-    pub fn operator(&mut self, operator: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.operator = Some(operator);
-        self
-    }
-    #[inline(always)]
-    pub fn operator_voter(&mut self, operator_voter: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.operator_voter = Some(operator_voter);
         self
     }
     #[inline(always)]
@@ -184,13 +151,28 @@ impl CastVoteBuilder {
         self
     }
     #[inline(always)]
-    pub fn weather_status(&mut self, weather_status: u8) -> &mut Self {
-        self.weather_status = Some(weather_status);
+    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
+        self.epoch = Some(epoch);
         self
     }
     #[inline(always)]
-    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
-        self.epoch = Some(epoch);
+    pub fn agg_sig(&mut self, agg_sig: [u8; 32]) -> &mut Self {
+        self.agg_sig = Some(agg_sig);
+        self
+    }
+    #[inline(always)]
+    pub fn apk2(&mut self, apk2: [u8; 64]) -> &mut Self {
+        self.apk2 = Some(apk2);
+        self
+    }
+    #[inline(always)]
+    pub fn signers_bitmap(&mut self, signers_bitmap: Vec<u8>) -> &mut Self {
+        self.signers_bitmap = Some(signers_bitmap);
+        self
+    }
+    #[inline(always)]
+    pub fn message(&mut self, message: [u8; 32]) -> &mut Self {
+        self.message = Some(message);
         self
     }
     /// Add an additional account to the instruction.
@@ -216,19 +198,19 @@ impl CastVoteBuilder {
         let accounts = CastVote {
             epoch_state: self.epoch_state.expect("epoch_state is not set"),
             config: self.config.expect("config is not set"),
-            ballot_box: self.ballot_box.expect("ballot_box is not set"),
             ncn: self.ncn.expect("ncn is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
-            operator: self.operator.expect("operator is not set"),
-            operator_voter: self.operator_voter.expect("operator_voter is not set"),
             consensus_result: self.consensus_result.expect("consensus_result is not set"),
         };
         let args = CastVoteInstructionArgs {
-            weather_status: self
-                .weather_status
-                .clone()
-                .expect("weather_status is not set"),
             epoch: self.epoch.clone().expect("epoch is not set"),
+            agg_sig: self.agg_sig.clone().expect("agg_sig is not set"),
+            apk2: self.apk2.clone().expect("apk2 is not set"),
+            signers_bitmap: self
+                .signers_bitmap
+                .clone()
+                .expect("signers_bitmap is not set"),
+            message: self.message.clone().expect("message is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -241,15 +223,9 @@ pub struct CastVoteCpiAccounts<'a, 'b> {
 
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ballot_box: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator_voter: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub consensus_result: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -263,15 +239,9 @@ pub struct CastVoteCpi<'a, 'b> {
 
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ballot_box: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub operator_voter: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub consensus_result: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -288,11 +258,8 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             __program: program,
             epoch_state: accounts.epoch_state,
             config: accounts.config,
-            ballot_box: accounts.ballot_box,
             ncn: accounts.ncn,
             epoch_snapshot: accounts.epoch_snapshot,
-            operator: accounts.operator,
-            operator_voter: accounts.operator_voter,
             consensus_result: accounts.consensus_result,
             __args: args,
         }
@@ -330,17 +297,13 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.epoch_state.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.ballot_box.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -350,14 +313,6 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.epoch_snapshot.key,
             false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.operator.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.operator_voter.key,
-            true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.consensus_result.key,
@@ -379,15 +334,12 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(8 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.epoch_state.clone());
         account_infos.push(self.config.clone());
-        account_infos.push(self.ballot_box.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.epoch_snapshot.clone());
-        account_infos.push(self.operator.clone());
-        account_infos.push(self.operator_voter.clone());
         account_infos.push(self.consensus_result.clone());
         remaining_accounts
             .iter()
@@ -407,12 +359,9 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
 ///
 ///   0. `[writable]` epoch_state
 ///   1. `[]` config
-///   2. `[writable]` ballot_box
-///   3. `[]` ncn
-///   4. `[]` epoch_snapshot
-///   5. `[]` operator
-///   6. `[signer]` operator_voter
-///   7. `[writable]` consensus_result
+///   2. `[]` ncn
+///   3. `[]` epoch_snapshot
+///   4. `[writable]` consensus_result
 #[derive(Clone, Debug)]
 pub struct CastVoteCpiBuilder<'a, 'b> {
     instruction: Box<CastVoteCpiBuilderInstruction<'a, 'b>>,
@@ -424,14 +373,14 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
             __program: program,
             epoch_state: None,
             config: None,
-            ballot_box: None,
             ncn: None,
             epoch_snapshot: None,
-            operator: None,
-            operator_voter: None,
             consensus_result: None,
-            weather_status: None,
             epoch: None,
+            agg_sig: None,
+            apk2: None,
+            signers_bitmap: None,
+            message: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -453,14 +402,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn ballot_box(
-        &mut self,
-        ballot_box: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.ballot_box = Some(ballot_box);
-        self
-    }
-    #[inline(always)]
     pub fn ncn(&mut self, ncn: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.ncn = Some(ncn);
         self
@@ -474,22 +415,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn operator(
-        &mut self,
-        operator: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.operator = Some(operator);
-        self
-    }
-    #[inline(always)]
-    pub fn operator_voter(
-        &mut self,
-        operator_voter: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.operator_voter = Some(operator_voter);
-        self
-    }
-    #[inline(always)]
     pub fn consensus_result(
         &mut self,
         consensus_result: &'b solana_program::account_info::AccountInfo<'a>,
@@ -498,13 +423,28 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn weather_status(&mut self, weather_status: u8) -> &mut Self {
-        self.instruction.weather_status = Some(weather_status);
+    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
+        self.instruction.epoch = Some(epoch);
         self
     }
     #[inline(always)]
-    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
-        self.instruction.epoch = Some(epoch);
+    pub fn agg_sig(&mut self, agg_sig: [u8; 32]) -> &mut Self {
+        self.instruction.agg_sig = Some(agg_sig);
+        self
+    }
+    #[inline(always)]
+    pub fn apk2(&mut self, apk2: [u8; 64]) -> &mut Self {
+        self.instruction.apk2 = Some(apk2);
+        self
+    }
+    #[inline(always)]
+    pub fn signers_bitmap(&mut self, signers_bitmap: Vec<u8>) -> &mut Self {
+        self.instruction.signers_bitmap = Some(signers_bitmap);
+        self
+    }
+    #[inline(always)]
+    pub fn message(&mut self, message: [u8; 32]) -> &mut Self {
+        self.instruction.message = Some(message);
         self
     }
     /// Add an additional account to the instruction.
@@ -549,12 +489,23 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = CastVoteInstructionArgs {
-            weather_status: self
-                .instruction
-                .weather_status
-                .clone()
-                .expect("weather_status is not set"),
             epoch: self.instruction.epoch.clone().expect("epoch is not set"),
+            agg_sig: self
+                .instruction
+                .agg_sig
+                .clone()
+                .expect("agg_sig is not set"),
+            apk2: self.instruction.apk2.clone().expect("apk2 is not set"),
+            signers_bitmap: self
+                .instruction
+                .signers_bitmap
+                .clone()
+                .expect("signers_bitmap is not set"),
+            message: self
+                .instruction
+                .message
+                .clone()
+                .expect("message is not set"),
         };
         let instruction = CastVoteCpi {
             __program: self.instruction.__program,
@@ -566,21 +517,12 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
 
             config: self.instruction.config.expect("config is not set"),
 
-            ballot_box: self.instruction.ballot_box.expect("ballot_box is not set"),
-
             ncn: self.instruction.ncn.expect("ncn is not set"),
 
             epoch_snapshot: self
                 .instruction
                 .epoch_snapshot
                 .expect("epoch_snapshot is not set"),
-
-            operator: self.instruction.operator.expect("operator is not set"),
-
-            operator_voter: self
-                .instruction
-                .operator_voter
-                .expect("operator_voter is not set"),
 
             consensus_result: self
                 .instruction
@@ -600,14 +542,14 @@ struct CastVoteCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     epoch_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ballot_box: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    operator_voter: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     consensus_result: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    weather_status: Option<u8>,
     epoch: Option<u64>,
+    agg_sig: Option<[u8; 32]>,
+    apk2: Option<[u8; 64]>,
+    signers_bitmap: Option<Vec<u8>>,
+    message: Option<[u8; 32]>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,
