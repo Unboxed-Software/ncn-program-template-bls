@@ -138,23 +138,7 @@ Keeper command will run these commands internally:
    ncn-program-cli create-ballot-box
    ```
 
-4. **Post-Vote Cooldown**:
-   
-   After voting completes and consensus is reached, there's a cooldown period before rewards can be distributed.
-
-5. **Reward Distribution**:
-
-   ```bash
-   # Create reward routers
-   ncn-program-cli create-ncn-reward-router
-   ncn-program-cli create-operator-vault-reward-router --operator <OPERATOR_ADDRESS>
-   
-   # Route and distribute rewards
-   ncn-program-cli route-ncn-rewards
-   ncn-program-cli route-operator-vault-rewards --operator <OPERATOR_ADDRESS>
-   ```
-
-6. **Clean Up**:
+4. **Clean Up**:
 
    ```bash
    # Close epoch accounts
@@ -178,6 +162,7 @@ Refer to `ncn-program-cli --help` for a complete list of available commands.
 The `keeper` command is responsible for automating various epoch-related tasks, such as creating epoch states, snapshotting, managing votes, and distributing rewards. It runs as a continuous process, monitoring the chain and executing necessary actions based on the current epoch state.
 
 The keeper progresses through these states:
+
 - **SetWeight**: Establish stake weights for the epoch
 - **Snapshot**: Capture operator and vault state snapshots
 - **Vote**: Monitor operator votes on consensus
@@ -192,6 +177,7 @@ ncn-program-cli run-keeper
 ```
 
 This command starts the keeper process with default settings:
+
 - Loop timeout: 10 minutes
 - Error timeout: 10 seconds
 

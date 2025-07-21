@@ -31,9 +31,7 @@ For more information about Jito (Re)Staking, take a look at the [docs](https://d
 3. **Create Snapshots** of operators and vaults to establish voting weights
 4. **Cast Votes** on weather status with influence based on stake weight
 5. **Achieve Consensus** when votes for a status reach ≥66% of total stake weight
-6. **Distribute Rewards** to stakeholders based on participation and stake weight
-7. **Record Results** with the winning status, voting statistics, and timing data
-8. **Clean Up** accounts after sufficient time has passed to reclaim rent
+6. **Clean Up** accounts after sufficient time has passed to reclaim rent
 
 ## Customization
 
@@ -42,7 +40,6 @@ While this implementation uses weather status as the consensus target, the frame
 - Replace weather status with other vote data
 - Modify consensus thresholds
 - Adjust epoch and timing parameters
-- Implement custom reward distribution logic
 
 ## Deploy
 

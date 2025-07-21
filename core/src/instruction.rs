@@ -10,7 +10,6 @@ use crate::config::ConfigAdminRole;
 /// - Global: Program initialization and configuration
 /// - Snapshot: Creating snapshots of validator and operator state
 /// - Vote: Consensus voting mechanism
-/// - Route and Distribute: Rewards distribution
 /// - Admin: Administrative operations
 #[rustfmt::skip]
 #[derive(Debug, BorshSerialize, BorshDeserialize, ShankInstruction)]

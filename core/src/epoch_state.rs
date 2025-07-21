@@ -13,9 +13,7 @@ use solana_program::{
 };
 
 use crate::{
-    constants::{DEFAULT_CONSENSUS_REACHED_SLOT, MAX_OPERATORS},
-    discriminators::Discriminators,
-    error::NCNProgramError,
+    constants::MAX_OPERATORS, discriminators::Discriminators, error::NCNProgramError,
     loaders::check_load,
 };
 
@@ -196,21 +194,6 @@ pub struct EpochState {
     /// Progress on Snapshotting Operators
     operator_snapshot_progress: [Progress; 256],
 
-    /// Total Distribution progress
-    total_distribution_progress: Progress,
-
-    /// NCN distribution progress
-    ncn_distribution_progress: Progress,
-
-    /// Protocol distribution progress
-    protocol_distribution_progress: Progress,
-
-    /// Operator Vault distribution progress
-    operator_vault_distribution_progress: Progress,
-
-    /// Operator Vault distribution progress per route
-    operator_vault_routes_distribution_progress: [Progress; 256],
-
     /// Is closing
     is_closing: PodBool,
 }
@@ -235,11 +218,6 @@ impl EpochState {
             set_weight_progress: Progress::default(),
             epoch_snapshot_progress: Progress::default(),
             operator_snapshot_progress: [Progress::default(); MAX_OPERATORS],
-            total_distribution_progress: Progress::default(),
-            ncn_distribution_progress: Progress::default(),
-            protocol_distribution_progress: Progress::default(),
-            operator_vault_distribution_progress: Progress::default(),
-            operator_vault_routes_distribution_progress: [Progress::default(); MAX_OPERATORS],
             is_closing: PodBool::from(false),
         }
     }
@@ -376,28 +354,6 @@ impl EpochState {
         self.operator_snapshot_progress[ncn_operator_index]
     }
 
-    pub const fn total_distribution_progress(&self) -> Progress {
-        self.total_distribution_progress
-    }
-
-    pub const fn ncn_distribution_progress(&self) -> Progress {
-        self.ncn_distribution_progress
-    }
-
-    pub const fn protocol_distribution_progress(&self) -> Progress {
-        self.protocol_distribution_progress
-    }
-
-    pub const fn operator_vault_distribution_progress(&self) -> Progress {
-        self.operator_vault_distribution_progress
-    }
-
-    pub const fn operator_vault_distribution_progress_route(
-        &self,
-        operator_index: usize,
-    ) -> Progress {
-        self.operator_vault_routes_distribution_progress[operator_index]
-    }
     // ------------ UPDATERS ------------
     pub fn update_realloc_epoch_state(&mut self) {
         self.account_status.set_epoch_state(AccountStatus::Created);
@@ -462,61 +418,7 @@ impl EpochState {
         operators_voted: u64,
         current_slot: u64,
     ) -> Result<(), NCNProgramError> {
-        self.total_distribution_progress.set_tally(operators_voted);
-
         Ok(())
-    }
-
-    pub fn update_set_tie_breaker(&mut self, current_slot: u64) -> Result<(), NCNProgramError> {
-        Ok(())
-    }
-
-    pub fn update_route_total_rewards(&mut self, total_rewards: u64) {
-        self.total_distribution_progress.set_total(total_rewards);
-    }
-
-    pub fn update_route_ncn_rewards(&mut self, ncn_rewards: u64) {
-        self.ncn_distribution_progress.set_total(ncn_rewards);
-    }
-
-    pub fn update_route_protocol_rewards(&mut self, protocol_rewards: u64) {
-        self.protocol_distribution_progress
-            .set_total(protocol_rewards);
-    }
-
-    pub fn update_operator_vault_rewards(&mut self, rewards: u64) {
-        self.operator_vault_distribution_progress.set_total(rewards);
-    }
-
-    pub fn update_distribute_ncn_rewards(&mut self, rewards: u64) {
-        let _ = self.total_distribution_progress.increment(rewards);
-        let _ = self.ncn_distribution_progress.increment(rewards);
-    }
-
-    pub fn update_distribute_protocol_rewards(&mut self, rewards: u64) {
-        let _ = self.total_distribution_progress.increment(rewards);
-        let _ = self.protocol_distribution_progress.increment(rewards);
-    }
-
-    pub fn update_route_operator_vault_rewards(
-        &mut self,
-        operator_index: usize,
-        total_rewards: u64,
-    ) {
-        self.operator_vault_routes_distribution_progress[operator_index].set_total(total_rewards);
-    }
-
-    pub fn update_distribute_operator_vault_rewards(&mut self, rewards: u64) {
-        let _ = self.operator_vault_distribution_progress.increment(rewards);
-    }
-
-    pub fn update_distribute_operator_vault_route_rewards(
-        &mut self,
-        operator_index: usize,
-        rewards: u64,
-    ) {
-        let _ = self.total_distribution_progress.increment(rewards);
-        let _ = self.operator_vault_routes_distribution_progress[operator_index].increment(rewards);
     }
 
     // ---------- CLOSERS ----------

@@ -12,10 +12,6 @@ pub enum Discriminators {
 
     // Voting - removed
 
-    // Distribution
-    NCNRewardRouter = 0x40,
-    OperatorVaultRewardRouter = 0x41,
-
     // State Tracking
     EpochState = 0x50,
     EpochMarker = 0x51,

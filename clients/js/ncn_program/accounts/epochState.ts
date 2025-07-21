@@ -59,11 +59,6 @@ export type EpochState = {
   setWeightProgress: Progress;
   epochSnapshotProgress: Progress;
   operatorSnapshotProgress: Array<Progress>;
-  totalDistributionProgress: Progress;
-  ncnDistributionProgress: Progress;
-  protocolDistributionProgress: Progress;
-  operatorVaultDistributionProgress: Progress;
-  operatorVaultRoutesDistributionProgress: Array<Progress>;
   isClosing: number;
 };
 
@@ -79,11 +74,6 @@ export type EpochStateArgs = {
   setWeightProgress: ProgressArgs;
   epochSnapshotProgress: ProgressArgs;
   operatorSnapshotProgress: Array<ProgressArgs>;
-  totalDistributionProgress: ProgressArgs;
-  ncnDistributionProgress: ProgressArgs;
-  protocolDistributionProgress: ProgressArgs;
-  operatorVaultDistributionProgress: ProgressArgs;
-  operatorVaultRoutesDistributionProgress: Array<ProgressArgs>;
   isClosing: number;
 };
 
@@ -101,14 +91,6 @@ export function getEpochStateEncoder(): Encoder<EpochStateArgs> {
     ['epochSnapshotProgress', getProgressEncoder()],
     [
       'operatorSnapshotProgress',
-      getArrayEncoder(getProgressEncoder(), { size: 256 }),
-    ],
-    ['totalDistributionProgress', getProgressEncoder()],
-    ['ncnDistributionProgress', getProgressEncoder()],
-    ['protocolDistributionProgress', getProgressEncoder()],
-    ['operatorVaultDistributionProgress', getProgressEncoder()],
-    [
-      'operatorVaultRoutesDistributionProgress',
       getArrayEncoder(getProgressEncoder(), { size: 256 }),
     ],
     ['isClosing', getBoolEncoder()],
@@ -129,14 +111,6 @@ export function getEpochStateDecoder(): Decoder<EpochState> {
     ['epochSnapshotProgress', getProgressDecoder()],
     [
       'operatorSnapshotProgress',
-      getArrayDecoder(getProgressDecoder(), { size: 256 }),
-    ],
-    ['totalDistributionProgress', getProgressDecoder()],
-    ['ncnDistributionProgress', getProgressDecoder()],
-    ['protocolDistributionProgress', getProgressDecoder()],
-    ['operatorVaultDistributionProgress', getProgressDecoder()],
-    [
-      'operatorVaultRoutesDistributionProgress',
       getArrayDecoder(getProgressDecoder(), { size: 256 }),
     ],
     ['isClosing', getBoolDecoder()],

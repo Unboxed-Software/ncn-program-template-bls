@@ -137,24 +137,12 @@ pub enum NCNProgramError {
     InvalidNcnFeeGroup,
     #[error("Not a valid base fee group")]
     InvalidBaseFeeGroup,
-    #[error("Operator reward list full")]
-    OperatorRewardListFull,
-    #[error("Operator Reward not found")]
-    OperatorRewardNotFound,
-    #[error("Vault Reward not found")]
-    VaultRewardNotFound,
     #[error("Destination mismatch")]
     DestinationMismatch,
-    #[error("Ncn reward route not found")]
-    NcnRewardRouteNotFound,
     #[error("Fee not active")]
     FeeNotActive,
-    #[error("No rewards to distribute")]
-    NoRewards,
     #[error("Weight not set")]
     WeightNotSet,
-    #[error("Router still routing")]
-    RouterStillRouting,
     #[error("Invalid epochs before stall")]
     InvalidEpochsBeforeStall,
     #[error("Invalid epochs before accounts can close")]
@@ -169,8 +157,6 @@ pub enum NCNProgramError {
     AccountAlreadyInitialized,
     #[error("Cannot vote with uninitialized account")]
     BadBallot,
-    #[error("Cannot route until voting is over")]
-    VotingIsNotOver,
     #[error("Operator is not in snapshot")]
     OperatorIsNotInSnapshot,
     #[error("Invalid account_to_close Discriminator")]

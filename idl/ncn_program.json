@@ -1359,41 +1359,6 @@
             }
           },
           {
-            "name": "totalDistributionProgress",
-            "type": {
-              "defined": "Progress"
-            }
-          },
-          {
-            "name": "ncnDistributionProgress",
-            "type": {
-              "defined": "Progress"
-            }
-          },
-          {
-            "name": "protocolDistributionProgress",
-            "type": {
-              "defined": "Progress"
-            }
-          },
-          {
-            "name": "operatorVaultDistributionProgress",
-            "type": {
-              "defined": "Progress"
-            }
-          },
-          {
-            "name": "operatorVaultRoutesDistributionProgress",
-            "type": {
-              "array": [
-                {
-                  "defined": "Progress"
-                },
-                256
-              ]
-            }
-          },
-          {
             "name": "isClosing",
             "type": {
               "defined": "PodBool"
@@ -2244,231 +2209,196 @@
     },
     {
       "code": 8760,
-      "name": "OperatorRewardListFull",
-      "msg": "Operator reward list full"
-    },
-    {
-      "code": 8761,
-      "name": "OperatorRewardNotFound",
-      "msg": "Operator Reward not found"
-    },
-    {
-      "code": 8762,
-      "name": "VaultRewardNotFound",
-      "msg": "Vault Reward not found"
-    },
-    {
-      "code": 8763,
       "name": "DestinationMismatch",
       "msg": "Destination mismatch"
     },
     {
-      "code": 8764,
-      "name": "NcnRewardRouteNotFound",
-      "msg": "Ncn reward route not found"
-    },
-    {
-      "code": 8765,
+      "code": 8761,
       "name": "FeeNotActive",
       "msg": "Fee not active"
     },
     {
-      "code": 8766,
-      "name": "NoRewards",
-      "msg": "No rewards to distribute"
-    },
-    {
-      "code": 8767,
+      "code": 8762,
       "name": "WeightNotSet",
       "msg": "Weight not set"
     },
     {
-      "code": 8768,
-      "name": "RouterStillRouting",
-      "msg": "Router still routing"
-    },
-    {
-      "code": 8769,
+      "code": 8763,
       "name": "InvalidEpochsBeforeStall",
       "msg": "Invalid epochs before stall"
     },
     {
-      "code": 8770,
+      "code": 8764,
       "name": "InvalidEpochsBeforeClose",
       "msg": "Invalid epochs before accounts can close"
     },
     {
-      "code": 8771,
+      "code": 8765,
       "name": "InvalidSlotsAfterConsensus",
       "msg": "Invalid slots after consensus"
     },
     {
-      "code": 8772,
+      "code": 8766,
       "name": "VaultNeedsUpdate",
       "msg": "Vault needs to be updated"
     },
     {
-      "code": 8773,
+      "code": 8767,
       "name": "InvalidAccountStatus",
       "msg": "Invalid Account Status"
     },
     {
-      "code": 8774,
+      "code": 8768,
       "name": "AccountAlreadyInitialized",
       "msg": "Account already initialized"
     },
     {
-      "code": 8775,
+      "code": 8769,
       "name": "BadBallot",
       "msg": "Cannot vote with uninitialized account"
     },
     {
-      "code": 8776,
-      "name": "VotingIsNotOver",
-      "msg": "Cannot route until voting is over"
-    },
-    {
-      "code": 8777,
+      "code": 8770,
       "name": "OperatorIsNotInSnapshot",
       "msg": "Operator is not in snapshot"
     },
     {
-      "code": 8778,
+      "code": 8771,
       "name": "InvalidAccountToCloseDiscriminator",
       "msg": "Invalid account_to_close Discriminator"
     },
     {
-      "code": 8779,
+      "code": 8772,
       "name": "CannotCloseAccount",
       "msg": "Cannot close account"
     },
     {
-      "code": 8780,
+      "code": 8773,
       "name": "CannotCloseAccountAlreadyClosed",
       "msg": "Cannot close account - Already closed"
     },
     {
-      "code": 8781,
+      "code": 8774,
       "name": "CannotCloseAccountNotEnoughEpochs",
       "msg": "Cannot close account - Not enough epochs have passed since consensus reached"
     },
     {
-      "code": 8782,
+      "code": 8775,
       "name": "CannotCloseAccountNoReceiverProvided",
       "msg": "Cannot close account - No receiver provided"
     },
     {
-      "code": 8783,
+      "code": 8776,
       "name": "CannotCloseAccountNoEnoughAccounts",
       "msg": "Cannot close account - Not enough accounts"
     },
     {
-      "code": 8784,
+      "code": 8777,
       "name": "CannotCloseEpochStateAccount",
       "msg": "Cannot close epoch state account - Epoch state needs all other accounts to be closed first"
     },
     {
-      "code": 8785,
+      "code": 8778,
       "name": "InvalidNCNFeeWallet",
       "msg": "Invalid NCN Fee wallet"
     },
     {
-      "code": 8786,
+      "code": 8779,
       "name": "EpochIsClosingDown",
       "msg": "Epoch is closing down"
     },
     {
-      "code": 8787,
+      "code": 8780,
       "name": "MarkerExists",
       "msg": "Marker exists"
     },
     {
-      "code": 8788,
+      "code": 8781,
       "name": "SecretKeyError",
       "msg": "Secret key error"
     },
     {
-      "code": 8789,
+      "code": 8782,
       "name": "AltBN128AddError",
       "msg": "AltBN128 add error"
     },
     {
-      "code": 8790,
+      "code": 8783,
       "name": "AltBN128MulError",
       "msg": "AltBN128 mul error"
     },
     {
-      "code": 8791,
+      "code": 8784,
       "name": "AltBN128PairingError",
       "msg": "AltBN128 pairing error"
     },
     {
-      "code": 8792,
+      "code": 8785,
       "name": "HashToCurveError",
       "msg": "Hash to curve error"
     },
     {
-      "code": 8793,
+      "code": 8786,
       "name": "BLSSigningError",
       "msg": "BLSSigning error"
     },
     {
-      "code": 8794,
+      "code": 8787,
       "name": "BLSVerificationError",
       "msg": "BLSVerification error"
     },
     {
-      "code": 8795,
+      "code": 8788,
       "name": "SerializationError",
       "msg": "Serialization error"
     },
     {
-      "code": 8796,
+      "code": 8789,
       "name": "G1PointCompressionError",
       "msg": "G1 point compression error"
     },
     {
-      "code": 8797,
+      "code": 8790,
       "name": "G1PointDecompressionError",
       "msg": "G1 point decompression error"
     },
     {
-      "code": 8798,
+      "code": 8791,
       "name": "G2PointCompressionError",
       "msg": "G2 point compression error"
     },
     {
-      "code": 8799,
+      "code": 8792,
       "name": "G2PointDecompressionError",
       "msg": "G2 point decompression error"
     },
     {
-      "code": 8800,
+      "code": 8793,
       "name": "InvalidInputLength",
       "msg": "Invalid input length"
     },
     {
-      "code": 8801,
+      "code": 8794,
       "name": "InvalidG1Pubkey",
       "msg": "Invalid G1 Pubkey"
     },
     {
-      "code": 8802,
+      "code": 8795,
       "name": "InvalidMinimumStakeWeight",
       "msg": "Invalid Minimum Stake Weight"
     },
     {
-      "code": 8803,
+      "code": 8796,
       "name": "MissingRequiredSignature",
       "msg": "Missing required signature"
     },
     {
-      "code": 8804,
+      "code": 8797,
       "name": "SignatureVerificationFailed",
       "msg": "Signature verification failed"
     },
     {
-      "code": 8805,
+      "code": 8798,
       "name": "NoNonSignersAggregatedPubkey",
       "msg": "No non signers aggregated pubkey"
     }

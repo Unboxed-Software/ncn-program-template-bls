@@ -164,7 +164,7 @@ mod fuzz_tests {
 
     /// Main simulation function that runs a full consensus cycle with the given configuration
     /// This is a modular version of the simulation_test that can be run with different parameters
-    /// It follows the same workflow: setup → initialization → voting → rewards → verification
+    /// It follows the same workflow: setup → initialization → voting  → verification
     async fn run_simulation(config: SimConfig) -> TestResult<()> {
         // Initialize cost tracker
         let mut cost_tracker = CostTracker::new();

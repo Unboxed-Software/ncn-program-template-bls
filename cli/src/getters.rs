@@ -630,9 +630,6 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
     rent_cost += client
         .get_minimum_balance_for_rent_exemption(BallotBox::SIZE)
         .await?;
-    // Base Reward Receiver
-    rent_cost += client.get_minimum_balance_for_rent_exemption(0).await?;
-    rent_cost += client.get_minimum_balance_for_rent_exemption(0).await? * operator_count;
 
     Ok(rent_cost)
 }
