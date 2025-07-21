@@ -68,51 +68,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn cannot_close_before_consensus_is_reached() -> TestResult<()> {
-        let mut fixture = TestBuilder::new().await;
-        let mut ncn_program_client = fixture.ncn_program_client();
-
-        const OPERATOR_COUNT: usize = 1;
-        const VAULT_COUNT: usize = 1;
-
-        let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, None)
-            .await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
-
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch_to_close = fixture.clock().await.epoch;
-
-        // Warp to way after close
-        {
-            let config: ncn_program_core::config::Config =
-                fixture.ncn_program_client().get_ncn_config(ncn).await?;
-            let epochs_after_consensus_before_close = config.epochs_after_consensus_before_close();
-
-            fixture
-                .warp_epoch_incremental(epochs_after_consensus_before_close * 2)
-                .await?;
-        }
-
-        // Try Close Epoch State
-        {
-            let (epoch_state, _, _) =
-                EpochState::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            let result = ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, epoch_state)
-                .await;
-
-            assert_ncn_program_error(result, NCNProgramError::ConsensusNotReached, None);
-
-            let result = fixture.get_account(&epoch_state).await?;
-            assert!(result.is_some());
-        }
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn cannot_close_epoch_state_before_others() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();

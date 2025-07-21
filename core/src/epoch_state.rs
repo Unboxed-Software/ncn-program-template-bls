@@ -415,8 +415,8 @@ impl EpochState {
 
     pub fn update_cast_vote(
         &mut self,
-        operators_voted: u64,
-        current_slot: u64,
+        _operators_voted: u64,
+        _current_slot: u64,
     ) -> Result<(), NCNProgramError> {
         Ok(())
     }
@@ -456,7 +456,7 @@ impl EpochState {
     pub fn current_state(
         &self,
         epoch_schedule: &EpochSchedule,
-        valid_slots_after_consensus: u64,
+        _valid_slots_after_consensus: u64,
         epochs_after_consensus_before_close: u64,
         current_slot: u64,
     ) -> Result<State, ProgramError> {
@@ -487,7 +487,7 @@ impl EpochState {
     pub fn current_state_patched(
         &self,
         epoch_schedule: &EpochSchedule,
-        valid_slots_after_consensus: u64,
+        _valid_slots_after_consensus: u64,
         epochs_after_consensus_before_close: u64,
         st_mint_count: u64,
         current_slot: u64,

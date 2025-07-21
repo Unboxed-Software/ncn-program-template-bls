@@ -27,7 +27,7 @@ use crate::{g2_point::G2Point, privkey::PrivKey, schemes::BLSSignature};
 #[derive(Clone, Debug, Copy)]
 pub struct G1Point(pub [u8; 64]);
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Default, Debug, Copy)]
 pub struct G1CompressedPoint(pub [u8; 32]);
 
 // =============================================================================
@@ -94,11 +94,11 @@ impl Default for G1Point {
     }
 }
 
-impl Default for G1CompressedPoint {
-    fn default() -> Self {
-        G1CompressedPoint([0u8; 32])
-    }
-}
+// impl Default for G1CompressedPoint {
+//     fn default() -> Self {
+//         G1CompressedPoint([0u8; 32])
+//     }
+// }
 
 impl TryFrom<Vec<u8>> for G1CompressedPoint {
     type Error = NCNProgramError;
@@ -129,7 +129,7 @@ impl TryFrom<PrivKey> for G1CompressedPoint {
     fn try_from(value: PrivKey) -> Result<Self, Self::Error> {
         let g1_generator = G1Point::from(G1_GENERATOR);
         let pubkey = g1_generator.mul(value.0);
-        Ok(G1CompressedPoint::try_from(pubkey)?)
+        G1CompressedPoint::try_from(pubkey)
     }
 }
 

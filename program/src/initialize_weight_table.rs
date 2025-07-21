@@ -2,8 +2,8 @@ use jito_bytemuck::{AccountDeserialize, Discriminator};
 use jito_jsm_core::loader::{load_system_account, load_system_program};
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
-    account_payer::AccountPayer, constants::MAX_REALLOC_BYTES, epoch_marker::EpochMarker,
-    epoch_state::EpochState, vault_registry::VaultRegistry, weight_table::WeightTable,
+    account_payer::AccountPayer, epoch_marker::EpochMarker, epoch_state::EpochState,
+    vault_registry::VaultRegistry, weight_table::WeightTable,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,

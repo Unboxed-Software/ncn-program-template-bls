@@ -10,7 +10,6 @@ use ncn_program_core::{
     g1_point::G1CompressedPoint,
     loaders::load_ncn_epoch,
     operator_registry::OperatorRegistry,
-    stake_weight::StakeWeights,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,

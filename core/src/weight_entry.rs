@@ -6,7 +6,7 @@ use spl_math::precise_number::PreciseNumber;
 
 use crate::{error::NCNProgramError, vault_registry::StMintEntry};
 
-#[derive(Debug, Clone, Copy, Zeroable, ShankType, Pod)]
+#[derive(Debug, Default, Clone, Copy, Zeroable, ShankType, Pod)]
 #[repr(C)]
 pub struct WeightEntry {
     /// Info about the ST mint
@@ -17,17 +17,6 @@ pub struct WeightEntry {
     slot_set: PodU64,
     /// The slot the weight was last updated
     slot_updated: PodU64,
-}
-
-impl Default for WeightEntry {
-    fn default() -> Self {
-        Self {
-            st_mint_entry: StMintEntry::default(),
-            weight: PodU128::default(),
-            slot_set: PodU64::default(),
-            slot_updated: PodU64::default(),
-        }
-    }
 }
 
 impl WeightEntry {
