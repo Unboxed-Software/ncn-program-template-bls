@@ -4,7 +4,7 @@ use clap_markdown::MarkdownOptions;
 use dotenv::dotenv;
 
 use log::info;
-use ncn_program_cli::{args::Args, handler::CliHandler, log::init_logger};
+use ncn_program_bls_cli::{args::Args, handler::CliHandler, log::init_logger};
 
 #[tokio::main]
 #[allow(clippy::large_stack_frames)]

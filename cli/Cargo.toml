@@ -1,5 +1,5 @@
 [package]
-name = "ncn-program-cli"
+name = "ncn-program-bls-cli"
 description = "NCN program template CLI"
 version = { workspace = true }
 authors = { workspace = true }
@@ -10,7 +10,7 @@ edition = { workspace = true }
 readme = { workspace = true }
 
 [[bin]]
-name = "ncn-program-cli"
+name = "ncn-program-bls-cli"
 path = "src/bin/main.rs"
 
 [dependencies]
@@ -38,7 +38,7 @@ jito-vault-program = { workspace = true }
 jito-vault-sdk = { workspace = true }
 log = { workspace = true }
 ncn-program = { workspace = true }
-ncn-program-client = { workspace = true }
+ncn-program-bls-client = { workspace = true }
 ncn-program-core = { workspace = true }
 reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }

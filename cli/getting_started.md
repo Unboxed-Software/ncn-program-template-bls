@@ -13,13 +13,13 @@ Install the NCN Program CLI
 
 ```bash
 cargo build --release
-cargo install --path ./cli --bin ncn-program-cli --locked
+cargo install --path ./cli --bin ncn-program-bls-cli --locked
 ```
 
 Ensure it has been installed
 
 ```bash
-ncn-program-cli --help
+ncn-program-bls-cli --help
 ```
 
 Clone and Install the Restaking and Vault CLI in a different directory
@@ -74,33 +74,33 @@ Setting up and using the NCN program follows this general workflow:
 
    ```bash
    # Fund your payer account if needed
-   ncn-program-cli admin-fund-account-payer --amount-in-sol 10
+   ncn-program-bls-cli admin-fund-account-payer --amount-in-sol 10
    ```
 
 2. **Initialize the NCN Program**:
 
    ```bash
    # Create program configuration with tie-breaker admin
-   ncn-program-cli admin-create-config --tie-breaker-admin <ADMIN_ADDRESS> --ncn-fee-wallet <FEE_WALLET_ADDRESS> --ncn-fee-bps <FEE_BPS>
+   ncn-program-bls-cli admin-create-config --tie-breaker-admin <ADMIN_ADDRESS> --ncn-fee-wallet <FEE_WALLET_ADDRESS> --ncn-fee-bps <FEE_BPS>
 
    # Create the vault registry
-   ncn-program-cli create-vault-registry
+   ncn-program-bls-cli create-vault-registry
    ```
 
 3. **Register Tokens and Vaults**:
 
    ```bash
    # Register a stake token mint with specified weight
-   ncn-program-cli admin-register-st-mint --vault <VAULT_ADDRESS> --weight <WEIGHT> --keypair-path <NCN_ADMIN_KEYPAIR_PATH>
+   ncn-program-bls-cli admin-register-st-mint --vault <VAULT_ADDRESS> --weight <WEIGHT> --keypair-path <NCN_ADMIN_KEYPAIR_PATH>
 
    # Register vaults
-   ncn-program-cli crank-register-vaults
+   ncn-program-bls-cli crank-register-vaults
    ```
 
 4. Running the keeper command to automate epoch management:
 
    ```bash
-   ncn-program-cli run-keeper
+   ncn-program-bls-cli run-keeper
    ```
 
 Keeper command will run these commands internally:
@@ -109,40 +109,40 @@ Keeper command will run these commands internally:
 
    ```bash
    # Create epoch state
-   ncn-program-cli create-epoch-state
+   ncn-program-bls-cli create-epoch-state
 
    # Create weight table
-   ncn-program-cli create-weight-table
+   ncn-program-bls-cli create-weight-table
 
    # Set epoch weights
-   ncn-program-cli set-epoch-weights
+   ncn-program-bls-cli set-epoch-weights
    ```
 
 2. **Create Snapshots**:
 
    ```bash
    # Create epoch snapshot
-   ncn-program-cli create-epoch-snapshot
+   ncn-program-bls-cli create-epoch-snapshot
 
    # Create operator snapshot
-   ncn-program-cli create-operator-snapshot --operator <OPERATOR_ADDRESS>
+   ncn-program-bls-cli create-operator-snapshot --operator <OPERATOR_ADDRESS>
 
    # Snapshot vault-operator delegations
-   ncn-program-cli snapshot-vault-operator-delegation
+   ncn-program-bls-cli snapshot-vault-operator-delegation
    ```
 
 3. **Voting Process**:
 
    ```bash
    # Create ballot box
-   ncn-program-cli create-ballot-box
+   ncn-program-bls-cli create-ballot-box
    ```
 
 4. **Clean Up**:
 
    ```bash
    # Close epoch accounts
-   ncn-program-cli crank-close-epoch-accounts
+   ncn-program-bls-cli crank-close-epoch-accounts
    ```
 
 ## Command Groups
@@ -155,7 +155,7 @@ The CLI provides the following command categories:
 - **Instructions**: Core program interactions
 - **Keeper Command**: Automated epoch management
 
-Refer to `ncn-program-cli --help` for a complete list of available commands.
+Refer to `ncn-program-bls-cli --help` for a complete list of available commands.
 
 ### Keeper Command
 
@@ -173,7 +173,7 @@ The keeper progresses through these states:
 **Example Usage:**
 
 ```bash
-ncn-program-cli run-keeper
+ncn-program-bls-cli run-keeper
 ```
 
 This command starts the keeper process with default settings:

@@ -16,8 +16,8 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN cargo build --release --bin ncn-program-cli
-RUN cargo install --path ./cli --bin ncn-program-cli --locked
+RUN cargo build --release --bin ncn-program-bls-cli
+RUN cargo install --path ./cli --bin ncn-program-bls-cli --locked
 
 ##### Final image
 FROM debian:bullseye-slim
@@ -27,6 +27,6 @@ RUN apt-get update && apt-get install -y \
     libssl1.1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/src/app/target/release/ncn-program-cli /usr/local/bin/ncn-program-cli
+COPY --from=builder /usr/src/app/target/release/ncn-program-bls-cli /usr/local/bin/ncn-program-bls-cli
 
-ENTRYPOINT ["ncn-program-cli", "keeper"]
+ENTRYPOINT ["ncn-program-bls-cli", "keeper"]

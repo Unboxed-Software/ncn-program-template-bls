@@ -5,15 +5,15 @@ layout: post
 weight: 1
 ---
 
-# Command-Line Help for `ncn-program-cli`
+# Command-Line Help for `ncn-program-bls-cli`
 
-This document contains the help content for the `ncn-program-cli` command-line program.
+This document contains the help content for the `ncn-program-bls-cli` command-line program.
 
-## `ncn-program-cli`
+## `ncn-program-bls-cli`
 
 A CLI for creating and managing the ncn program
 
-**Usage:** `ncn-program-cli [OPTIONS] <COMMAND>`
+**Usage:** `ncn-program-bls-cli [OPTIONS] <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -97,11 +97,11 @@ A CLI for creating and managing the ncn program
 
 
 
-## `ncn-program-cli run-keeper`
+## `ncn-program-bls-cli run-keeper`
 
 NCN Keeper
 
-**Usage:** `ncn-program-cli run-keeper [OPTIONS]`
+**Usage:** `ncn-program-bls-cli run-keeper [OPTIONS]`
 
 ###### **Options:**
 
@@ -114,11 +114,11 @@ NCN Keeper
 
 
 
-## `ncn-program-cli run-operator`
+## `ncn-program-bls-cli run-operator`
 
 Operator Keeper
 
-**Usage:** `ncn-program-cli run-operator [OPTIONS] --operator <OPERATOR>`
+**Usage:** `ncn-program-bls-cli run-operator [OPTIONS] --operator <OPERATOR>`
 
 ###### **Options:**
 
@@ -132,43 +132,43 @@ Operator Keeper
 
 
 
-## `ncn-program-cli crank-update-all-vaults`
+## `ncn-program-bls-cli crank-update-all-vaults`
 
 Crank Functions
 
-**Usage:** `ncn-program-cli crank-update-all-vaults`
+**Usage:** `ncn-program-bls-cli crank-update-all-vaults`
 
 
 
-## `ncn-program-cli crank-register-vaults`
+## `ncn-program-bls-cli crank-register-vaults`
 
-**Usage:** `ncn-program-cli crank-register-vaults`
-
-
-
-## `ncn-program-cli crank-snapshot`
-
-**Usage:** `ncn-program-cli crank-snapshot`
+**Usage:** `ncn-program-bls-cli crank-register-vaults`
 
 
 
-## `ncn-program-cli crank-close-epoch-accounts`
+## `ncn-program-bls-cli crank-snapshot`
 
-**Usage:** `ncn-program-cli crank-close-epoch-accounts`
-
-
-
-## `ncn-program-cli set-epoch-weights`
-
-**Usage:** `ncn-program-cli set-epoch-weights`
+**Usage:** `ncn-program-bls-cli crank-snapshot`
 
 
 
-## `ncn-program-cli admin-create-config`
+## `ncn-program-bls-cli crank-close-epoch-accounts`
+
+**Usage:** `ncn-program-bls-cli crank-close-epoch-accounts`
+
+
+
+## `ncn-program-bls-cli set-epoch-weights`
+
+**Usage:** `ncn-program-bls-cli set-epoch-weights`
+
+
+
+## `ncn-program-bls-cli admin-create-config`
 
 Admin
 
-**Usage:** `ncn-program-cli admin-create-config [OPTIONS] --ncn-fee-wallet <NCN_FEE_WALLET> --ncn-fee-bps <NCN_FEE_BPS>`
+**Usage:** `ncn-program-bls-cli admin-create-config [OPTIONS] --ncn-fee-wallet <NCN_FEE_WALLET> --ncn-fee-bps <NCN_FEE_BPS>`
 
 ###### **Options:**
 
@@ -187,9 +187,9 @@ Admin
 
 
 
-## `ncn-program-cli admin-register-st-mint`
+## `ncn-program-bls-cli admin-register-st-mint`
 
-**Usage:** `ncn-program-cli admin-register-st-mint [OPTIONS] --vault <VAULT>`
+**Usage:** `ncn-program-bls-cli admin-register-st-mint [OPTIONS] --vault <VAULT>`
 
 ###### **Options:**
 
@@ -198,9 +198,9 @@ Admin
 
 
 
-## `ncn-program-cli admin-set-weight`
+## `ncn-program-bls-cli admin-set-weight`
 
-**Usage:** `ncn-program-cli admin-set-weight --vault <VAULT> --weight <WEIGHT>`
+**Usage:** `ncn-program-bls-cli admin-set-weight --vault <VAULT> --weight <WEIGHT>`
 
 ###### **Options:**
 
@@ -209,9 +209,9 @@ Admin
 
 
 
-## `ncn-program-cli admin-set-tie-breaker`
+## `ncn-program-bls-cli admin-set-tie-breaker`
 
-**Usage:** `ncn-program-cli admin-set-tie-breaker --weather-status <WEATHER_STATUS>`
+**Usage:** `ncn-program-bls-cli admin-set-tie-breaker --weather-status <WEATHER_STATUS>`
 
 ###### **Options:**
 
@@ -219,9 +219,9 @@ Admin
 
 
 
-## `ncn-program-cli admin-set-parameters`
+## `ncn-program-bls-cli admin-set-parameters`
 
-**Usage:** `ncn-program-cli admin-set-parameters [OPTIONS]`
+**Usage:** `ncn-program-bls-cli admin-set-parameters [OPTIONS]`
 
 ###### **Options:**
 
@@ -232,9 +232,9 @@ Admin
 
 
 
-## `ncn-program-cli admin-set-new-admin`
+## `ncn-program-bls-cli admin-set-new-admin`
 
-**Usage:** `ncn-program-cli admin-set-new-admin [OPTIONS] --new-admin <NEW_ADMIN>`
+**Usage:** `ncn-program-bls-cli admin-set-new-admin [OPTIONS] --new-admin <NEW_ADMIN>`
 
 ###### **Options:**
 
@@ -243,9 +243,9 @@ Admin
 
 
 
-## `ncn-program-cli admin-fund-account-payer`
+## `ncn-program-bls-cli admin-fund-account-payer`
 
-**Usage:** `ncn-program-cli admin-fund-account-payer --amount-in-sol <AMOUNT_IN_SOL>`
+**Usage:** `ncn-program-bls-cli admin-fund-account-payer --amount-in-sol <AMOUNT_IN_SOL>`
 
 ###### **Options:**
 
@@ -253,17 +253,17 @@ Admin
 
 
 
-## `ncn-program-cli create-vault-registry`
+## `ncn-program-bls-cli create-vault-registry`
 
 Instructions
 
-**Usage:** `ncn-program-cli create-vault-registry`
+**Usage:** `ncn-program-bls-cli create-vault-registry`
 
 
 
-## `ncn-program-cli register-vault`
+## `ncn-program-bls-cli register-vault`
 
-**Usage:** `ncn-program-cli register-vault --vault <VAULT>`
+**Usage:** `ncn-program-bls-cli register-vault --vault <VAULT>`
 
 ###### **Options:**
 
@@ -271,27 +271,27 @@ Instructions
 
 
 
-## `ncn-program-cli create-epoch-state`
+## `ncn-program-bls-cli create-epoch-state`
 
-**Usage:** `ncn-program-cli create-epoch-state`
-
-
-
-## `ncn-program-cli create-weight-table`
-
-**Usage:** `ncn-program-cli create-weight-table`
+**Usage:** `ncn-program-bls-cli create-epoch-state`
 
 
 
-## `ncn-program-cli create-epoch-snapshot`
+## `ncn-program-bls-cli create-weight-table`
 
-**Usage:** `ncn-program-cli create-epoch-snapshot`
+**Usage:** `ncn-program-bls-cli create-weight-table`
 
 
 
-## `ncn-program-cli create-operator-snapshot`
+## `ncn-program-bls-cli create-epoch-snapshot`
 
-**Usage:** `ncn-program-cli create-operator-snapshot --operator <OPERATOR>`
+**Usage:** `ncn-program-bls-cli create-epoch-snapshot`
+
+
+
+## `ncn-program-bls-cli create-operator-snapshot`
+
+**Usage:** `ncn-program-bls-cli create-operator-snapshot --operator <OPERATOR>`
 
 ###### **Options:**
 
@@ -299,9 +299,9 @@ Instructions
 
 
 
-## `ncn-program-cli snapshot-vault-operator-delegation`
+## `ncn-program-bls-cli snapshot-vault-operator-delegation`
 
-**Usage:** `ncn-program-cli snapshot-vault-operator-delegation --vault <VAULT> --operator <OPERATOR>`
+**Usage:** `ncn-program-bls-cli snapshot-vault-operator-delegation --vault <VAULT> --operator <OPERATOR>`
 
 ###### **Options:**
 
@@ -310,15 +310,15 @@ Instructions
 
 
 
-## `ncn-program-cli create-ballot-box`
+## `ncn-program-bls-cli create-ballot-box`
 
-**Usage:** `ncn-program-cli create-ballot-box`
+**Usage:** `ncn-program-bls-cli create-ballot-box`
 
 
 
-## `ncn-program-cli operator-cast-vote`
+## `ncn-program-bls-cli operator-cast-vote`
 
-**Usage:** `ncn-program-cli operator-cast-vote --operator <OPERATOR> --weather-status <WEATHER_STATUS>`
+**Usage:** `ncn-program-bls-cli operator-cast-vote --operator <OPERATOR> --weather-status <WEATHER_STATUS>`
 
 ###### **Options:**
 
@@ -327,106 +327,17 @@ Instructions
 
 
 
-## `ncn-program-cli get-ncn`
+## `ncn-program-bls-cli get-ncn`
 
 Getters
 
-**Usage:** `ncn-program-cli get-ncn`
+**Usage:** `ncn-program-bls-cli get-ncn`
 
 
 
-## `ncn-program-cli get-ncn-operator-state`
+## `ncn-program-bls-cli get-ncn-operator-state`
 
-**Usage:** `ncn-program-cli get-ncn-operator-state --operator <OPERATOR>`
-
-###### **Options:**
-
-* `--operator <OPERATOR>` — Operator Account Address
-
-
-
-## `ncn-program-cli get-vault-ncn-ticket`
-
-**Usage:** `ncn-program-cli get-vault-ncn-ticket --vault <VAULT>`
-
-###### **Options:**
-
-* `--vault <VAULT>` — Vault Account Address
-
-
-
-## `ncn-program-cli get-ncn-vault-ticket`
-
-**Usage:** `ncn-program-cli get-ncn-vault-ticket --vault <VAULT>`
-
-###### **Options:**
-
-* `--vault <VAULT>` — Vault Account Address
-
-
-
-## `ncn-program-cli get-vault-operator-delegation`
-
-**Usage:** `ncn-program-cli get-vault-operator-delegation --vault <VAULT> --operator <OPERATOR>`
-
-###### **Options:**
-
-* `--vault <VAULT>` — Vault Account Address
-* `--operator <OPERATOR>` — Operator Account Address
-
-
-
-## `ncn-program-cli get-all-tickets`
-
-**Usage:** `ncn-program-cli get-all-tickets`
-
-
-
-## `ncn-program-cli get-all-operators-in-ncn`
-
-**Usage:** `ncn-program-cli get-all-operators-in-ncn`
-
-
-
-## `ncn-program-cli get-all-vaults-in-ncn`
-
-**Usage:** `ncn-program-cli get-all-vaults-in-ncn`
-
-
-
-## `ncn-program-cli get-ncn-program-config`
-
-**Usage:** `ncn-program-cli get-ncn-program-config`
-
-
-
-## `ncn-program-cli get-vault-registry`
-
-**Usage:** `ncn-program-cli get-vault-registry`
-
-
-
-## `ncn-program-cli get-weight-table`
-
-**Usage:** `ncn-program-cli get-weight-table`
-
-
-
-## `ncn-program-cli get-epoch-state`
-
-**Usage:** `ncn-program-cli get-epoch-state`
-
-
-
-## `ncn-program-cli get-epoch-snapshot`
-
-**Usage:** `ncn-program-cli get-epoch-snapshot`
-
-
-
-## `ncn-program-cli get-operator-snapshot`
-
-**Usage:** `ncn-program-cli get-operator-snapshot --operator <OPERATOR>`
+**Usage:** `ncn-program-bls-cli get-ncn-operator-state --operator <OPERATOR>`
 
 ###### **Options:**
 
@@ -434,51 +345,140 @@ Getters
 
 
 
-## `ncn-program-cli get-ballot-box`
+## `ncn-program-bls-cli get-vault-ncn-ticket`
 
-**Usage:** `ncn-program-cli get-ballot-box`
+**Usage:** `ncn-program-bls-cli get-vault-ncn-ticket --vault <VAULT>`
 
+###### **Options:**
 
-
-## `ncn-program-cli get-account-payer`
-
-**Usage:** `ncn-program-cli get-account-payer`
+* `--vault <VAULT>` — Vault Account Address
 
 
 
-## `ncn-program-cli get-total-epoch-rent-cost`
+## `ncn-program-bls-cli get-ncn-vault-ticket`
 
-**Usage:** `ncn-program-cli get-total-epoch-rent-cost`
+**Usage:** `ncn-program-bls-cli get-ncn-vault-ticket --vault <VAULT>`
 
+###### **Options:**
 
-
-## `ncn-program-cli get-consensus-result`
-
-**Usage:** `ncn-program-cli get-consensus-result`
+* `--vault <VAULT>` — Vault Account Address
 
 
 
-## `ncn-program-cli get-operator-stakes`
+## `ncn-program-bls-cli get-vault-operator-delegation`
 
-**Usage:** `ncn-program-cli get-operator-stakes`
+**Usage:** `ncn-program-bls-cli get-vault-operator-delegation --vault <VAULT> --operator <OPERATOR>`
 
+###### **Options:**
 
-
-## `ncn-program-cli get-vault-stakes`
-
-**Usage:** `ncn-program-cli get-vault-stakes`
-
-
-
-## `ncn-program-cli get-vault-operator-stakes`
-
-**Usage:** `ncn-program-cli get-vault-operator-stakes`
+* `--vault <VAULT>` — Vault Account Address
+* `--operator <OPERATOR>` — Operator Account Address
 
 
 
-## `ncn-program-cli full-update-vaults`
+## `ncn-program-bls-cli get-all-tickets`
 
-**Usage:** `ncn-program-cli full-update-vaults [OPTIONS]`
+**Usage:** `ncn-program-bls-cli get-all-tickets`
+
+
+
+## `ncn-program-bls-cli get-all-operators-in-ncn`
+
+**Usage:** `ncn-program-bls-cli get-all-operators-in-ncn`
+
+
+
+## `ncn-program-bls-cli get-all-vaults-in-ncn`
+
+**Usage:** `ncn-program-bls-cli get-all-vaults-in-ncn`
+
+
+
+## `ncn-program-bls-cli get-ncn-program-config`
+
+**Usage:** `ncn-program-bls-cli get-ncn-program-config`
+
+
+
+## `ncn-program-bls-cli get-vault-registry`
+
+**Usage:** `ncn-program-bls-cli get-vault-registry`
+
+
+
+## `ncn-program-bls-cli get-weight-table`
+
+**Usage:** `ncn-program-bls-cli get-weight-table`
+
+
+
+## `ncn-program-bls-cli get-epoch-state`
+
+**Usage:** `ncn-program-bls-cli get-epoch-state`
+
+
+
+## `ncn-program-bls-cli get-epoch-snapshot`
+
+**Usage:** `ncn-program-bls-cli get-epoch-snapshot`
+
+
+
+## `ncn-program-bls-cli get-operator-snapshot`
+
+**Usage:** `ncn-program-bls-cli get-operator-snapshot --operator <OPERATOR>`
+
+###### **Options:**
+
+* `--operator <OPERATOR>` — Operator Account Address
+
+
+
+## `ncn-program-bls-cli get-ballot-box`
+
+**Usage:** `ncn-program-bls-cli get-ballot-box`
+
+
+
+## `ncn-program-bls-cli get-account-payer`
+
+**Usage:** `ncn-program-bls-cli get-account-payer`
+
+
+
+## `ncn-program-bls-cli get-total-epoch-rent-cost`
+
+**Usage:** `ncn-program-bls-cli get-total-epoch-rent-cost`
+
+
+
+## `ncn-program-bls-cli get-consensus-result`
+
+**Usage:** `ncn-program-bls-cli get-consensus-result`
+
+
+
+## `ncn-program-bls-cli get-operator-stakes`
+
+**Usage:** `ncn-program-bls-cli get-operator-stakes`
+
+
+
+## `ncn-program-bls-cli get-vault-stakes`
+
+**Usage:** `ncn-program-bls-cli get-vault-stakes`
+
+
+
+## `ncn-program-bls-cli get-vault-operator-stakes`
+
+**Usage:** `ncn-program-bls-cli get-vault-operator-stakes`
+
+
+
+## `ncn-program-bls-cli full-update-vaults`
+
+**Usage:** `ncn-program-bls-cli full-update-vaults [OPTIONS]`
 
 ###### **Options:**
 
