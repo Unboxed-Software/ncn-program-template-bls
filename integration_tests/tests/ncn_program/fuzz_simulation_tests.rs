@@ -2,8 +2,14 @@
 mod fuzz_tests {
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
-    use ncn_program_core::constants::WEIGHT;
-    use solana_sdk::{msg, native_token::sol_to_lamports, signature::Keypair, signer::Signer};
+    use ncn_program_core::{
+        constants::{MAX_OPERATORS, WEIGHT},
+        g1_point::{G1CompressedPoint, G1Point},
+        g2_point::{G2CompressedPoint, G2Point},
+        schemes::Sha256Normalized,
+        utils::create_signer_bitmap,
+    };
+    use solana_sdk::{native_token::sol_to_lamports, signature::Keypair, signer::Signer};
     use std::collections::HashMap;
 
     // Struct to configure mint token parameters for simulation
@@ -463,30 +469,56 @@ mod fuzz_tests {
         {
             let epoch = fixture.clock().await.epoch;
 
-            // All operators vote for the same status to ensure consensus
+            // Create a message for voting - all operators vote for the same status to ensure consensus
             // This differs from simulation_test.rs where some operators vote differently
-            // for operator_root in test_ncn.operators.iter() {
-            //     let operator = operator_root.operator_pubkey;
-            //     ncn_program_client
-            //         .do_cast_vote(
-            //             ncn_pubkey,
-            //             operator,
-            //             &operator_root.operator_admin,
-            //             winning_weather_status,
-            //             epoch,
-            //         )
-            //         .await?;
-            //
-            //     cost_tracker.add_transaction_cost("Cast Vote", 1);
-            //     cost_tracker.add_compute_cost(5000); // Estimated compute units for vote processing
-            // }
+            let vote_message =
+                solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
 
-            println!("  ✅ Voting completed (votes commented out for this test)");
+            // All operators sign the same message (no non-signers in this simulation)
+            let mut signatures: Vec<G1Point> = vec![];
+            let mut apk2_pubkeys: Vec<G2Point> = vec![];
+
+            for operator_root in test_ncn.operators.iter() {
+                apk2_pubkeys.push(operator_root.bn128_g2_pubkey);
+                let signature = operator_root
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&vote_message)
+                    .unwrap();
+                signatures.push(signature);
+            }
+
+            // Aggregate signatures and public keys
+            let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let apk2_compressed = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+            let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let agg_sig_compressed = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+            // Create signers bitmap - all operators signed (no non-signers)
+            let non_signers_indices: Vec<usize> = vec![];
+            let signers_bitmap =
+                create_signer_bitmap(&non_signers_indices, test_ncn.operators.len());
+
+            // Cast the aggregated vote
+            ncn_program_client
+                .do_cast_vote(
+                    ncn_pubkey,
+                    epoch,
+                    agg_sig_compressed,
+                    apk2_compressed,
+                    signers_bitmap,
+                    vote_message,
+                )
+                .await?;
+
+            cost_tracker.add_transaction_cost("Cast Vote", 1);
+            cost_tracker.add_compute_cost(100000); // BLS signature verification is expensive
+
+            println!("  ✅ Voting completed successfully");
         }
 
         // 9. Close epoch accounts but keep consensus result
         // This simulates cleanup after epoch completion while preserving the final result
-        let epoch_before_closing_account = fixture.clock().await.epoch;
         fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
         // Track account closing costs (rent recovery)
@@ -513,12 +545,12 @@ mod fuzz_tests {
 
     // Test with basic configuration
     // This test runs the core simulation with a standard set of parameters
-    #[ignore = "long test"]
+    // #[ignore = "long test"]
     #[tokio::test]
     async fn test_basic_simulation() -> TestResult<()> {
         // Basic configuration with multiple mints and delegation amounts
         let config = SimConfig {
-            operator_count: 13,
+            operator_count: MAX_OPERATORS,
             mints: vec![
                 MintConfig {
                     keypair: Keypair::new(),

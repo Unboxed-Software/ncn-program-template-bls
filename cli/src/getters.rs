@@ -17,6 +17,7 @@ use jito_vault_core::{
     vault_update_state_tracker::VaultUpdateStateTracker,
 };
 use log::{info, warn};
+use ncn_program_client::accounts::OperatorRegistry;
 use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config as NCNProgramConfig,
@@ -621,14 +622,6 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
     rent_cost += client
         .get_minimum_balance_for_rent_exemption(EpochSnapshot::SIZE)
         .await?;
-    // Note: OperatorSnapshot::SIZE is no longer available in this version
-    // For now, we'll skip this calculation
-    // rent_cost += client
-    //     .get_minimum_balance_for_rent_exemption(OperatorSnapshot::SIZE)
-    //     .await?
-    //     * operator_count;
-
-    // BallotBox functionality has been removed
 
     Ok(rent_cost)
 }

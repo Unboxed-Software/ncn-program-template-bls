@@ -6,8 +6,9 @@ use ncn_program_core::{
     epoch_snapshot::EpochSnapshot,
     epoch_state::EpochState,
     g1_point::{G1CompressedPoint, G1Point},
-    g2_point::G2CompressedPoint,
+    g2_point::{G2CompressedPoint, G2Point},
     schemes::Sha256Normalized,
+    utils::create_signer_bitmap,
     weight_table::WeightTable,
 };
 use solana_program::{clock::Clock, native_token::sol_to_lamports, pubkey::Pubkey};
@@ -680,25 +681,64 @@ impl TestBuilder {
         let epoch = clock.epoch;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        // TODO: fix cast vote
+        // Collect all active operators for voting
+        let mut active_operators = Vec::new();
         for operator_root in test_ncn.operators.iter() {
             let operator = operator_root.operator_pubkey;
             let operator_snapshot = ncn_program_client
                 .get_operator_snapshot(operator, ncn, epoch)
                 .await?;
 
-            // if operator_snapshot.is_active() {
-            //     ncn_program_client
-            //         .do_cast_vote(
-            //             ncn,
-            //             operator,
-            //             &operator_root.operator_admin,
-            //             weather_status,
-            //             epoch,
-            //         )
-            //         .await?;
-            // }
+            if operator_snapshot.is_active() {
+                active_operators.push(operator_root);
+            }
         }
+
+        // If no active operators, nothing to vote on
+        if active_operators.is_empty() {
+            return Ok(());
+        }
+
+        // Create a vote message for "Sunny" weather status
+        let vote_message =
+            solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
+
+        // Collect signatures and public keys from all active operators
+        let mut signatures: Vec<G1Point> = vec![];
+        let mut apk2_pubkeys: Vec<G2Point> = vec![];
+
+        for operator in &active_operators {
+            apk2_pubkeys.push(operator.bn128_g2_pubkey);
+            let signature = operator
+                .bn128_privkey
+                .sign::<Sha256Normalized, &[u8; 32]>(&vote_message)
+                .unwrap();
+            signatures.push(signature);
+        }
+
+        // Aggregate signatures and public keys
+        let aggregated_apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let aggregated_apk2_compressed = G2CompressedPoint::try_from(&aggregated_apk2).unwrap().0;
+
+        let aggregated_signature = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let aggregated_signature_compressed =
+            G1CompressedPoint::try_from(aggregated_signature).unwrap().0;
+
+        // Create signers bitmap (all active operators signed, so no non-signers)
+        let non_signers_indices: Vec<usize> = Vec::new();
+        let signers_bitmap = create_signer_bitmap(&non_signers_indices, test_ncn.operators.len());
+
+        // Cast the aggregated vote
+        ncn_program_client
+            .do_cast_vote(
+                ncn,
+                epoch,
+                aggregated_signature_compressed,
+                aggregated_apk2_compressed,
+                signers_bitmap,
+                vote_message,
+            )
+            .await?;
 
         Ok(())
     }
