@@ -26,29 +26,15 @@ localhost = []
 
 [dependencies]
 borsh = { workspace = true }
-bytemuck = { workspace = true }
-cfg-if = { workspace = true }
-const_str_to_pubkey = { workspace = true }
 jito-bytemuck = { workspace = true }
 jito-jsm-core = { workspace = true }
 jito-restaking-core = { workspace = true }
 jito-restaking-program = { workspace = true }
-jito-restaking-sdk = { workspace = true }
 jito-vault-core = { workspace = true }
 jito-vault-program = { workspace = true }
-jito-vault-sdk = { workspace = true }
 ncn-program-core = { workspace = true }
-shank = { workspace = true }
 solana-program = { workspace = true }
 solana-security-txt = { workspace = true }
-spl-associated-token-account = { workspace = true }
-spl-token = { workspace = true }
-thiserror = { workspace = true }
-solana-bn254 = { workspace = true }
-num = { workspace = true }
-dashu = { workspace = true }
-solana-nostd-sha256 = { workspace = true }
-sha2 = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }

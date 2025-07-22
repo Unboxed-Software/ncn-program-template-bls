@@ -13,24 +13,16 @@ readme = { workspace = true }
 borsh = { workspace = true }
 bytemuck = { workspace = true }
 jito-bytemuck = { workspace = true }
-jito-jsm-core = { workspace = true }
 jito-restaking-core = { workspace = true }
-jito-restaking-sdk = { workspace = true }
 jito-vault-core = { workspace = true }
-jito-vault-sdk = { workspace = true }
-serde = { workspace = true }
-serde_with = { workspace = true }
 shank = { workspace = true }
 solana-program = { workspace = true }
-spl-associated-token-account = { workspace = true }
 spl-math = { workspace = true }
-spl-token = { workspace = true }
 thiserror = { workspace = true }
 solana-bn254 = { workspace = true }
 num = { workspace = true }
 dashu = { workspace = true }
 solana-nostd-sha256 = { workspace = true }
-sha2 = { workspace = true }
 
 # For client-side BN254 operations
 [target.'cfg(not(target_os = "solana"))'.dependencies]

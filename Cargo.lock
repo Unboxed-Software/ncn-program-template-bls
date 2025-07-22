@@ -1421,15 +1421,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const_str_to_pubkey"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "006755890506a0f9a96a6e7a076deeb70cc6621817e5d22a8f838435369f244f"
-dependencies = [
- "solana-program",
-]
-
-[[package]]
 name = "constant_time_eq"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3205,23 +3196,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jito-restaking-client"
-version = "0.0.3"
-source = "git+https://github.com/jito-foundation/restaking?branch=v2.1-upgrade#358fbc3c20d947c977a136808f9fbf7f070e478b"
-dependencies = [
- "anchor-lang",
- "borsh 0.10.4",
- "bytemuck",
- "num-derive",
- "num-traits",
- "serde",
- "serde_with",
- "solana-program",
- "solana-sdk",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "jito-restaking-core"
 version = "0.0.3"
 source = "git+https://github.com/jito-foundation/restaking?branch=v2.1-upgrade#358fbc3c20d947c977a136808f9fbf7f070e478b"
@@ -3759,58 +3733,36 @@ version = "0.0.1"
 dependencies = [
  "assert_matches",
  "borsh 0.10.4",
- "bytemuck",
- "cfg-if",
- "const_str_to_pubkey",
- "dashu",
  "jito-bytemuck",
  "jito-jsm-core",
  "jito-restaking-core",
  "jito-restaking-program",
- "jito-restaking-sdk",
  "jito-vault-core",
  "jito-vault-program",
- "jito-vault-sdk",
  "ncn-program-core",
- "num 0.4.3",
- "sha2 0.10.9",
- "shank",
- "solana-bn254 2.2.2",
- "solana-nostd-sha256",
  "solana-program",
  "solana-security-txt",
- "spl-associated-token-account 6.0.0",
- "spl-token 7.0.0",
- "thiserror 1.0.69",
 ]
 
 [[package]]
-name = "ncn-program-cli"
+name = "ncn-program-bls-cli"
 version = "0.0.1"
 dependencies = [
- "anchor-lang",
  "anyhow",
  "assert_matches",
  "base64 0.22.1",
- "borsh 0.10.4",
- "borsh 1.5.5",
- "bytemuck",
  "chrono",
  "clap 4.5.23",
  "clap-markdown",
  "dotenv",
  "env_logger 0.10.2",
- "futures",
  "jito-bytemuck",
  "jito-jsm-core",
- "jito-restaking-client",
  "jito-restaking-core",
  "jito-restaking-program",
- "jito-restaking-sdk",
  "jito-vault-client",
  "jito-vault-core",
  "jito-vault-program",
- "jito-vault-sdk",
  "log",
  "ncn-program",
  "ncn-program-client",
@@ -3820,13 +3772,9 @@ dependencies = [
  "solana-account-decoder",
  "solana-client",
  "solana-metrics",
- "solana-program",
  "solana-rpc-client",
  "solana-sdk",
- "solana-transaction-status",
- "spl-associated-token-account 6.0.0",
  "spl-token 7.0.0",
- "thiserror 1.0.69",
  "tokio",
 ]
 
@@ -3840,7 +3788,6 @@ dependencies = [
  "num-derive",
  "num-traits",
  "serde",
- "serde-big-array",
  "serde_with",
  "solana-program",
  "solana-sdk",
@@ -3861,23 +3808,15 @@ dependencies = [
  "dashu",
  "hex",
  "jito-bytemuck",
- "jito-jsm-core",
  "jito-restaking-core",
- "jito-restaking-sdk",
  "jito-vault-core",
- "jito-vault-sdk",
  "num 0.4.3",
  "rand 0.8.5",
- "serde",
- "serde_with",
- "sha2 0.10.9",
  "shank",
  "solana-bn254 2.2.2",
  "solana-nostd-sha256",
  "solana-program",
- "spl-associated-token-account 6.0.0",
  "spl-math",
- "spl-token 7.0.0",
  "thiserror 1.0.69",
 ]
 
@@ -5369,15 +5308,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02fc4265df13d6fa1d00ecff087228cc0a2b5f3c0e87e258d8b94a156e984c70"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-big-array"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -7040,9 +6970,9 @@ dependencies = [
  "solana-vote",
  "solana-vote-program",
  "solana-zk-elgamal-proof-program",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (git+https://github.com/jito-foundation/jito-solana.git?rev=87dcd086af931d81a0a71ad49cbea38e9655f166)",
  "solana-zk-token-proof-program",
- "solana-zk-token-sdk",
+ "solana-zk-token-sdk 2.1.11 (git+https://github.com/jito-foundation/jito-solana.git?rev=87dcd086af931d81a0a71ad49cbea38e9655f166)",
  "static_assertions",
  "strum",
  "strum_macros",
@@ -7641,7 +7571,39 @@ dependencies = [
  "solana-log-collector",
  "solana-program-runtime",
  "solana-sdk",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (git+https://github.com/jito-foundation/jito-solana.git?rev=87dcd086af931d81a0a71ad49cbea38e9655f166)",
+]
+
+[[package]]
+name = "solana-zk-sdk"
+version = "2.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e5f33e61ecb86621dd7b47e164ec09021b0c910a79e3a6b17ae763554ad7138"
+dependencies = [
+ "aes-gcm-siv",
+ "base64 0.22.1",
+ "bincode",
+ "bytemuck",
+ "bytemuck_derive",
+ "curve25519-dalek 4.1.3",
+ "itertools 0.12.1",
+ "js-sys",
+ "lazy_static",
+ "merlin",
+ "num-derive",
+ "num-traits",
+ "rand 0.8.5",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha3",
+ "solana-derivation-path",
+ "solana-program",
+ "solana-sdk",
+ "subtle",
+ "thiserror 1.0.69",
+ "wasm-bindgen",
+ "zeroize",
 ]
 
 [[package]]
@@ -7687,7 +7649,39 @@ dependencies = [
  "solana-log-collector",
  "solana-program-runtime",
  "solana-sdk",
- "solana-zk-token-sdk",
+ "solana-zk-token-sdk 2.1.11 (git+https://github.com/jito-foundation/jito-solana.git?rev=87dcd086af931d81a0a71ad49cbea38e9655f166)",
+]
+
+[[package]]
+name = "solana-zk-token-sdk"
+version = "2.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b9c007da85c5be2273c96647e4070bf69b2fda7ba43cddf5eab84c14b2fad67"
+dependencies = [
+ "aes-gcm-siv",
+ "base64 0.22.1",
+ "bincode",
+ "bytemuck",
+ "bytemuck_derive",
+ "byteorder",
+ "curve25519-dalek 4.1.3",
+ "itertools 0.12.1",
+ "lazy_static",
+ "merlin",
+ "num-derive",
+ "num-traits",
+ "rand 0.8.5",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha3",
+ "solana-curve25519",
+ "solana-derivation-path",
+ "solana-program",
+ "solana-sdk",
+ "subtle",
+ "thiserror 1.0.69",
+ "zeroize",
 ]
 
 [[package]]
@@ -7851,7 +7845,7 @@ checksum = "ce0f668975d2b0536e8a8fd60e56a05c467f06021dae037f1d0cfed0de2e231d"
 dependencies = [
  "bytemuck",
  "solana-program",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-pod 0.5.0",
  "spl-token-confidential-transfer-proof-extraction",
 ]
@@ -7903,7 +7897,7 @@ dependencies = [
  "bytemuck",
  "bytemuck_derive",
  "solana-program",
- "solana-zk-token-sdk",
+ "solana-zk-token-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-program-error 0.5.0",
 ]
 
@@ -7923,7 +7917,7 @@ dependencies = [
  "solana-program-error",
  "solana-program-option",
  "solana-pubkey",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.69",
 ]
 
@@ -8044,7 +8038,7 @@ dependencies = [
  "num_enum",
  "solana-program",
  "solana-security-txt",
- "solana-zk-token-sdk",
+ "solana-zk-token-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-memo 5.0.0",
  "spl-pod 0.3.1",
  "spl-token 6.0.0",
@@ -8068,7 +8062,7 @@ dependencies = [
  "num_enum",
  "solana-program",
  "solana-security-txt",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-elgamal-registry",
  "spl-memo 6.0.0",
  "spl-pod 0.5.0",
@@ -8096,7 +8090,7 @@ dependencies = [
  "num_enum",
  "solana-program",
  "solana-security-txt",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-elgamal-registry",
  "spl-memo 6.0.0",
  "spl-pod 0.5.0",
@@ -8120,7 +8114,7 @@ dependencies = [
  "base64 0.22.1",
  "bytemuck",
  "solana-curve25519",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -8132,7 +8126,7 @@ dependencies = [
  "bytemuck",
  "solana-curve25519",
  "solana-program",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-pod 0.5.0",
  "thiserror 2.0.11",
 ]
@@ -8144,7 +8138,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8627184782eec1894de8ea26129c61303f1f0adeed65c20e0b10bc584f09356d"
 dependencies = [
  "curve25519-dalek 4.1.3",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.69",
 ]
 
@@ -8155,7 +8149,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e3597628b0d2fe94e7900fd17cdb4cfbb31ee35c66f82809d27d86e44b2848b"
 dependencies = [
  "curve25519-dalek 4.1.3",
- "solana-zk-sdk",
+ "solana-zk-sdk 2.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 2.0.11",
 ]
 
@@ -9815,11 +9809,6 @@ source = "git+https://github.com/jito-foundation/jito-solana.git?rev=87dcd086af9
 
 [[patch.unused]]
 name = "solana-cli-config"
-version = "2.1.11"
-source = "git+https://github.com/jito-foundation/jito-solana.git?rev=87dcd086af931d81a0a71ad49cbea38e9655f166#87dcd086af931d81a0a71ad49cbea38e9655f166"
-
-[[patch.unused]]
-name = "solana-core"
 version = "2.1.11"
 source = "git+https://github.com/jito-foundation/jito-solana.git?rev=87dcd086af931d81a0a71ad49cbea38e9655f166#87dcd086af931d81a0a71ad49cbea38e9655f166"
 

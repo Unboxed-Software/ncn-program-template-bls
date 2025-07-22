@@ -14,44 +14,32 @@ name = "ncn-program-bls-cli"
 path = "src/bin/main.rs"
 
 [dependencies]
-anchor-lang = { workspace = true }
 anyhow = { workspace = true }
 base64 = { workspace = true }
-borsh = { workspace = true }
-borsh1 = { package = "borsh", version = "1.5.3" }
-bytemuck = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 clap-markdown = { workspace = true }
 dotenv = { workspace = true }
 env_logger = { workspace = true }
-futures = { workspace = true }
 jito-bytemuck = { workspace = true }
 jito-jsm-core = { workspace = true }
-jito-restaking-client = { workspace = true }
 jito-restaking-core = { workspace = true }
 jito-restaking-program = { workspace = true }
-jito-restaking-sdk = { workspace = true }
 jito-vault-client = { workspace = true }
 jito-vault-core = { workspace = true }
 jito-vault-program = { workspace = true }
-jito-vault-sdk = { workspace = true }
 log = { workspace = true }
 ncn-program = { workspace = true }
-ncn-program-bls-client = { workspace = true }
+ncn-program-client = { workspace = true }
 ncn-program-core = { workspace = true }
 reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 solana-account-decoder = { workspace = true }
 solana-client = { workspace = true }
 solana-metrics = { workspace = true }
-solana-program = { workspace = true }
 solana-rpc-client = { workspace = true }
 solana-sdk = { workspace = true }
-solana-transaction-status = { workspace = true }
-spl-associated-token-account = { workspace = true }
 spl-token = { workspace = true }
-thiserror = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
