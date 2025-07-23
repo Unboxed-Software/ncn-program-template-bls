@@ -3,6 +3,7 @@ mod tests {
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
     use ncn_program_core::{
         constants::WEIGHT,
+        error::NCNProgramError,
         g1_point::{G1CompressedPoint, G1Point},
         g2_point::{G2CompressedPoint, G2Point},
         schemes::Sha256Normalized,
@@ -11,7 +12,9 @@ mod tests {
 
     use solana_sdk::{msg, signature::Keypair, signer::Signer};
 
-    use crate::fixtures::{test_builder::TestBuilder, TestResult};
+    use crate::fixtures::{
+        ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,
+    };
 
     // This test runs a complete end-to-end NCN (Network of Consensus Nodes) consensus workflow
     #[tokio::test]
@@ -36,11 +39,8 @@ mod tests {
             (Keypair::new(), WEIGHT * 4), // Dave with quadruple weight
         ];
         let delegations = [
-            1,                  // minimum delegation amount
-            10_000_000_000,     // 10 tokens
-            100_000_000_000,    // 100 tokens
-            1_000_000_000_000,  // 1k tokens
-            10_000_000_000_000, // 10k tokens
+            1, // minimum delegation amount
+            100, 1_000,
         ];
 
         // 3. Initialize system accounts and establish relationships
@@ -109,7 +109,13 @@ mod tests {
         // 3.d. Vaults delegate stakes to operators
         // Each vault delegates different amounts to different operators based on the delegation amounts array
         {
-            for (index, operator_root) in test_ncn.operators.iter().enumerate() {
+            for (index, operator_root) in test_ncn
+                .operators
+                .iter()
+                .take(OPERATOR_COUNT - 1)
+                .skip(1)
+                .enumerate()
+            {
                 for vault_root in test_ncn.vaults.iter() {
                     // Cycle through delegation amounts based on operator index
                     let delegation_amount = delegations[index % delegations.len()];
@@ -125,6 +131,31 @@ mod tests {
                             .unwrap();
                     }
                 }
+            }
+            let first_operator_root = &test_ncn.operators[0];
+            let last_operator_root = &test_ncn.operators[OPERATOR_COUNT - 1];
+
+            let vault_root = &test_ncn.vaults[0];
+            let delegation_amount = delegations[0];
+
+            if delegation_amount > 0 {
+                vault_program_client
+                    .do_add_delegation(
+                        vault_root,
+                        &first_operator_root.operator_pubkey,
+                        delegation_amount,
+                    )
+                    .await
+                    .unwrap();
+
+                vault_program_client
+                    .do_add_delegation(
+                        vault_root,
+                        &last_operator_root.operator_pubkey,
+                        delegation_amount,
+                    )
+                    .await
+                    .unwrap();
             }
         }
 
@@ -151,7 +182,7 @@ mod tests {
                 .do_initialize_config(
                     test_ncn.ncn_root.ncn_pubkey,
                     &test_ncn.ncn_root.ncn_admin,
-                    Some(100),
+                    Some(1000),
                 )
                 .await?;
 
@@ -245,6 +276,11 @@ mod tests {
                     .await?;
             }
 
+            let epoch_snapshot = ncn_program_client
+                .get_epoch_snapshot(ncn_pubkey, epoch)
+                .await?;
+            msg!("Epoch snapshot: {}", epoch_snapshot);
+
             // 5.f. Take a snapshot for each vault and its delegation - records delegations
             fixture
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
@@ -261,87 +297,111 @@ mod tests {
 
             msg!("Epoch snapshot: {}", epoch_snapshot);
 
-            // Create a message for voting on Sunny weather status
-            // This message represents what operators are collectively agreeing on
-            let sunny_vote_message =
-                solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
+            {
+                // Create a message for voting on Sunny weather status
+                // This message represents what operators are collectively agreeing on
+                let sunny_vote_message =
+                    solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
 
-            // Most operators vote for Sunny (will be the winning vote)
-            // Skip the first operator to create a minority that doesn't participate in this vote
-            let sunny_voters = &test_ncn.operators[1..]; // All except first operator
-            let mut sunny_signatures: Vec<G1Point> = vec![];
-            let mut sunny_apk2_pubkeys: Vec<G2Point> = vec![];
+                let mut sunny_signatures: Vec<G1Point> = vec![];
+                let mut sunny_apk2_pubkeys: Vec<G2Point> = vec![];
+                let mut non_signers_indices: Vec<usize> = vec![];
 
-            for operator in sunny_voters {
-                sunny_apk2_pubkeys.push(operator.bn128_g2_pubkey);
-                let signature = operator
-                    .bn128_privkey
-                    .sign::<Sha256Normalized, &[u8; 32]>(&sunny_vote_message)
+                for (i, operator) in test_ncn.operators.iter().enumerate() {
+                    let operator_snapshot = epoch_snapshot
+                        .find_operator_snapshot(&operator.operator_pubkey)
+                        .unwrap();
+                    if operator_snapshot.has_minimum_stake_weight() {
+                        sunny_apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                        let signature = operator
+                            .bn128_privkey
+                            .sign::<Sha256Normalized, &[u8; 32]>(&sunny_vote_message)
+                            .unwrap();
+                        sunny_signatures.push(signature);
+                    } else {
+                        non_signers_indices.push(i); // First operator didn't sign
+                    }
+                }
+
+                // Aggregate signatures and public keys for Sunny vote
+                let sunny_apk2 = sunny_apk2_pubkeys
+                    .into_iter()
+                    .reduce(|acc, x| acc + x)
                     .unwrap();
-                sunny_signatures.push(signature);
+                let sunny_apk2_compressed = G2CompressedPoint::try_from(&sunny_apk2).unwrap().0;
+
+                let sunny_agg_sig = sunny_signatures
+                    .into_iter()
+                    .reduce(|acc, x| acc + x)
+                    .unwrap();
+                let sunny_agg_sig_compressed =
+                    G1CompressedPoint::try_from(sunny_agg_sig).unwrap().0;
+
+                // Create signers bitmap
+                let sunny_signers_bitmap =
+                    create_signer_bitmap(&non_signers_indices, test_ncn.operators.len());
+
+                // Cast the aggregated vote for Sunny weather
+                ncn_program_client
+                    .do_cast_vote(
+                        ncn_pubkey,
+                        epoch,
+                        sunny_agg_sig_compressed,
+                        sunny_apk2_compressed,
+                        sunny_signers_bitmap,
+                        sunny_vote_message,
+                    )
+                    .await?;
             }
+            {
+                // Quorum not met case
+                let cloudy_vote_message =
+                    solana_nostd_sha256::hashv(&[b"weather_vote", b"Cloudy", &epoch.to_le_bytes()]);
 
-            // Aggregate signatures and public keys for Sunny vote
-            let sunny_apk2 = sunny_apk2_pubkeys
-                .into_iter()
-                .reduce(|acc, x| acc + x)
-                .unwrap();
-            let sunny_apk2_compressed = G2CompressedPoint::try_from(&sunny_apk2).unwrap().0;
+                let mut signatures: Vec<G1Point> = vec![];
+                let mut apk2_pubkeys: Vec<G2Point> = vec![];
+                let mut non_signers_indices: Vec<usize> = (4..OPERATOR_COUNT).collect();
 
-            let sunny_agg_sig = sunny_signatures
-                .into_iter()
-                .reduce(|acc, x| acc + x)
-                .unwrap();
-            let sunny_agg_sig_compressed = G1CompressedPoint::try_from(sunny_agg_sig).unwrap().0;
+                for (i, operator) in test_ncn.operators.iter().take(4).enumerate() {
+                    let operator_snapshot = epoch_snapshot
+                        .find_operator_snapshot(&operator.operator_pubkey)
+                        .unwrap();
+                    if operator_snapshot.has_minimum_stake_weight() {
+                        apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                        let signature = operator
+                            .bn128_privkey
+                            .sign::<Sha256Normalized, &[u8; 32]>(&cloudy_vote_message)
+                            .unwrap();
+                        signatures.push(signature);
+                    } else {
+                        non_signers_indices.push(i); // First operator didn't sign
+                    }
+                }
 
-            // Create signers bitmap - operator 0 didn't sign (bit 0 = 1), others signed (bit = 0)
-            let non_signers_indices = vec![0]; // First operator didn't sign
-            let sunny_signers_bitmap =
-                create_signer_bitmap(&non_signers_indices, test_ncn.operators.len());
+                // Aggregate signatures and public keys for  vote
+                let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+                let apk2_compressed = G2CompressedPoint::try_from(&apk2).unwrap().0;
 
-            // Cast the aggregated vote for Sunny weather
-            ncn_program_client
-                .do_cast_vote(
-                    ncn_pubkey,
-                    epoch,
-                    sunny_agg_sig_compressed,
-                    sunny_apk2_compressed,
-                    sunny_signers_bitmap,
-                    sunny_vote_message,
-                )
-                .await?;
+                let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+                let agg_sig_compressed = G1CompressedPoint::try_from(agg_sig).unwrap().0;
 
-            // Create a minority vote for Cloudy (just the first operator)
-            let cloudy_vote_message =
-                solana_nostd_sha256::hashv(&[b"weather_vote", b"Cloudy", &epoch.to_le_bytes()]);
+                // Create signers bitmap
+                let signers_bitmap =
+                    create_signer_bitmap(&non_signers_indices, test_ncn.operators.len());
 
-            let first_operator = &test_ncn.operators[0];
-            let cloudy_signature = first_operator
-                .bn128_privkey
-                .sign::<Sha256Normalized, &[u8; 32]>(&cloudy_vote_message)
-                .unwrap();
-
-            let cloudy_agg_sig = G1CompressedPoint::try_from(cloudy_signature).unwrap().0;
-            let cloudy_apk2 = G2CompressedPoint::try_from(&first_operator.bn128_privkey)
-                .unwrap()
-                .0;
-
-            // Create signers bitmap where only operator 0 signed, others didn't
-            let cloudy_non_signers: Vec<usize> = (1..test_ncn.operators.len()).collect();
-            let cloudy_signers_bitmap =
-                create_signer_bitmap(&cloudy_non_signers, test_ncn.operators.len());
-
-            // Cast the minority vote for Cloudy weather
-            ncn_program_client
-                .do_cast_vote(
-                    ncn_pubkey,
-                    epoch,
-                    cloudy_agg_sig,
-                    cloudy_apk2,
-                    cloudy_signers_bitmap,
-                    cloudy_vote_message,
-                )
-                .await?;
+                // Cast the aggregated vote for  weather
+                let result = ncn_program_client
+                    .do_cast_vote(
+                        ncn_pubkey,
+                        epoch,
+                        agg_sig_compressed,
+                        apk2_compressed,
+                        signers_bitmap,
+                        cloudy_vote_message,
+                    )
+                    .await;
+                assert_ncn_program_error(result, NCNProgramError::QuorumNotMet, Some(1));
+            }
 
             println!("✅ BLS aggregate signature verification successful!");
             println!("✅ Cast vote operations completed successfully!");

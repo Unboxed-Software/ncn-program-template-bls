@@ -44,7 +44,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(100, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
@@ -58,7 +58,7 @@ mod tests {
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
 
-        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 10); // Let's say these operators didn't sign
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 2); // Let's say these operators didn't sign
 
         let mut signitures: Vec<G1Point> = vec![];
         let mut apk2_pubkeys: Vec<G2Point> = vec![];
@@ -177,7 +177,7 @@ mod tests {
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
 
-        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 5); // Let's say these operators didn't sign
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 2); // Let's say these operators didn't sign
 
         let mut signitures: Vec<G1Point> = vec![];
         let mut apk2_pubkeys: Vec<G2Point> = vec![];
@@ -228,7 +228,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(1, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
@@ -249,7 +249,9 @@ mod tests {
         // Create an invalid signature (just random bytes)
         let agg_sig = [1u8; 32]; // Invalid signature
 
-        let signers_bitmap = vec![0u8; 1]; // All signed
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 0);
+        // all have signed in the bitmap
+        let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
 
         let result = ncn_program_client
             .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
@@ -316,10 +318,14 @@ mod tests {
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         let epoch = clock.epoch;
 
+        let epoch_snapshot = ncn_program_client
+            .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+            .await?;
+
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
 
-        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 5); // Let's say these operators didn't sign
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 3); // Let's say these operators didn't sign
 
         let mut signitures: Vec<G1Point> = vec![];
         let mut apk2_pubkeys: Vec<G2Point> = vec![];

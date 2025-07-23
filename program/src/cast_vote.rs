@@ -70,8 +70,11 @@ pub fn process_cast_vote(
     let slot = Clock::get()?.slot;
     msg!("Current slot: {}", slot);
 
+    let registered_operators = epoch_snapshot.operators_registered();
+    msg!("Registered operators: {}", registered_operators);
+
     // Check bitmap size
-    let required_bitmap_bytes = (epoch_snapshot.operators_registered() + 7) / 8;
+    let required_bitmap_bytes = (registered_operators + 7) / 8;
     if non_signers_bitmap.len() as u64 != required_bitmap_bytes {
         msg!("Invalid bitmap size");
         return Err(NCNProgramError::InvalidInputLength.into());
@@ -80,7 +83,7 @@ pub fn process_cast_vote(
     msg!(
         "Bitmap is: {:?} , {:?}",
         non_signers_bitmap.len(),
-        epoch_snapshot.operators_registered()
+        registered_operators
     );
 
     // Convert apk2 to G2Point
@@ -93,7 +96,7 @@ pub fn process_cast_vote(
     let mut non_signers_count = 0;
 
     for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumerate() {
-        if i >= epoch_snapshot.operators_registered() as usize {
+        if i >= registered_operators as usize {
             break;
         }
 
@@ -120,6 +123,16 @@ pub fn process_cast_vote(
         } else {
             // msg!("Operator {} did not sign", i);
         }
+    }
+
+    // If non_signers_count is more than 1/3 of registered operators, throw an error because quorum didn't meet
+    if non_signers_count > registered_operators / 3 {
+        msg!(
+            "Quorum not met: non-signers count ({}) exceeds 1/3 of registered operators ({})",
+            non_signers_count,
+            registered_operators
+        );
+        return Err(NCNProgramError::QuorumNotMet.into());
     }
 
     let total_agg_g1_pubkey_compressed =

@@ -545,7 +545,7 @@ mod fuzz_tests {
 
     // Test with basic configuration
     // This test runs the core simulation with a standard set of parameters
-    // #[ignore = "long test"]
+    #[ignore = "long test"]
     #[tokio::test]
     async fn test_basic_simulation() -> TestResult<()> {
         // Basic configuration with multiple mints and delegation amounts

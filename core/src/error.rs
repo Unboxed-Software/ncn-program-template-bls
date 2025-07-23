@@ -216,6 +216,8 @@ pub enum NCNProgramError {
     SignatureVerificationFailed,
     #[error("No non signers aggregated pubkey")]
     NoNonSignersAggregatedPubkey,
+    #[error("Quorum not met")]
+    QuorumNotMet,
 }
 
 impl<T> DecodeError<T> for NCNProgramError {
