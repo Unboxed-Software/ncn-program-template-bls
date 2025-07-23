@@ -224,6 +224,10 @@ export const NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE = 0x225c; // 8796
 export const NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED = 0x225d; // 8797
 /** NoNonSignersAggregatedPubkey: No non signers aggregated pubkey */
 export const NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY = 0x225e; // 8798
+/** QuorumNotMet: Quorum not met */
+export const NCN_PROGRAM_ERROR__QUORUM_NOT_MET = 0x225f; // 8799
+/** OperatorNcnConnectionNotActive: Operator <> NCN connection is not active */
+export const NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE = 0x2260; // 8800
 
 export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -304,8 +308,10 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__OPERATOR_ENTRY_NOT_FOUND
   | typeof NCN_PROGRAM_ERROR__OPERATOR_FINALIZED
   | typeof NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT
+  | typeof NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE
   | typeof NCN_PROGRAM_ERROR__OPERATOR_REGISTRY_LIST_FULL
   | typeof NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL
+  | typeof NCN_PROGRAM_ERROR__QUORUM_NOT_MET
   | typeof NCN_PROGRAM_ERROR__REGISTRY_NOT_INITIALIZED
   | typeof NCN_PROGRAM_ERROR__SECRET_KEY_ERROR
   | typeof NCN_PROGRAM_ERROR__SERIALIZATION_ERROR
@@ -413,8 +419,10 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__OPERATOR_ENTRY_NOT_FOUND]: `Operator Entry not found`,
     [NCN_PROGRAM_ERROR__OPERATOR_FINALIZED]: `Operator is already finalized - should not happen`,
     [NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT]: `Operator is not in snapshot`,
+    [NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE]: `Operator <> NCN connection is not active`,
     [NCN_PROGRAM_ERROR__OPERATOR_REGISTRY_LIST_FULL]: `Operator Registry operators are at capacity`,
     [NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL]: `Operator votes full`,
+    [NCN_PROGRAM_ERROR__QUORUM_NOT_MET]: `Quorum not met`,
     [NCN_PROGRAM_ERROR__REGISTRY_NOT_INITIALIZED]: `Registry not initialized`,
     [NCN_PROGRAM_ERROR__SECRET_KEY_ERROR]: `Secret key error`,
     [NCN_PROGRAM_ERROR__SERIALIZATION_ERROR]: `Serialization error`,

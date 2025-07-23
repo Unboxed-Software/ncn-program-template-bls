@@ -19,6 +19,10 @@ pub struct RegisterOperator {
     pub operator: solana_program::pubkey::Pubkey,
 
     pub operator_admin: solana_program::pubkey::Pubkey,
+
+    pub ncn_operator_state: solana_program::pubkey::Pubkey,
+
+    pub restaking_config: solana_program::pubkey::Pubkey,
 }
 
 impl RegisterOperator {
@@ -34,7 +38,7 @@ impl RegisterOperator {
         args: RegisterOperatorInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.config,
             false,
@@ -53,6 +57,14 @@ impl RegisterOperator {
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.operator_admin,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.ncn_operator_state,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.restaking_config,
+            false,
         ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = RegisterOperatorInstructionData::new().try_to_vec().unwrap();
@@ -101,6 +113,8 @@ pub struct RegisterOperatorInstructionArgs {
 ///   2. `[]` ncn
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
+///   5. `[]` ncn_operator_state
+///   6. `[]` restaking_config
 #[derive(Clone, Debug, Default)]
 pub struct RegisterOperatorBuilder {
     config: Option<solana_program::pubkey::Pubkey>,
@@ -108,6 +122,8 @@ pub struct RegisterOperatorBuilder {
     ncn: Option<solana_program::pubkey::Pubkey>,
     operator: Option<solana_program::pubkey::Pubkey>,
     operator_admin: Option<solana_program::pubkey::Pubkey>,
+    ncn_operator_state: Option<solana_program::pubkey::Pubkey>,
+    restaking_config: Option<solana_program::pubkey::Pubkey>,
     g1_pubkey: Option<[u8; 32]>,
     g2_pubkey: Option<[u8; 64]>,
     signature: Option<[u8; 64]>,
@@ -144,6 +160,22 @@ impl RegisterOperatorBuilder {
     #[inline(always)]
     pub fn operator_admin(&mut self, operator_admin: solana_program::pubkey::Pubkey) -> &mut Self {
         self.operator_admin = Some(operator_admin);
+        self
+    }
+    #[inline(always)]
+    pub fn ncn_operator_state(
+        &mut self,
+        ncn_operator_state: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.ncn_operator_state = Some(ncn_operator_state);
+        self
+    }
+    #[inline(always)]
+    pub fn restaking_config(
+        &mut self,
+        restaking_config: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.restaking_config = Some(restaking_config);
         self
     }
     #[inline(always)]
@@ -189,6 +221,10 @@ impl RegisterOperatorBuilder {
             ncn: self.ncn.expect("ncn is not set"),
             operator: self.operator.expect("operator is not set"),
             operator_admin: self.operator_admin.expect("operator_admin is not set"),
+            ncn_operator_state: self
+                .ncn_operator_state
+                .expect("ncn_operator_state is not set"),
+            restaking_config: self.restaking_config.expect("restaking_config is not set"),
         };
         let args = RegisterOperatorInstructionArgs {
             g1_pubkey: self.g1_pubkey.clone().expect("g1_pubkey is not set"),
@@ -211,6 +247,10 @@ pub struct RegisterOperatorCpiAccounts<'a, 'b> {
     pub operator: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub ncn_operator_state: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `register_operator` CPI instruction.
@@ -227,6 +267,10 @@ pub struct RegisterOperatorCpi<'a, 'b> {
     pub operator: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub ncn_operator_state: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: RegisterOperatorInstructionArgs,
 }
@@ -244,6 +288,8 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
             ncn: accounts.ncn,
             operator: accounts.operator,
             operator_admin: accounts.operator_admin,
+            ncn_operator_state: accounts.ncn_operator_state,
+            restaking_config: accounts.restaking_config,
             __args: args,
         }
     }
@@ -280,7 +326,7 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
             false,
@@ -301,6 +347,14 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
             *self.operator_admin.key,
             true,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.ncn_operator_state.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.restaking_config.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -317,13 +371,15 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(7 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.config.clone());
         account_infos.push(self.operator_registry.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.operator.clone());
         account_infos.push(self.operator_admin.clone());
+        account_infos.push(self.ncn_operator_state.clone());
+        account_infos.push(self.restaking_config.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -345,6 +401,8 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
 ///   2. `[]` ncn
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
+///   5. `[]` ncn_operator_state
+///   6. `[]` restaking_config
 #[derive(Clone, Debug)]
 pub struct RegisterOperatorCpiBuilder<'a, 'b> {
     instruction: Box<RegisterOperatorCpiBuilderInstruction<'a, 'b>>,
@@ -359,6 +417,8 @@ impl<'a, 'b> RegisterOperatorCpiBuilder<'a, 'b> {
             ncn: None,
             operator: None,
             operator_admin: None,
+            ncn_operator_state: None,
+            restaking_config: None,
             g1_pubkey: None,
             g2_pubkey: None,
             signature: None,
@@ -401,6 +461,22 @@ impl<'a, 'b> RegisterOperatorCpiBuilder<'a, 'b> {
         operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.operator_admin = Some(operator_admin);
+        self
+    }
+    #[inline(always)]
+    pub fn ncn_operator_state(
+        &mut self,
+        ncn_operator_state: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.ncn_operator_state = Some(ncn_operator_state);
+        self
+    }
+    #[inline(always)]
+    pub fn restaking_config(
+        &mut self,
+        restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.restaking_config = Some(restaking_config);
         self
     }
     #[inline(always)]
@@ -494,6 +570,16 @@ impl<'a, 'b> RegisterOperatorCpiBuilder<'a, 'b> {
                 .instruction
                 .operator_admin
                 .expect("operator_admin is not set"),
+
+            ncn_operator_state: self
+                .instruction
+                .ncn_operator_state
+                .expect("ncn_operator_state is not set"),
+
+            restaking_config: self
+                .instruction
+                .restaking_config
+                .expect("restaking_config is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -511,6 +597,8 @@ struct RegisterOperatorCpiBuilderInstruction<'a, 'b> {
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ncn_operator_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    restaking_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     g1_pubkey: Option<[u8; 32]>,
     g2_pubkey: Option<[u8; 64]>,
     signature: Option<[u8; 64]>,

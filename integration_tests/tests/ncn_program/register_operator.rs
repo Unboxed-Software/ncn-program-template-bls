@@ -6,6 +6,9 @@ mod tests {
         schemes::Sha256Normalized,
     };
 
+    use crate::fixtures::ncn_program_client::assert_ncn_program_error;
+    use ncn_program_core::error::NCNProgramError;
+
     #[tokio::test]
     async fn test_register_operator_success() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
@@ -28,6 +31,20 @@ mod tests {
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
             .await?;
+
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
 
         // Generate BLS keypair
         let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
@@ -75,25 +92,11 @@ mod tests {
     #[tokio::test]
     async fn test_register_operator_duplicate() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
-
-        let mut restaking_program_client = fixture.restaking_program_client();
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        // Setup NCN
-        let ncn_root = fixture.setup_ncn().await?;
+        let test_ncn = fixture.create_initial_test_ncn(1, 1, None).await?;
 
-        ncn_program_client
-            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
-            .await?;
-
-        ncn_program_client
-            .do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
-            .await?;
-
-        // Setup operator
-        let operator_root = restaking_program_client
-            .do_initialize_operator(Some(200))
-            .await?;
+        let operator_root = &test_ncn.operators[0];
 
         // Generate BLS keypair
         let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
@@ -107,7 +110,7 @@ mod tests {
         // Register operator first time
         ncn_program_client
             .do_register_operator(
-                ncn_root.ncn_pubkey,
+                test_ncn.ncn_root.ncn_pubkey,
                 operator_root.operator_pubkey,
                 &operator_root.operator_admin,
                 g1_compressed.0,
@@ -119,7 +122,7 @@ mod tests {
         // Register same operator again should succeed (no-op)
         ncn_program_client
             .do_register_operator(
-                ncn_root.ncn_pubkey,
+                test_ncn.ncn_root.ncn_pubkey,
                 operator_root.operator_pubkey,
                 &operator_root.operator_admin,
                 g1_compressed.0,
@@ -130,7 +133,7 @@ mod tests {
 
         // Should still only have one operator
         let operator_registry = ncn_program_client
-            .get_operator_registry(ncn_root.ncn_pubkey)
+            .get_operator_registry(test_ncn.ncn_root.ncn_pubkey)
             .await?;
 
         assert_eq!(operator_registry.operator_count(), 1);
@@ -231,6 +234,134 @@ mod tests {
 
         assert!(result.is_err());
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_register_operator_fails_if_ncn_not_opted_in() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut restaking_program_client = fixture.restaking_program_client();
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        // Setup NCN and registry
+        let ncn_root = fixture.setup_ncn().await?;
+        ncn_program_client
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
+            .await?;
+        ncn_program_client
+            .do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
+            .await?;
+
+        // Setup operator and handshake
+        let operator_root = restaking_program_client
+            .do_initialize_operator(Some(200))
+            .await?;
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
+
+        // Now, NCN disables the operator
+        restaking_program_client
+            .do_ncn_cooldown_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+
+        // Generate BLS keypair
+        let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
+        let signature = operator_root
+            .bn128_privkey
+            .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
+            .unwrap();
+
+        // Try to register operator (should fail)
+        let result = ncn_program_client
+            .do_register_operator(
+                ncn_root.ncn_pubkey,
+                operator_root.operator_pubkey,
+                &operator_root.operator_admin,
+                g1_compressed.0,
+                g2_compressed.0,
+                signature.0,
+            )
+            .await;
+        assert_ncn_program_error(
+            result,
+            NCNProgramError::OperatorNcnConnectionNotActive,
+            None,
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_register_operator_fails_if_operator_not_opted_in() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut restaking_program_client = fixture.restaking_program_client();
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        // Setup NCN and registry
+        let ncn_root = fixture.setup_ncn().await?;
+        ncn_program_client
+            .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
+            .await?;
+        ncn_program_client
+            .do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
+            .await?;
+
+        // Setup operator and handshake
+        let operator_root = restaking_program_client
+            .do_initialize_operator(Some(200))
+            .await?;
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
+
+        // Operator disables itself
+        restaking_program_client
+            .do_operator_cooldown_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        // Generate BLS keypair
+        let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
+        let signature = operator_root
+            .bn128_privkey
+            .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
+            .unwrap();
+
+        // Try to register operator (should fail)
+        let result = ncn_program_client
+            .do_register_operator(
+                ncn_root.ncn_pubkey,
+                operator_root.operator_pubkey,
+                &operator_root.operator_admin,
+                g1_compressed.0,
+                g2_compressed.0,
+                signature.0,
+            )
+            .await;
+        assert_ncn_program_error(
+            result,
+            NCNProgramError::OperatorNcnConnectionNotActive,
+            None,
+        );
         Ok(())
     }
 }

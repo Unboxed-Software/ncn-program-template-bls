@@ -325,6 +325,12 @@ pub enum NcnProgramError {
     /// 8798 - No non signers aggregated pubkey
     #[error("No non signers aggregated pubkey")]
     NoNonSignersAggregatedPubkey = 0x225E,
+    /// 8799 - Quorum not met
+    #[error("Quorum not met")]
+    QuorumNotMet = 0x225F,
+    /// 8800 - Operator <> NCN connection is not active
+    #[error("Operator <> NCN connection is not active")]
+    OperatorNcnConnectionNotActive = 0x2260,
 }
 
 impl solana_program::program_error::PrintProgramError for NcnProgramError {

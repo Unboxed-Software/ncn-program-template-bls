@@ -48,6 +48,8 @@ export type RegisterOperatorInstruction<
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountOperator extends string | IAccountMeta<string> = string,
   TAccountOperatorAdmin extends string | IAccountMeta<string> = string,
+  TAccountNcnOperatorState extends string | IAccountMeta<string> = string,
+  TAccountRestakingConfig extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -67,6 +69,12 @@ export type RegisterOperatorInstruction<
         ? ReadonlySignerAccount<TAccountOperatorAdmin> &
             IAccountSignerMeta<TAccountOperatorAdmin>
         : TAccountOperatorAdmin,
+      TAccountNcnOperatorState extends string
+        ? ReadonlyAccount<TAccountNcnOperatorState>
+        : TAccountNcnOperatorState,
+      TAccountRestakingConfig extends string
+        ? ReadonlyAccount<TAccountRestakingConfig>
+        : TAccountRestakingConfig,
       ...TRemainingAccounts,
     ]
   >;
@@ -121,12 +129,16 @@ export type RegisterOperatorInput<
   TAccountNcn extends string = string,
   TAccountOperator extends string = string,
   TAccountOperatorAdmin extends string = string,
+  TAccountNcnOperatorState extends string = string,
+  TAccountRestakingConfig extends string = string,
 > = {
   config: Address<TAccountConfig>;
   operatorRegistry: Address<TAccountOperatorRegistry>;
   ncn: Address<TAccountNcn>;
   operator: Address<TAccountOperator>;
   operatorAdmin: TransactionSigner<TAccountOperatorAdmin>;
+  ncnOperatorState: Address<TAccountNcnOperatorState>;
+  restakingConfig: Address<TAccountRestakingConfig>;
   g1Pubkey: RegisterOperatorInstructionDataArgs['g1Pubkey'];
   g2Pubkey: RegisterOperatorInstructionDataArgs['g2Pubkey'];
   signature: RegisterOperatorInstructionDataArgs['signature'];
@@ -138,6 +150,8 @@ export function getRegisterOperatorInstruction<
   TAccountNcn extends string,
   TAccountOperator extends string,
   TAccountOperatorAdmin extends string,
+  TAccountNcnOperatorState extends string,
+  TAccountRestakingConfig extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
   input: RegisterOperatorInput<
@@ -145,7 +159,9 @@ export function getRegisterOperatorInstruction<
     TAccountOperatorRegistry,
     TAccountNcn,
     TAccountOperator,
-    TAccountOperatorAdmin
+    TAccountOperatorAdmin,
+    TAccountNcnOperatorState,
+    TAccountRestakingConfig
   >,
   config?: { programAddress?: TProgramAddress }
 ): RegisterOperatorInstruction<
@@ -154,7 +170,9 @@ export function getRegisterOperatorInstruction<
   TAccountOperatorRegistry,
   TAccountNcn,
   TAccountOperator,
-  TAccountOperatorAdmin
+  TAccountOperatorAdmin,
+  TAccountNcnOperatorState,
+  TAccountRestakingConfig
 > {
   // Program address.
   const programAddress = config?.programAddress ?? NCN_PROGRAM_PROGRAM_ADDRESS;
@@ -169,6 +187,14 @@ export function getRegisterOperatorInstruction<
     ncn: { value: input.ncn ?? null, isWritable: false },
     operator: { value: input.operator ?? null, isWritable: false },
     operatorAdmin: { value: input.operatorAdmin ?? null, isWritable: false },
+    ncnOperatorState: {
+      value: input.ncnOperatorState ?? null,
+      isWritable: false,
+    },
+    restakingConfig: {
+      value: input.restakingConfig ?? null,
+      isWritable: false,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -186,6 +212,8 @@ export function getRegisterOperatorInstruction<
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.operator),
       getAccountMeta(accounts.operatorAdmin),
+      getAccountMeta(accounts.ncnOperatorState),
+      getAccountMeta(accounts.restakingConfig),
     ],
     programAddress,
     data: getRegisterOperatorInstructionDataEncoder().encode(
@@ -197,7 +225,9 @@ export function getRegisterOperatorInstruction<
     TAccountOperatorRegistry,
     TAccountNcn,
     TAccountOperator,
-    TAccountOperatorAdmin
+    TAccountOperatorAdmin,
+    TAccountNcnOperatorState,
+    TAccountRestakingConfig
   >;
 
   return instruction;
@@ -214,6 +244,8 @@ export type ParsedRegisterOperatorInstruction<
     ncn: TAccountMetas[2];
     operator: TAccountMetas[3];
     operatorAdmin: TAccountMetas[4];
+    ncnOperatorState: TAccountMetas[5];
+    restakingConfig: TAccountMetas[6];
   };
   data: RegisterOperatorInstructionData;
 };
@@ -226,7 +258,7 @@ export function parseRegisterOperatorInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedRegisterOperatorInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 7) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -244,6 +276,8 @@ export function parseRegisterOperatorInstruction<
       ncn: getNextAccount(),
       operator: getNextAccount(),
       operatorAdmin: getNextAccount(),
+      ncnOperatorState: getNextAccount(),
+      restakingConfig: getNextAccount(),
     },
     data: getRegisterOperatorInstructionDataDecoder().decode(instruction.data),
   };

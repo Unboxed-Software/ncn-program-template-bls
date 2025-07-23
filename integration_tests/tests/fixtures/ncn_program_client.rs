@@ -102,6 +102,14 @@ impl NCNProgramClient {
         Ok(())
     }
 
+    /// Gets the current balance of the payer account.
+    pub async fn get_payer_balance(&mut self) -> TestResult<u64> {
+        Ok(self
+            .banks_client
+            .get_balance_with_commitment(self.payer.pubkey(), CommitmentLevel::Processed)
+            .await?)
+    }
+
     /// Sets up the NCN program by initializing the config and vault registry.
     pub async fn setup_ncn_program(&mut self, ncn_root: &NcnRoot) -> TestResult<()> {
         self.do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
@@ -1373,10 +1381,19 @@ impl NCNProgramClient {
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
         let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
+        let ncn_operator_state = NcnOperatorState::find_program_address(
+            &jito_restaking_program::id(),
+            &ncn,
+            &operator_pubkey,
+        )
+        .0;
+        let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
 
         self.register_operator(
             config,
             operator_registry,
+            ncn_operator_state,
+            restaking_config,
             ncn,
             operator_pubkey,
             operator_admin,
@@ -1393,6 +1410,8 @@ impl NCNProgramClient {
         &mut self,
         config: Pubkey,
         operator_registry: Pubkey,
+        ncn_operator_state: Pubkey,
+        restaking_config: Pubkey,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
@@ -1406,6 +1425,8 @@ impl NCNProgramClient {
             .ncn(ncn)
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())
+            .ncn_operator_state(ncn_operator_state)
+            .restaking_config(restaking_config)
             .g1_pubkey(g1_pubkey)
             .g2_pubkey(g2_pubkey)
             .signature(signature)

@@ -1,11 +1,12 @@
 use jito_bytemuck::AccountDeserialize;
-use jito_restaking_core::{ncn::Ncn, operator::Operator};
+use jito_restaking_core::{ncn::Ncn, ncn_operator_state::NcnOperatorState, operator::Operator};
 use ncn_program_core::{
     config::Config,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE},
     error::NCNProgramError,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
+    loaders::load_ncn_epoch,
     operator_registry::OperatorRegistry,
     schemes::sha256_normalized::Sha256Normalized,
 };
@@ -31,6 +32,8 @@ use solana_program::{
 /// 3. `[]` ncn: The NCN account
 /// 4. `[]` operator: The operator to register
 /// 5. `[signer]` operator_admin: The operator admin that must sign
+/// 6. `[]` ncn_operator_state: The connection between NCN and operator
+/// 7. `[]` restaking_config: Restaking configuration account
 pub fn process_register_operator(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -38,7 +41,9 @@ pub fn process_register_operator(
     g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
     signature: [u8; 64],
 ) -> ProgramResult {
-    let [config, operator_registry, ncn, operator, operator_admin] = accounts else {
+    let [config, operator_registry, ncn, operator, operator_admin, ncn_operator_state, restaking_config] =
+        accounts
+    else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -47,6 +52,13 @@ pub fn process_register_operator(
     OperatorRegistry::load(program_id, operator_registry, ncn.key, true)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     Operator::load(&jito_restaking_program::id(), operator, false)?;
+    NcnOperatorState::load(
+        &jito_restaking_program::id(),
+        ncn_operator_state,
+        ncn,
+        operator,
+        false,
+    )?;
 
     // Verify that the operator_admin is authorized to register this operator
     {
@@ -62,6 +74,32 @@ pub fn process_register_operator(
             msg!("Error: Operator admin must sign the transaction");
             return Err(ProgramError::MissingRequiredSignature);
         }
+    }
+
+    let current_slot = Clock::get()?.slot;
+    let (_, ncn_epoch_length) = load_ncn_epoch(restaking_config, current_slot, None)?;
+
+    let is_active = {
+        let ncn_operator_state_data = ncn_operator_state.data.borrow();
+        let ncn_operator_state_account =
+            NcnOperatorState::try_from_slice_unchecked(&ncn_operator_state_data)?;
+
+        let ncn_operator_okay = ncn_operator_state_account
+            .ncn_opt_in_state
+            .is_active(current_slot, ncn_epoch_length)?;
+
+        let operator_ncn_okay = ncn_operator_state_account
+            .operator_opt_in_state
+            .is_active(current_slot, ncn_epoch_length)?;
+
+        ncn_operator_okay && operator_ncn_okay
+    };
+
+    if !is_active {
+        msg!("Error: Operator <> NCN connection is not acctive");
+        return Err(ProgramError::from(
+            NCNProgramError::OperatorNcnConnectionNotActive,
+        ));
     }
 
     // Verify BLS signature: signature should be G1 pubkey signed by G2 private key

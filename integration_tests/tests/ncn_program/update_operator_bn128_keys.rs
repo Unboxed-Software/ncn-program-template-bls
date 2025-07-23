@@ -30,6 +30,20 @@ mod tests {
             .do_initialize_operator(Some(200))
             .await?;
 
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
+
         // Generate initial BLS keypair
         let initial_g1_compressed =
             G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
@@ -119,6 +133,20 @@ mod tests {
             .do_initialize_operator(Some(200))
             .await?;
 
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
+
         // Generate BLS keypair for update
         let new_private_key = PrivKey::from_random();
         let new_g1_compressed = G1CompressedPoint::try_from(new_private_key).unwrap();
@@ -173,6 +201,20 @@ mod tests {
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
             .await?;
+
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
 
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
@@ -249,6 +291,20 @@ mod tests {
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
             .await?;
+
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
 
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
@@ -327,6 +383,20 @@ mod tests {
             .do_initialize_operator(Some(200))
             .await?;
 
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
+
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
         let initial_g1_compressed = G1CompressedPoint::try_from(initial_private_key).unwrap();
@@ -399,6 +469,20 @@ mod tests {
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
             .await?;
+
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
 
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
@@ -513,6 +597,20 @@ mod tests {
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
             .await?;
+
+        // Setup operator and handshake
+        restaking_program_client
+            .do_initialize_ncn_operator_state(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        fixture.warp_slot_incremental(1).await.unwrap();
+        restaking_program_client
+            .do_ncn_warmup_operator(&ncn_root, &operator_root.operator_pubkey)
+            .await?;
+        restaking_program_client
+            .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
 
         // Generate BLS keypair
         let private_key = PrivKey::from_random();

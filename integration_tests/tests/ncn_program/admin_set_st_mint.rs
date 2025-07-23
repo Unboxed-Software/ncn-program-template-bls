@@ -36,6 +36,8 @@ mod tests {
         assert_eq!(*mint_entry.st_mint(), st_mint);
         assert_eq!(mint_entry.weight(), weight);
 
+        fixture.warp_slot_incremental(1).await?;
+
         ncn_program_client
             .do_admin_set_st_mint(ncn, st_mint, weight)
             .await?;

@@ -235,6 +235,16 @@
           "name": "operatorAdmin",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "ncnOperatorState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "restakingConfig",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -2401,6 +2411,16 @@
       "code": 8798,
       "name": "NoNonSignersAggregatedPubkey",
       "msg": "No non signers aggregated pubkey"
+    },
+    {
+      "code": 8799,
+      "name": "QuorumNotMet",
+      "msg": "Quorum not met"
+    },
+    {
+      "code": 8800,
+      "name": "OperatorNcnConnectionNotActive",
+      "msg": "Operator <> NCN connection is not active"
     }
   ],
   "metadata": {

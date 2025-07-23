@@ -218,6 +218,8 @@ pub enum NCNProgramError {
     NoNonSignersAggregatedPubkey,
     #[error("Quorum not met")]
     QuorumNotMet,
+    #[error("Operator <> NCN connection is not active")]
+    OperatorNcnConnectionNotActive,
 }
 
 impl<T> DecodeError<T> for NCNProgramError {
