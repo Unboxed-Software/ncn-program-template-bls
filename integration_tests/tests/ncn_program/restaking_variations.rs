@@ -15,21 +15,14 @@ mod tests {
         let mut restaking_client = fixture.restaking_program_client();
 
         const OPERATOR_COUNT: usize = 3;
-        const VAULT_COUNT: usize = 1;
         const OPERATOR_FEE_BPS: u16 = MAX_FEE_BPS;
         const INDEX_OF_OPERATOR_TO_REMOVE: usize = 1;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(OPERATOR_FEE_BPS))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(OPERATOR_FEE_BPS))
             .await?;
 
         {
-            fixture.warp_epoch_incremental(2).await?;
-        }
-
-        {
-            msg!("First Run");
-            // First Run
             fixture.snapshot_test_ncn(&test_ncn).await?;
 
             fixture.vote_test_ncn(&test_ncn).await?;
@@ -47,10 +40,7 @@ mod tests {
         }
 
         {
-            msg!("Second Run");
-            // Second Run
             fixture.snapshot_test_ncn(&test_ncn).await?;
-
             fixture.vote_test_ncn(&test_ncn).await?;
         }
 
@@ -63,11 +53,10 @@ mod tests {
         let mut restaking_client = fixture.restaking_program_client();
 
         const OPERATOR_COUNT: usize = 1;
-        const VAULT_COUNT: usize = 3;
-        const INDEX_OF_VAULT_TO_REMOVE: usize = 1;
+        const INDEX_OF_VAULT_TO_REMOVE: usize = 0;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(0))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(0))
             .await?;
 
         {
@@ -108,10 +97,9 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
 
         const OPERATOR_COUNT: usize = 1;
-        const VAULT_COUNT: usize = 1;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(0))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(0))
             .await?;
 
         {

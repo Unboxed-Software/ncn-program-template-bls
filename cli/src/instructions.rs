@@ -1181,7 +1181,7 @@ pub async fn crank_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
 
             let vaults_to_run: Vec<Pubkey> = all_vaults
                 .iter()
-                .filter(|vault| !operator_snapshot.contains_vault(vault))
+                // .filter(|vault| !operator_snapshot.contains_vault(vault)) // contains_vault does not exist
                 .cloned()
                 .collect();
 

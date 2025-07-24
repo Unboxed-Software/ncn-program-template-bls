@@ -12,8 +12,6 @@ import {
   fixEncoderSize,
   getAddressDecoder,
   getAddressEncoder,
-  getArrayDecoder,
-  getArrayEncoder,
   getBoolDecoder,
   getBoolEncoder,
   getBytesDecoder,
@@ -39,32 +37,24 @@ export type OperatorSnapshot = {
   operator: Address;
   g1Pubkey: ReadonlyUint8Array;
   slotCreated: bigint;
-  slotFinalized: bigint;
+  slotLastSnapshoted: bigint;
   isActive: number;
   ncnOperatorIndex: bigint;
   operatorIndex: bigint;
   hasMinimumStakeWeight: number;
-  stakeWeightSoFar: StakeWeights;
-  vaultOperatorDelegationCount: bigint;
-  vaultOperatorDelegationsRegistered: bigint;
-  validOperatorVaultDelegations: bigint;
-  vaultsDelegated: Array<Address>;
+  stakeWeight: StakeWeights;
 };
 
 export type OperatorSnapshotArgs = {
   operator: Address;
   g1Pubkey: ReadonlyUint8Array;
   slotCreated: number | bigint;
-  slotFinalized: number | bigint;
+  slotLastSnapshoted: number | bigint;
   isActive: number;
   ncnOperatorIndex: number | bigint;
   operatorIndex: number | bigint;
   hasMinimumStakeWeight: number;
-  stakeWeightSoFar: StakeWeightsArgs;
-  vaultOperatorDelegationCount: number | bigint;
-  vaultOperatorDelegationsRegistered: number | bigint;
-  validOperatorVaultDelegations: number | bigint;
-  vaultsDelegated: Array<Address>;
+  stakeWeight: StakeWeightsArgs;
 };
 
 export function getOperatorSnapshotEncoder(): Encoder<OperatorSnapshotArgs> {
@@ -72,16 +62,12 @@ export function getOperatorSnapshotEncoder(): Encoder<OperatorSnapshotArgs> {
     ['operator', getAddressEncoder()],
     ['g1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
     ['slotCreated', getU64Encoder()],
-    ['slotFinalized', getU64Encoder()],
+    ['slotLastSnapshoted', getU64Encoder()],
     ['isActive', getBoolEncoder()],
     ['ncnOperatorIndex', getU64Encoder()],
     ['operatorIndex', getU64Encoder()],
     ['hasMinimumStakeWeight', getBoolEncoder()],
-    ['stakeWeightSoFar', getStakeWeightsEncoder()],
-    ['vaultOperatorDelegationCount', getU64Encoder()],
-    ['vaultOperatorDelegationsRegistered', getU64Encoder()],
-    ['validOperatorVaultDelegations', getU64Encoder()],
-    ['vaultsDelegated', getArrayEncoder(getAddressEncoder(), { size: 10 })],
+    ['stakeWeight', getStakeWeightsEncoder()],
   ]);
 }
 
@@ -90,16 +76,12 @@ export function getOperatorSnapshotDecoder(): Decoder<OperatorSnapshot> {
     ['operator', getAddressDecoder()],
     ['g1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],
     ['slotCreated', getU64Decoder()],
-    ['slotFinalized', getU64Decoder()],
+    ['slotLastSnapshoted', getU64Decoder()],
     ['isActive', getBoolDecoder()],
     ['ncnOperatorIndex', getU64Decoder()],
     ['operatorIndex', getU64Decoder()],
     ['hasMinimumStakeWeight', getBoolDecoder()],
-    ['stakeWeightSoFar', getStakeWeightsDecoder()],
-    ['vaultOperatorDelegationCount', getU64Decoder()],
-    ['vaultOperatorDelegationsRegistered', getU64Decoder()],
-    ['validOperatorVaultDelegations', getU64Decoder()],
-    ['vaultsDelegated', getArrayDecoder(getAddressDecoder(), { size: 10 })],
+    ['stakeWeight', getStakeWeightsDecoder()],
   ]);
 }
 

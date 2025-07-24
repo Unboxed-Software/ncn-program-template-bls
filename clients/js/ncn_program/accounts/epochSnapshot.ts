@@ -58,7 +58,6 @@ export type EpochSnapshot = {
   slotCreated: bigint;
   slotFinalized: bigint;
   operatorCount: bigint;
-  vaultCount: bigint;
   operatorsRegistered: bigint;
   operatorsCanVoteCount: bigint;
   totalAggG1Pubkey: ReadonlyUint8Array;
@@ -74,7 +73,6 @@ export type EpochSnapshotArgs = {
   slotCreated: number | bigint;
   slotFinalized: number | bigint;
   operatorCount: number | bigint;
-  vaultCount: number | bigint;
   operatorsRegistered: number | bigint;
   operatorsCanVoteCount: number | bigint;
   totalAggG1Pubkey: ReadonlyUint8Array;
@@ -91,7 +89,6 @@ export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
     ['slotCreated', getU64Encoder()],
     ['slotFinalized', getU64Encoder()],
     ['operatorCount', getU64Encoder()],
-    ['vaultCount', getU64Encoder()],
     ['operatorsRegistered', getU64Encoder()],
     ['operatorsCanVoteCount', getU64Encoder()],
     ['totalAggG1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
@@ -112,7 +109,6 @@ export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
     ['slotCreated', getU64Decoder()],
     ['slotFinalized', getU64Decoder()],
     ['operatorCount', getU64Decoder()],
-    ['vaultCount', getU64Decoder()],
     ['operatorsRegistered', getU64Decoder()],
     ['operatorsCanVoteCount', getU64Decoder()],
     ['totalAggG1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],

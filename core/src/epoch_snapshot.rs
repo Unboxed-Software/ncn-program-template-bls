@@ -38,8 +38,6 @@ pub struct EpochSnapshot {
     slot_finalized: PodU64,
     /// Number of operators in the epoch
     operator_count: PodU64,
-    /// Number of vaults in the epoch
-    vault_count: PodU64,
     /// Keeps track of the number of completed operator registration through `snapshot_vault_operator_delegation` and `initialize_operator_snapshot`
     operators_registered: PodU64,
     /// Keeps track of the number of valid operator vault delegations
@@ -66,7 +64,6 @@ impl EpochSnapshot {
         bump: u8,
         current_slot: u64,
         operator_count: u64,
-        vault_count: u64,
         minimum_stake_weight: StakeWeights,
     ) -> Self {
         Self {
@@ -76,7 +73,6 @@ impl EpochSnapshot {
             slot_finalized: PodU64::from(0),
             bump,
             operator_count: PodU64::from(operator_count),
-            vault_count: PodU64::from(vault_count),
             operators_registered: PodU64::from(0),
             operators_can_vote_count: PodU64::from(0),
             total_agg_g1_pubkey: [0; G1_COMPRESSED_POINT_SIZE],
@@ -93,7 +89,6 @@ impl EpochSnapshot {
         bump: u8,
         current_slot: u64,
         operator_count: u64,
-        vault_count: u64,
         minimum_stake_weight: StakeWeights,
     ) {
         // Initializes field by field to avoid overflowing stack
@@ -103,7 +98,6 @@ impl EpochSnapshot {
         self.slot_finalized = PodU64::from(0);
         self.bump = bump;
         self.operator_count = PodU64::from(operator_count);
-        self.vault_count = PodU64::from(vault_count);
         self.operators_registered = PodU64::from(0);
         self.operators_can_vote_count = PodU64::from(0);
         self.total_agg_g1_pubkey = [0; G1_COMPRESSED_POINT_SIZE];
@@ -169,10 +163,6 @@ impl EpochSnapshot {
         self.operator_count.into()
     }
 
-    pub fn vault_count(&self) -> u64 {
-        self.vault_count.into()
-    }
-
     pub fn operators_registered(&self) -> u64 {
         self.operators_registered.into()
     }
@@ -200,13 +190,11 @@ impl EpochSnapshot {
     pub fn increment_operator_registration(
         &mut self,
         current_slot: u64,
-        vault_operator_delegations: u64,
     ) -> Result<(), NCNProgramError> {
         msg!(
-            "Incrementing operator registration for epoch {} at slot {} with vault delegations {}",
+            "Incrementing operator registration for epoch {} at slot {}",
             self.epoch(),
             current_slot,
-            vault_operator_delegations
         );
 
         if self.finalized() {
@@ -230,14 +218,6 @@ impl EpochSnapshot {
                 .ok_or(NCNProgramError::ArithmeticOverflow)?,
         );
         msg!("Operators registered: {}", self.operators_registered());
-
-        if vault_operator_delegations > 0 {
-            self.operators_can_vote_count = PodU64::from(
-                self.operators_can_vote_count()
-                    .checked_add(1)
-                    .ok_or(NCNProgramError::ArithmeticOverflow)?,
-            );
-        }
 
         msg!(
             "Operators can vote count: {}",
@@ -373,7 +353,7 @@ pub struct OperatorSnapshot {
     g1_pubkey: [u8; 32], // G1 compressed pubkey
 
     slot_created: PodU64,
-    slot_finalized: PodU64,
+    slot_last_snapshoted: PodU64,
 
     is_active: PodBool,
 
@@ -383,13 +363,7 @@ pub struct OperatorSnapshot {
 
     has_minimum_stake_weight: PodBool,
 
-    stake_weight_so_far: StakeWeights,
-
-    vault_operator_delegation_count: PodU64,
-    vault_operator_delegations_registered: PodU64,
-    valid_operator_vault_delegations: PodU64,
-
-    vaults_delegated: [Pubkey; 10],
+    stake_weight: StakeWeights,
 }
 
 impl Default for OperatorSnapshot {
@@ -398,16 +372,12 @@ impl Default for OperatorSnapshot {
             operator: Pubkey::default(),
             g1_pubkey: [0; G1_COMPRESSED_POINT_SIZE],
             slot_created: PodU64::from(0),
-            slot_finalized: PodU64::from(0),
+            slot_last_snapshoted: PodU64::from(0),
             is_active: PodBool::from(false),
             ncn_operator_index: PodU64::from(u64::MAX),
             operator_index: PodU64::from(u64::MAX),
             has_minimum_stake_weight: PodBool::from(false),
-            stake_weight_so_far: StakeWeights::default(),
-            vaults_delegated: [Pubkey::default(); 10],
-            vault_operator_delegation_count: PodU64::from(0),
-            vault_operator_delegations_registered: PodU64::from(0),
-            valid_operator_vault_delegations: PodU64::from(0),
+            stake_weight: StakeWeights::default(),
         }
     }
 }
@@ -421,22 +391,17 @@ impl OperatorSnapshot {
         ncn_operator_index: u64,
         operator_index: u64,
         g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
-        vault_operator_delegation_count: u64,
     ) -> Result<Self, NCNProgramError> {
         Ok(Self {
             operator: *operator,
             slot_created: PodU64::from(current_slot),
-            slot_finalized: PodU64::from(0),
+            slot_last_snapshoted: PodU64::from(0),
             is_active: PodBool::from(is_active),
             ncn_operator_index: PodU64::from(ncn_operator_index),
             operator_index: PodU64::from(operator_index),
             g1_pubkey,
             has_minimum_stake_weight: PodBool::from(false),
-            stake_weight_so_far: StakeWeights::default(),
-            vaults_delegated: [Pubkey::default(); 10],
-            vault_operator_delegation_count: PodU64::from(vault_operator_delegation_count),
-            vault_operator_delegations_registered: PodU64::from(0),
-            valid_operator_vault_delegations: PodU64::from(0),
+            stake_weight: StakeWeights::default(),
         })
     }
 
@@ -455,26 +420,17 @@ impl OperatorSnapshot {
             return Err(NCNProgramError::TooManyVaultOperatorDelegations);
         }
         let slot_finalized = if !is_active { current_slot } else { 0 };
-        let vault_operator_delegation_count = if is_active {
-            vault_operator_delegation_count
-        } else {
-            0
-        };
 
         // Initializes field by field to avoid overflowing stack
         self.operator = *operator;
         self.slot_created = PodU64::from(current_slot);
-        self.slot_finalized = PodU64::from(slot_finalized);
+        self.slot_last_snapshoted = PodU64::from(slot_finalized);
         self.is_active = PodBool::from(is_active);
         self.ncn_operator_index = PodU64::from(ncn_operator_index);
         self.operator_index = PodU64::from(operator_index);
         self.g1_pubkey = g1_pubkey;
         self.has_minimum_stake_weight = PodBool::from(false);
-        self.stake_weight_so_far = StakeWeights::default();
-        self.vaults_delegated = [Pubkey::default(); MAX_VAULTS];
-        self.vault_operator_delegation_count = PodU64::from(vault_operator_delegation_count);
-        self.vault_operator_delegations_registered = PodU64::from(0);
-        self.valid_operator_vault_delegations = PodU64::from(0);
+        self.stake_weight = StakeWeights::default();
 
         Ok(())
     }
@@ -491,6 +447,18 @@ impl OperatorSnapshot {
         self.g1_pubkey
     }
 
+    pub fn slot_last_snapshoted(&self) -> u64 {
+        self.slot_last_snapshoted.into()
+    }
+
+    pub fn slot_created(&self) -> u64 {
+        self.slot_created.into()
+    }
+
+    pub fn is_snapshoted(&self) -> bool {
+        self.slot_last_snapshoted() > self.slot_created.into()
+    }
+
     pub fn have_valid_bn128_g1_pubkey(&self) -> bool {
         G1CompressedPoint::try_from(self.g1_pubkey).is_ok()
             && self.g1_pubkey != G1CompressedPoint::default().0
@@ -505,103 +473,34 @@ impl OperatorSnapshot {
     }
 
     pub fn stake_weight_so_far(&self) -> &StakeWeights {
-        &self.stake_weight_so_far
+        &self.stake_weight
     }
 
     pub fn set_has_minimum_stake_weight(&mut self, has_minimum_stake_weight: bool) {
         self.has_minimum_stake_weight = PodBool::from(has_minimum_stake_weight);
     }
 
-    pub fn set_stake_weight_so_far(&mut self, stake_weight_so_far: &StakeWeights) {
-        self.stake_weight_so_far = *stake_weight_so_far;
+    pub fn set_stake_weight(&mut self, stake_weight_so_far: &StakeWeights) {
+        self.stake_weight = *stake_weight_so_far;
     }
 
-    pub fn vault_operator_delegation_count(&self) -> u64 {
-        self.vault_operator_delegation_count.into()
-    }
-
-    pub fn vault_operator_delegations_registered(&self) -> u64 {
-        self.vault_operator_delegations_registered.into()
-    }
-
-    pub fn valid_operator_vault_delegations(&self) -> u64 {
-        self.valid_operator_vault_delegations.into()
-    }
-
-    pub fn finalized(&self) -> bool {
-        !self.is_active()
-            || self.vault_operator_delegations_registered()
-                == self.vault_operator_delegation_count()
-            || self.vault_operator_delegations_registered() == MAX_VAULTS as u64
-            || self.has_minimum_stake_weight()
-    }
-
-    pub fn contains_vault(&self, vault: &Pubkey) -> bool {
-        self.vaults_delegated.iter().any(|v| v.eq(vault))
-    }
-
-    pub const fn vaults_delegated(&self) -> &[Pubkey] {
-        &self.vaults_delegated
-    }
-
-    pub fn insert_vault_operator_stake_weight(
-        &mut self,
-        vault: &Pubkey,
-    ) -> Result<(), NCNProgramError> {
-        if self
-            .vault_operator_delegations_registered()
-            .checked_add(1)
-            .ok_or(NCNProgramError::ArithmeticOverflow)?
-            > MAX_VAULTS as u64
-        {
-            return Err(NCNProgramError::TooManyVaultOperatorDelegations);
-        }
-
-        if self.contains_vault(vault) {
-            return Err(NCNProgramError::DuplicateVaultOperatorDelegation);
-        }
-
-        self.vaults_delegated[self.vault_operator_delegations_registered() as usize] = *vault;
-
-        Ok(())
-    }
-
-    pub fn increment_vault_operator_delegation_registration(
+    pub fn snapshot_vault_operator_delegation(
         &mut self,
         current_slot: u64,
-        vault: &Pubkey,
         stake_weights: &StakeWeights,
         minimum_stake_weight: &StakeWeights,
     ) -> Result<(), NCNProgramError> {
-        if self.finalized() {
-            return Err(NCNProgramError::VaultOperatorDelegationFinalized);
+        if !self.is_active() {
+            return Err(NCNProgramError::OperatorSnapshotIsNotActive);
         }
 
-        self.insert_vault_operator_stake_weight(vault)?;
-
-        self.vault_operator_delegations_registered = PodU64::from(
-            self.vault_operator_delegations_registered()
-                .checked_add(1)
-                .ok_or(NCNProgramError::ArithmeticOverflow)?,
-        );
-
-        if stake_weights.stake_weight() > 0 {
-            self.valid_operator_vault_delegations = PodU64::from(
-                self.valid_operator_vault_delegations()
-                    .checked_add(1)
-                    .ok_or(NCNProgramError::ArithmeticOverflow)?,
-            );
-        }
-
-        self.stake_weight_so_far.increment(stake_weights)?;
+        self.set_stake_weight(stake_weights);
 
         if self.stake_weight_so_far().stake_weight() >= minimum_stake_weight.stake_weight() {
             self.set_has_minimum_stake_weight(true);
         }
 
-        if self.finalized() {
-            self.slot_finalized = PodU64::from(current_slot);
-        }
+        self.slot_last_snapshoted = PodU64::from(current_slot);
 
         Ok(())
     }
@@ -684,7 +583,6 @@ impl fmt::Display for EpochSnapshot {
        writeln!(f, "  Epoch:                        {}", self.epoch())?;
        writeln!(f, "  Bump:                         {}", self.bump)?;
        writeln!(f, "  Operator Count:               {}", self.operator_count())?;
-       writeln!(f, "  Vault Count:                  {}", self.vault_count())?;
        writeln!(f, "  Operators Registered:         {}", self.operators_registered())?;
        writeln!(f, "  Operators can vote:           {}", self.operators_can_vote_count())?;
        writeln!(f, "  Slot Finalized:               {}", self.slot_finalized())?;
@@ -709,19 +607,11 @@ impl fmt::Display for OperatorSnapshot {
        writeln!(f, "  Operator:                     {}", self.operator)?;
        writeln!(f, "  Is Active:                    {}", self.is_active())?;
        writeln!(f, "  NCN Operator Index:           {}", self.ncn_operator_index())?;
-       writeln!(f, "  Finalized:                    {}", self.finalized())?;
+       writeln!(f, "  Slot Last Snapshoted:         {}", self.slot_last_snapshoted())?;
+       writeln!(f, "  Is Snapshoted:                {}", self.is_snapshoted())?;
        writeln!(f, "  G1 Pubkey:                    {:?}", self.g1_pubkey())?;
        writeln!(f, "  Has Minimum Stake Weight:     {}", self.has_minimum_stake_weight())?;
        writeln!(f, "  Stake Weight So Far:          {:?}", self.stake_weight_so_far())?;
-       writeln!(f, "  Vault Operator Delegation Count: {}", self.vault_operator_delegation_count())?;
-       writeln!(f, "  Vault Operator Delegations Registered: {}", self.vault_operator_delegations_registered())?;
-       writeln!(f, "  Valid Operator Vault Delegations: {}", self.valid_operator_vault_delegations())?;
-       writeln!(f, "  Vaults Delegated:")?;
-       for vault in self.vaults_delegated.iter() {
-           if *vault != Pubkey::default() {
-               writeln!(f, "    - {}", vault)?;
-           }
-       }
 
        writeln!(f, "\n")?;
        Ok(())
@@ -741,16 +631,12 @@ mod tests {
         let expected_total = size_of::<Pubkey>() // operator
             + size_of::<[u8; G1_COMPRESSED_POINT_SIZE]>() // g1_pubkey
             + size_of::<PodU64>() // slot_created
-            + size_of::<PodU64>() // slot_finalized
+            + size_of::<PodU64>() // slot_last_snapshoted
             + size_of::<PodBool>() // is_active
             + size_of::<PodU64>() // ncn_operator_index
             + size_of::<PodU64>() // operator_index
             + size_of::<PodBool>() // has_minimum_stake_weight
-            + size_of::<StakeWeights>() // stake_weight_so_far
-            + size_of::<PodU64>() // vault_operator_delegation_count
-            + size_of::<PodU64>() // vault_operator_delegations_registered
-            + size_of::<PodU64>() // valid_operator_vault_delegations
-            + size_of::<[Pubkey; 10]>(); // vaults_delegated
+            + size_of::<StakeWeights>(); // stake_weight
 
         assert_eq!(size_of::<OperatorSnapshot>(), expected_total);
     }
@@ -767,7 +653,6 @@ mod tests {
             + size_of::<PodU64>() // slot_created
             + size_of::<PodU64>() // slot_finalized
             + size_of::<PodU64>() // operator_count
-            + size_of::<PodU64>() // vault_count
             + size_of::<PodU64>() // operators_registered
             + size_of::<PodU64>() // operators_can_vote_count
             + size_of::<[u8; G1_COMPRESSED_POINT_SIZE]>() // total_agg_g1_pubkey
@@ -798,7 +683,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count - set to 1
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -808,7 +692,6 @@ mod tests {
         // Try to increment operator registration when already finalized
         let result = snapshot.increment_operator_registration(
             200, // current_slot
-            1,   // vault_operator_delegations
         );
 
         // Verify we get the expected error
@@ -824,27 +707,13 @@ mod tests {
         let g1_pubkey = G1CompressedPoint::from_random().0;
 
         // Create two operator snapshots - one for active and one for inactive
-        let mut active_snapshot = OperatorSnapshot::new(
-            &Pubkey::new_unique(),
-            current_slot,
-            true,
-            0,
-            0,
-            g1_pubkey,
-            1,
-        )
-        .unwrap();
+        let mut active_snapshot =
+            OperatorSnapshot::new(&Pubkey::new_unique(), current_slot, true, 0, 0, g1_pubkey)
+                .unwrap();
 
-        let mut inactive_snapshot = OperatorSnapshot::new(
-            &Pubkey::new_unique(),
-            current_slot,
-            false,
-            0,
-            0,
-            g1_pubkey,
-            1,
-        )
-        .unwrap();
+        let mut inactive_snapshot =
+            OperatorSnapshot::new(&Pubkey::new_unique(), current_slot, false, 0, 0, g1_pubkey)
+                .unwrap();
 
         // Initialize active snapshot
         active_snapshot
@@ -882,7 +751,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
@@ -919,7 +787,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
@@ -975,7 +842,6 @@ mod tests {
             0,         // ncn_operator_index
             0,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -997,7 +863,6 @@ mod tests {
             0,                  // ncn_operator_index
             0,                  // operator_index
             original_g1_pubkey, // original g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1032,7 +897,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -1051,7 +915,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
         // Snapshot 2: operator2 first, then operator1
@@ -1078,7 +941,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
@@ -1107,7 +969,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
@@ -1121,7 +982,6 @@ mod tests {
             0,         // ncn_operator_index
             0,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1153,7 +1013,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
@@ -1170,7 +1029,6 @@ mod tests {
             0,           // ncn_operator_index (index 0)
             0,           // operator_index
             g1_pubkey_1, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1181,7 +1039,6 @@ mod tests {
             1,           // ncn_operator_index (index 1)
             1,           // operator_index
             g1_pubkey_2, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1216,7 +1073,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
@@ -1229,7 +1085,6 @@ mod tests {
             0,         // ncn_operator_index
             0,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1240,7 +1095,6 @@ mod tests {
             0,         // ncn_operator_index (same as operator1)
             1,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1266,7 +1120,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
@@ -1280,7 +1133,6 @@ mod tests {
             0,         // ncn_operator_index
             0,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1292,7 +1144,6 @@ mod tests {
             1,         // ncn_operator_index
             1,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1322,7 +1173,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -1332,7 +1182,6 @@ mod tests {
             2,                      // bump
             200,                    // current_slot
             10,                     // operator_count
-            5,                      // vault_count
             StakeWeights::new(100), // minimum_stake_weight
         );
 
@@ -1341,7 +1190,6 @@ mod tests {
         assert_eq!(epoch_snapshot.bump, 2);
         assert_eq!(u64::from(epoch_snapshot.slot_created), 200u64);
         assert_eq!(epoch_snapshot.operator_count(), 10);
-        assert_eq!(epoch_snapshot.vault_count(), 5);
         assert_eq!(epoch_snapshot.minimum_stake_weight().stake_weight(), 100);
     }
 
@@ -1373,13 +1221,11 @@ mod tests {
             3,                      // bump
             500,                    // current_slot
             15,                     // operator_count
-            8,                      // vault_count
             StakeWeights::new(200), // minimum_stake_weight
         );
 
         assert_eq!(epoch_snapshot.epoch(), 10);
         assert_eq!(epoch_snapshot.operator_count(), 15);
-        assert_eq!(epoch_snapshot.vault_count(), 8);
         assert_eq!(epoch_snapshot.operators_registered(), 0);
         assert_eq!(epoch_snapshot.operators_can_vote_count(), 0);
         assert_eq!(epoch_snapshot.slot_finalized(), 0);
@@ -1395,32 +1241,27 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
         // First increment - should succeed
-        let result = epoch_snapshot.increment_operator_registration(150, 1);
+        let result = epoch_snapshot.increment_operator_registration(150);
         assert!(result.is_ok());
         assert_eq!(epoch_snapshot.operators_registered(), 1);
-        assert_eq!(epoch_snapshot.operators_can_vote_count(), 1);
+        assert_eq!(epoch_snapshot.operators_can_vote_count(), 0); // operators_can_vote_count is not updated by this method
         assert_eq!(epoch_snapshot.slot_finalized(), 0); // Not finalized yet
 
         // Second increment - should finalize
-        let result = epoch_snapshot.increment_operator_registration(200, 0);
+        let result = epoch_snapshot.increment_operator_registration(200);
         assert!(result.is_ok());
         assert_eq!(epoch_snapshot.operators_registered(), 2);
-        assert_eq!(epoch_snapshot.operators_can_vote_count(), 1); // No change since vault_operator_delegations = 0
+        assert_eq!(epoch_snapshot.operators_can_vote_count(), 0); // Still 0 - not updated by registration
         assert_eq!(epoch_snapshot.slot_finalized(), 200); // Now finalized
         assert!(epoch_snapshot.finalized());
 
         // Third increment - should fail since finalized
-        let result = epoch_snapshot.increment_operator_registration(250, 1);
+        let result = epoch_snapshot.increment_operator_registration(250);
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            NCNProgramError::EpochSnapshotAlreadyFinalized
-        );
     }
 
     #[test]
@@ -1431,7 +1272,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -1449,7 +1289,6 @@ mod tests {
             0,         // ncn_operator_index
             0,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1474,7 +1313,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -1488,7 +1326,6 @@ mod tests {
             0,         // ncn_operator_index
             0,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1519,7 +1356,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -1532,7 +1368,6 @@ mod tests {
             0,         // ncn_operator_index
             0,         // operator_index
             g1_pubkey, // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1557,7 +1392,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -1569,7 +1403,6 @@ mod tests {
             MAX_OPERATORS as u64, // ncn_operator_index (too large)
             0,                    // operator_index
             g1_pubkey,            // g1_pubkey
-            1,
         )
         .unwrap();
 
@@ -1592,22 +1425,18 @@ mod tests {
             5,         // ncn_operator_index
             10,        // operator_index
             g1_pubkey, // g1_pubkey
-            1,         // vault_operator_delegation_count
         )
         .unwrap();
 
         assert_eq!(snapshot.operator(), &operator);
         assert_eq!(u64::from(snapshot.slot_created), 100u64);
-        assert_eq!(u64::from(snapshot.slot_finalized), 0u64);
+        assert_eq!(u64::from(snapshot.slot_last_snapshoted), 0u64);
         assert!(snapshot.is_active());
         assert_eq!(snapshot.ncn_operator_index(), 5);
         assert_eq!(u64::from(snapshot.operator_index), 10u64);
         assert_eq!(snapshot.g1_pubkey(), g1_pubkey);
         assert!(!snapshot.has_minimum_stake_weight());
         assert_eq!(snapshot.stake_weight_so_far().stake_weight(), 0);
-        assert_eq!(snapshot.vault_operator_delegation_count(), 1);
-        assert_eq!(snapshot.vault_operator_delegations_registered(), 0);
-        assert_eq!(snapshot.valid_operator_vault_delegations(), 0);
     }
 
     #[test]
@@ -1632,13 +1461,13 @@ mod tests {
         );
     }
 
-    #[test]
     fn test_operator_snapshot_initialize_inactive() {
         let mut snapshot = OperatorSnapshot::default();
 
         let operator = Pubkey::new_unique();
         let g1_pubkey = G1CompressedPoint::from_random().0;
 
+        // Use a smaller vault_operator_delegation_count that fits with MAX_VAULTS=1
         snapshot
             .initialize(
                 &operator, 100,       // current_slot
@@ -1646,14 +1475,13 @@ mod tests {
                 0,         // ncn_operator_index
                 0,         // operator_index
                 g1_pubkey, // g1_pubkey
-                5,         // vault_operator_delegation_count
+                1,         // vault_operator_delegation_count (reduced from 5 to 1)
             )
             .unwrap();
 
         assert_eq!(snapshot.operator(), &operator);
         assert!(!snapshot.is_active());
-        assert_eq!(u64::from(snapshot.slot_finalized), 100u64); // Should be finalized immediately
-        assert_eq!(snapshot.vault_operator_delegation_count(), 0); // Should be reset to 0
+        assert_eq!(u64::from(snapshot.slot_last_snapshoted), 100u64); // Should be finalized immediately
     }
 
     #[test]
@@ -1679,177 +1507,17 @@ mod tests {
 
         // Test setting stake weight
         let stake_weight = StakeWeights::new(100);
-        snapshot.set_stake_weight_so_far(&stake_weight);
+        snapshot.set_stake_weight(&stake_weight);
         assert_eq!(snapshot.stake_weight_so_far().stake_weight(), 100);
 
         // Test incrementing stake weight
         let increment = StakeWeights::new(50);
-        snapshot.stake_weight_so_far.increment(&increment);
+        let _ = snapshot.stake_weight.increment(&increment);
         assert_eq!(snapshot.stake_weight_so_far().stake_weight(), 150);
 
         // Test setting minimum stake weight flag
         snapshot.set_has_minimum_stake_weight(true);
         assert!(snapshot.has_minimum_stake_weight());
-    }
-
-    #[test]
-    fn test_operator_snapshot_finalized() {
-        let mut snapshot = OperatorSnapshot::default();
-
-        // Test finalized by registration count
-        snapshot.vault_operator_delegation_count = PodU64::from(5);
-        snapshot.vault_operator_delegations_registered = PodU64::from(5);
-        assert!(snapshot.finalized());
-
-        // Test finalized by MAX_VAULTS
-        snapshot.vault_operator_delegations_registered = PodU64::from(MAX_VAULTS as u64);
-        assert!(snapshot.finalized());
-
-        // Test finalized by minimum stake weight
-        snapshot.vault_operator_delegations_registered = PodU64::from(0);
-        snapshot.set_has_minimum_stake_weight(true);
-        assert!(snapshot.finalized());
-    }
-
-    #[test]
-    fn test_operator_snapshot_contains_vault() {
-        let mut snapshot = OperatorSnapshot::default();
-
-        let vault1 = Pubkey::new_unique();
-        let vault2 = Pubkey::new_unique();
-
-        // Test empty vaults list
-        assert!(!snapshot.contains_vault(&vault1));
-
-        // Add vaults
-        snapshot.vaults_delegated[0] = vault1;
-        snapshot.vaults_delegated[1] = vault2;
-
-        // Test contains
-        assert!(snapshot.contains_vault(&vault1));
-        assert!(snapshot.contains_vault(&vault2));
-        assert!(!snapshot.contains_vault(&Pubkey::new_unique()));
-    }
-
-    #[test]
-    fn test_operator_snapshot_insert_vault_operator_stake_weight() {
-        let mut snapshot = OperatorSnapshot::default();
-        snapshot.vault_operator_delegations_registered = PodU64::from(MAX_VAULTS as u64);
-
-        let vault = Pubkey::new_unique();
-
-        // Test overflow
-        let result = snapshot.insert_vault_operator_stake_weight(&vault);
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            NCNProgramError::TooManyVaultOperatorDelegations
-        );
-
-        // Reset and test duplicate
-        snapshot.vault_operator_delegations_registered = PodU64::from(0);
-        snapshot.vaults_delegated[0] = vault;
-
-        let result = snapshot.insert_vault_operator_stake_weight(&vault);
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            NCNProgramError::DuplicateVaultOperatorDelegation
-        );
-
-        // Test successful insertion
-        let new_vault = Pubkey::new_unique();
-        let result = snapshot.insert_vault_operator_stake_weight(&new_vault);
-        assert!(result.is_ok());
-        assert_eq!(snapshot.vaults_delegated[0], new_vault);
-    }
-
-    #[test]
-    fn test_operator_snapshot_increment_vault_operator_delegation_registration() {
-        let mut snapshot = OperatorSnapshot::new(
-            &Pubkey::new_unique(),
-            100,                                // current_slot
-            true,                               // is_active
-            1,                                  // ncn_operator_index
-            1,                                  // operator_index
-            G1CompressedPoint::from_random().0, // g1_pubkey
-            2,                                  // vault_operator_delegation_count
-        )
-        .unwrap();
-
-        let minimum_stake_weight = StakeWeights::new(100);
-
-        // Test finalized snapshot
-        snapshot.set_has_minimum_stake_weight(true);
-        let result = snapshot.increment_vault_operator_delegation_registration(
-            100, // current_slot
-            &Pubkey::new_unique(),
-            &StakeWeights::new(50),
-            &minimum_stake_weight,
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            NCNProgramError::VaultOperatorDelegationFinalized
-        );
-
-        // Reset and test successful increment
-        snapshot.set_has_minimum_stake_weight(false);
-        let vault = Pubkey::new_unique();
-        let stake_weights = StakeWeights::new(50);
-
-        let result = snapshot.increment_vault_operator_delegation_registration(
-            100, // current_slot
-            &vault,
-            &stake_weights,
-            &minimum_stake_weight,
-        );
-        assert!(result.is_ok());
-
-        assert_eq!(snapshot.vault_operator_delegations_registered(), 1);
-        assert_eq!(snapshot.valid_operator_vault_delegations(), 1);
-        assert_eq!(snapshot.stake_weight_so_far().stake_weight(), 50);
-        assert!(!snapshot.has_minimum_stake_weight()); // Not enough for minimum
-
-        // Test with zero stake weight
-        let result = snapshot.increment_vault_operator_delegation_registration(
-            150, // current_slot
-            &Pubkey::new_unique(),
-            &StakeWeights::new(0),
-            &minimum_stake_weight,
-        );
-        msg!("Result: {:?}", result);
-        assert!(result.is_ok());
-        assert_eq!(snapshot.valid_operator_vault_delegations(), 1); // No increment
-    }
-
-    #[test]
-    fn test_operator_snapshot_increment_vault_operator_delegation_registration_minimum_weight() {
-        let mut snapshot = OperatorSnapshot::new(
-            &Pubkey::new_unique(),
-            100,                                // current_slot
-            true,                               // is_active
-            1,                                  // ncn_operator_index
-            1,                                  // operator_index
-            G1CompressedPoint::from_random().0, // g1_pubkey
-            1,                                  // vault_operator_delegation_count
-        )
-        .unwrap();
-        let minimum_stake_weight = StakeWeights::new(100);
-
-        let vault = Pubkey::new_unique();
-        let stake_weights = StakeWeights::new(100); // Exactly minimum
-
-        let result = snapshot.increment_vault_operator_delegation_registration(
-            100, // current_slot
-            &vault,
-            &stake_weights,
-            &minimum_stake_weight,
-        );
-        assert!(result.is_ok());
-
-        assert!(snapshot.has_minimum_stake_weight());
-        assert_eq!(u64::from(snapshot.slot_finalized), 100u64); // Should be finalized
     }
 
     #[test]
@@ -1883,7 +1551,6 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
@@ -1921,13 +1588,11 @@ mod tests {
             255,                          // bump
             u64::MAX,                     // current_slot
             MAX_OPERATORS as u64,         // operator_count
-            MAX_VAULTS as u64,            // vault_count
             StakeWeights::new(u128::MAX), // minimum_stake_weight
         );
 
         assert_eq!(epoch_snapshot.epoch(), u64::MAX);
         assert_eq!(epoch_snapshot.operator_count(), MAX_OPERATORS as u64);
-        assert_eq!(epoch_snapshot.vault_count(), MAX_VAULTS as u64);
         assert_eq!(
             epoch_snapshot.minimum_stake_weight().stake_weight(),
             u128::MAX
@@ -1946,7 +1611,6 @@ mod tests {
             MAX_OPERATORS as u64 - 1, // ncn_operator_index
             u64::MAX,                 // operator_index
             g1_pubkey,                // g1_pubkey
-            1,                        // vault_operator_delegation_count
         )
         .unwrap();
 
@@ -1963,35 +1627,65 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            1,                    // vault_count
             StakeWeights::new(1), // minimum_stake_weight
         );
 
         // Set to maximum values to test overflow
         epoch_snapshot.operators_registered = PodU64::from(u64::MAX);
 
-        let result = epoch_snapshot.increment_operator_registration(200, 1);
+        let result = epoch_snapshot.increment_operator_registration(200);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), NCNProgramError::ArithmeticOverflow);
     }
 
     #[test]
-    fn test_operator_snapshot_arithmetic_overflow_protection() {
-        let mut snapshot = OperatorSnapshot::default();
+    fn test_operator_snapshot_is_snapshoted() {
+        // Default snapshot: slot_last_snapshoted == slot_created == 0
+        let snapshot = OperatorSnapshot::default();
+        assert_eq!(snapshot.slot_created(), 0u64);
+        assert_eq!(snapshot.slot_last_snapshoted(), 0u64);
+        assert!(!snapshot.is_snapshoted());
 
-        // Set to maximum values to test overflow
-        snapshot.vault_operator_delegations_registered = PodU64::from(u64::MAX);
+        // New snapshot: slot_last_snapshoted == 0, slot_created == 100
+        let operator = Pubkey::new_unique();
+        let g1_pubkey = G1CompressedPoint::from_random().0;
+        let snapshot = OperatorSnapshot::new(
+            &operator, 100, // current_slot
+            true, 0, 0, g1_pubkey,
+        )
+        .unwrap();
+        assert_eq!(snapshot.slot_created(), 100u64);
+        assert_eq!(snapshot.slot_last_snapshoted(), 0u64);
+        assert!(!snapshot.is_snapshoted());
 
-        let result = snapshot.increment_vault_operator_delegation_registration(
-            100, // current_slot
-            &Pubkey::new_unique(),
-            &StakeWeights::new(50),
-            &StakeWeights::new(100),
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            NCNProgramError::VaultOperatorDelegationFinalized
-        );
+        // After snapshot_vault_operator_delegation: slot_last_snapshoted > slot_created
+        let mut snapshot = OperatorSnapshot::new(
+            &operator, 100, // current_slot
+            true, 0, 0, g1_pubkey,
+        )
+        .unwrap();
+        // Manually set slot_last_snapshoted to 150
+        snapshot.slot_last_snapshoted = PodU64::from(150u64);
+        assert_eq!(snapshot.slot_created(), 100u64);
+        assert_eq!(snapshot.slot_last_snapshoted(), 150u64);
+        assert!(snapshot.is_snapshoted());
+
+        // Edge case: slot_last_snapshoted == slot_created (should be false)
+        let mut snapshot = OperatorSnapshot::new(
+            &operator, 200, // current_slot
+            true, 0, 0, g1_pubkey,
+        )
+        .unwrap();
+        snapshot.slot_last_snapshoted = PodU64::from(200u64);
+        assert!(!snapshot.is_snapshoted());
+
+        // Edge case: slot_last_snapshoted < slot_created (should be false)
+        let mut snapshot = OperatorSnapshot::new(
+            &operator, 300, // current_slot
+            true, 0, 0, g1_pubkey,
+        )
+        .unwrap();
+        snapshot.slot_last_snapshoted = PodU64::from(250u64);
+        assert!(!snapshot.is_snapshoted());
     }
 }

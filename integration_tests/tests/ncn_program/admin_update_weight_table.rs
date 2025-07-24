@@ -9,7 +9,7 @@ mod tests {
         let mut vault_client = fixture.vault_program_client();
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(1, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
 
         fixture.warp_slot_incremental(1000).await?;
 

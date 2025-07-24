@@ -32,15 +32,11 @@ mod tests {
 
         // 2. Define test parameters
         const OPERATOR_COUNT: usize = 13; // Number of operators to create for testing
-        let mints = vec![
-            (Keypair::new(), WEIGHT),     // Alice with base weight
-            (Keypair::new(), WEIGHT * 2), // Bob with double weight
-            (Keypair::new(), WEIGHT * 3), // Charlie with triple weight
-            (Keypair::new(), WEIGHT * 4), // Dave with quadruple weight
-        ];
+        let mint_keypair = (Keypair::new(), WEIGHT);
+
         let delegations = [
             1, // minimum delegation amount
-            100, 1_000,
+            1_000,
         ];
 
         // 3. Initialize system accounts and establish relationships
@@ -88,37 +84,19 @@ mod tests {
 
         // 3.c. Initialize vaults and establish NCN <> vaults and vault <> operator relationships
         {
-            // Create 3 vaults for Alice
+            // Create the vault
             fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 3, Some(mints[0].0.insecure_clone()))
-                .await?;
-            // Create 2 vaults for Bob
-            fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 2, Some(mints[1].0.insecure_clone()))
-                .await?;
-            // Create 1 vault for Charlie
-            fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[2].0.insecure_clone()))
-                .await?;
-            // Create 1 vault for Dave
-            fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mints[3].0.insecure_clone()))
+                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mint_keypair.0.insecure_clone()))
                 .await?;
         }
 
         // 3.d. Vaults delegate stakes to operators
         // Each vault delegates different amounts to different operators based on the delegation amounts array
         {
-            for (index, operator_root) in test_ncn
-                .operators
-                .iter()
-                .take(OPERATOR_COUNT - 1)
-                .skip(1)
-                .enumerate()
-            {
+            for operator_root in test_ncn.operators.iter().take(OPERATOR_COUNT - 1).skip(1) {
                 for vault_root in test_ncn.vaults.iter() {
                     // Cycle through delegation amounts based on operator index
-                    let delegation_amount = delegations[index % delegations.len()];
+                    let delegation_amount = delegations[1];
 
                     if delegation_amount > 0 {
                         vault_program_client
@@ -197,11 +175,10 @@ mod tests {
 
             // 4.d. Register all the Supported Token (ST) mints in the NCN program
             // This assigns weights to each mint for voting power calculations
-            for (mint, weight) in mints.iter() {
-                ncn_program_client
-                    .do_admin_register_st_mint(ncn_pubkey, mint.pubkey(), *weight)
-                    .await?;
-            }
+            let (mint, weight) = mint_keypair;
+            ncn_program_client
+                .do_admin_register_st_mint(ncn_pubkey, mint.pubkey(), weight)
+                .await?;
 
             // 4.c Register all the vaults in the NCN program
             // This is permissionless because the admin already approved it by initiating

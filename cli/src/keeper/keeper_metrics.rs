@@ -502,7 +502,6 @@ pub async fn emit_epoch_metrics_operator_snapshot(handler: &CliHandler, epoch: u
                 ("current-slot", current_slot, i64),
                 ("keeper-epoch", epoch, i64),
                 ("operator", operator.to_string(), String),
-                ("is-finalized", operator_snapshot.finalized(), bool),
                 ("is-active", operator_snapshot.is_active(), bool),
                 (
                     "ncn-operator-index",
@@ -515,26 +514,10 @@ pub async fn emit_epoch_metrics_operator_snapshot(handler: &CliHandler, epoch: u
                     i64
                 ),
                 (
-                    "valid-operator-vault-delegations",
-                    operator_snapshot.valid_operator_vault_delegations(),
-                    i64
-                ),
-                (
-                    "vault-operator-delegation-count",
-                    operator_snapshot.vault_operator_delegation_count(),
-                    i64
-                ),
-                (
-                    "vault-operator-delegations-registered",
-                    operator_snapshot.vault_operator_delegations_registered(),
-                    i64
-                ),
-                (
                     "stake-weight",
                     format_stake_weight(operator_snapshot.stake_weight_so_far().stake_weight()),
                     f64
-                ),
-                ("slot-finalized", operator_snapshot.finalized() as i64, i64)
+                )
             );
         }
     }
@@ -574,8 +557,7 @@ pub async fn emit_epoch_metrics_epoch_snapshot(handler: &CliHandler, epoch: u64)
                 epoch_snapshot.operators_registered(),
                 i64
             ),
-            ("operator-count", epoch_snapshot.operator_count(), i64),
-            ("vault-count", epoch_snapshot.vault_count(), i64)
+            ("operator-count", epoch_snapshot.operator_count(), i64)
         );
     }
 

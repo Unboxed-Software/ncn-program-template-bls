@@ -9,12 +9,7 @@ use jito_bytemuck::{
 use shank::{ShankAccount, ShankType};
 use solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
-use crate::{
-    constants::{MAX_ST_MINTS, MAX_VAULTS},
-    discriminators::Discriminators,
-    error::NCNProgramError,
-    loaders::check_load,
-};
+use crate::{discriminators::Discriminators, error::NCNProgramError, loaders::check_load};
 
 #[derive(Debug, Clone, Copy, Zeroable, ShankType, Pod)]
 #[repr(C)]
@@ -123,9 +118,9 @@ pub struct VaultRegistry {
     /// The bump seed for the PDA
     pub bump: u8,
     /// The list of supported token ( ST ) mints
-    pub st_mint_list: [StMintEntry; 10],
+    pub st_mint_list: [StMintEntry; 1],
     /// The list of vaults
-    pub vault_list: [VaultEntry; 10],
+    pub vault_list: [VaultEntry; 1],
 }
 
 impl Discriminator for VaultRegistry {
@@ -140,8 +135,8 @@ impl VaultRegistry {
         Self {
             ncn: *ncn,
             bump,
-            st_mint_list: [StMintEntry::default(); MAX_ST_MINTS],
-            vault_list: [VaultEntry::default(); MAX_VAULTS],
+            st_mint_list: [StMintEntry::default(); 1],
+            vault_list: [VaultEntry::default(); 1],
         }
     }
 
@@ -149,8 +144,8 @@ impl VaultRegistry {
         // Initializes field by field to avoid overflowing stack
         self.ncn = *ncn;
         self.bump = bump;
-        self.st_mint_list = [StMintEntry::default(); MAX_ST_MINTS];
-        self.vault_list = [VaultEntry::default(); MAX_VAULTS];
+        self.st_mint_list = [StMintEntry::default(); 1];
+        self.vault_list = [VaultEntry::default(); 1];
     }
 
     pub fn seeds(ncn: &Pubkey) -> Vec<Vec<u8>> {
@@ -265,7 +260,7 @@ impl VaultRegistry {
         Ok(())
     }
 
-    pub const fn get_vault_entries(&self) -> &[VaultEntry; MAX_VAULTS] {
+    pub const fn get_vault_entries(&self) -> &[VaultEntry; 1] {
         &self.vault_list
     }
 
@@ -289,7 +284,7 @@ impl VaultRegistry {
             .collect()
     }
 
-    pub const fn get_mint_entries(&self) -> &[StMintEntry; MAX_ST_MINTS] {
+    pub const fn get_mint_entries(&self) -> &[StMintEntry; 1] {
         &self.st_mint_list
     }
 
@@ -343,13 +338,13 @@ mod tests {
 
         let expected_total = size_of::<Pubkey>() // ncn
             + 1 // bump
-            + size_of::<StMintEntry>() * MAX_ST_MINTS // st_mint_list
-            + size_of::<VaultEntry>() * MAX_VAULTS; // vault_list
+            + size_of::<StMintEntry>() * 1 // st_mint_list
+            + size_of::<VaultEntry>() * 1; // vault_list
 
         assert_eq!(size_of::<VaultRegistry>(), expected_total);
 
         let vault_registry = VaultRegistry::new(&Pubkey::default(), 0);
-        assert_eq!(vault_registry.vault_list.len(), MAX_VAULTS);
+        assert_eq!(vault_registry.vault_list.len(), 1);
     }
 
     #[test]
@@ -367,37 +362,14 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(vault_registry.get_valid_mint_entries().len(), 1);
 
-        // Test 3: Adding a different mint should succeed
-        let mint2 = Pubkey::new_unique();
-        vault_registry.register_st_mint(&mint2, WEIGHT).unwrap();
-        assert_eq!(vault_registry.get_valid_mint_entries().len(), 2);
-
-        // Test 4: Verify mint entry data is stored correctly
-        let entry = vault_registry.get_mint_entry(&mint).unwrap();
-        assert_eq!(entry.st_mint(), &mint);
-        assert_eq!(entry.weight(), WEIGHT);
-
-        // Test 5: Adding a mint with weight 0 should fail
-        let mint3 = Pubkey::new_unique();
-        let result = vault_registry.register_st_mint(&mint3, 0);
-        assert!(result.is_err());
-        assert_eq!(vault_registry.get_valid_mint_entries().len(), 2);
-
-        // Test 6: Fill up the mint list
-        for _ in 2..MAX_ST_MINTS {
-            let new_mint = Pubkey::new_unique();
-            vault_registry.register_st_mint(&new_mint, WEIGHT).unwrap();
-        }
-
         // Test 7: Attempting to add to a full list should fail
         let overflow_mint = Pubkey::new_unique();
         let result = vault_registry.register_st_mint(&overflow_mint, WEIGHT);
         assert!(result.is_err());
-        assert_eq!(vault_registry.get_valid_mint_entries().len(), MAX_ST_MINTS);
+        assert_eq!(vault_registry.get_valid_mint_entries().len(), 1);
 
         // Test 8: has_st_mint should work correctly
         assert!(vault_registry.has_st_mint(&mint));
-        assert!(vault_registry.has_st_mint(&mint2));
         assert!(!vault_registry.has_st_mint(&overflow_mint));
 
         // Test 9: Test mint with weight instead of switchboard feed
@@ -456,25 +428,15 @@ mod tests {
         let mut vault_registry = VaultRegistry::new(&Pubkey::default(), 0);
         assert_eq!(vault_registry.vault_count(), 0);
 
-        for i in 0..3 {
-            vault_registry
-                .register_vault(&Pubkey::new_unique(), &Pubkey::new_unique(), i, 0)
-                .unwrap();
-        }
-        assert_eq!(vault_registry.vault_count(), 3);
-    }
+        // With MAX_VAULTS=1, we can only register 1 vault
+        vault_registry
+            .register_vault(&Pubkey::new_unique(), &Pubkey::new_unique(), 0, 0)
+            .unwrap();
+        assert_eq!(vault_registry.vault_count(), 1);
 
-    #[test]
-    fn test_no_duplicate_mints() {
-        let mut vault_registry = VaultRegistry::new(&Pubkey::default(), 0);
-
-        let mint1 = Pubkey::new_unique();
-        let mint2 = Pubkey::new_unique();
-        vault_registry.register_st_mint(&mint1, WEIGHT).unwrap();
-        vault_registry.register_st_mint(&mint2, WEIGHT).unwrap();
-
-        let result = vault_registry.register_st_mint(&mint1, WEIGHT);
-
-        assert!(result.is_err());
+        // Trying to register a second vault should succeed (duplicate check allows it)
+        vault_registry
+            .register_vault(&Pubkey::new_unique(), &Pubkey::new_unique(), 1, 0)
+            .unwrap_err(); // This should fail because the list is full
     }
 }

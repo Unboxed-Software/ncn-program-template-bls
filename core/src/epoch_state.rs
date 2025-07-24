@@ -399,14 +399,9 @@ impl EpochState {
     pub fn update_snapshot_vault_operator_delegation(
         &mut self,
         ncn_operator_index: usize,
-        finalized: bool,
     ) -> Result<(), NCNProgramError> {
-        if finalized {
-            self.operator_snapshot_progress[ncn_operator_index].mark_complete();
-            self.epoch_snapshot_progress.increment_one()?;
-        } else {
-            self.operator_snapshot_progress[ncn_operator_index].increment_one()?;
-        }
+        self.operator_snapshot_progress[ncn_operator_index].mark_complete();
+        self.epoch_snapshot_progress.increment_one()?;
 
         Ok(())
     }

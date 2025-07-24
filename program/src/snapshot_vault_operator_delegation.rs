@@ -124,18 +124,15 @@ pub fn process_snapshot_vault_operator_delegation(
 
     let mut cloned_operator_snapshot = operator_snapshot.clone();
 
-    if cloned_operator_snapshot.finalized() {
-        msg!("Error: Operator snapshot is already finalized");
-        return Err(NCNProgramError::OperatorFinalized.into());
+    if !cloned_operator_snapshot.is_active() {}
+
+    if cloned_operator_snapshot.slot_last_snapshoted() >= current_slot {
+        msg!("Error: Operator snapshot is already taked");
+        return Err(NCNProgramError::OperatorSnapshotAlreadyTaked.into());
     }
 
     // Check if operator has valid BN128 G1 pubkey and determine active status
     let is_active = {
-        if cloned_operator_snapshot.has_minimum_stake_weight() {
-            msg!("Operator already has minimum stake weight");
-            return Ok(());
-        }
-
         if !cloned_operator_snapshot.have_valid_bn128_g1_pubkey() {
             false
         } else {
@@ -200,24 +197,23 @@ pub fn process_snapshot_vault_operator_delegation(
 
     // Increment vault operator delegation and check if finalized
     let stake_weights = StakeWeights::snapshot(total_stake_weight)?;
-    let (is_finalized, ncn_operator_index, valid_delegations) = {
-        cloned_operator_snapshot.increment_vault_operator_delegation_registration(
+    let (has_minimum_stake_weight, ncn_operator_index, is_snapshoted) = {
+        let is_snapshoted = cloned_operator_snapshot.is_snapshoted();
+        cloned_operator_snapshot.snapshot_vault_operator_delegation(
             current_slot,
-            vault.key,
             &stake_weights,
             epoch_snapshot_account.minimum_stake_weight(),
         )?;
 
-        let is_finalized = cloned_operator_snapshot.finalized();
+        let has_minimum_stake_weight = cloned_operator_snapshot.has_minimum_stake_weight();
         let ncn_operator_index = cloned_operator_snapshot.ncn_operator_index();
-        let valid_delegations = cloned_operator_snapshot.valid_operator_vault_delegations();
 
-        (is_finalized, ncn_operator_index, valid_delegations)
+        (has_minimum_stake_weight, ncn_operator_index, is_snapshoted)
     };
 
     // If operator is finalized, increment operator registration
-    if is_finalized {
-        epoch_snapshot_account.increment_operator_registration(current_slot, valid_delegations)?;
+    if !is_snapshoted {
+        epoch_snapshot_account.increment_operator_registration(current_slot)?;
     }
 
     epoch_snapshot_account.update_operator_snapshot(
@@ -231,7 +227,7 @@ pub fn process_snapshot_vault_operator_delegation(
         let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
         let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
         epoch_state_account
-            .update_snapshot_vault_operator_delegation(ncn_operator_index as usize, is_finalized)?;
+            .update_snapshot_vault_operator_delegation(ncn_operator_index as usize)?;
     }
 
     Ok(())

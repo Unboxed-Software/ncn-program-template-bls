@@ -30,9 +30,9 @@ pub struct WeightTable {
     /// Bump seed for the PDA
     bump: u8,
     /// A snapshot of the Vault Registry
-    vault_registry: [VaultEntry; 10],
+    vault_registry: [VaultEntry; 1],
     /// The weight table
-    table: [WeightEntry; 10],
+    table: [WeightEntry; 1],
 }
 
 impl Discriminator for WeightTable {
@@ -343,10 +343,11 @@ mod tests {
 
     use super::*;
 
-    fn get_test_mint_entries(count: usize) -> [StMintEntry; 10] {
+    fn get_test_mint_entries(count: usize) -> [StMintEntry; MAX_ST_MINTS] {
         let mut mints = [StMintEntry::default(); MAX_ST_MINTS];
 
-        for i in 0..count {
+        // Only fill up to the minimum of count and MAX_ST_MINTS
+        for i in 0..count.min(MAX_ST_MINTS) {
             mints[i] = StMintEntry::new(&Pubkey::new_unique(), 0);
         }
 
@@ -369,38 +370,24 @@ mod tests {
     #[test]
     fn test_check_registry_for_vault() {
         let ncn = Pubkey::new_unique();
-        let mut table = WeightTable::new(&ncn, 0, 0, 3, 0); // vault_count = 3
+        let mut table = WeightTable::new(&ncn, 0, 0, 1, 0); // vault_count = 1
 
-        // Create vault registry entries
+        // Create vault registry entries - only 1 entry since MAX_VAULTS=1
         let mut vault_registry = [VaultEntry::default(); MAX_VAULTS];
 
-        // Add three vault entries with different indexes
+        // Add one vault entry
         vault_registry[0] = VaultEntry::new(
             &Pubkey::new_unique(),
             &Pubkey::new_unique(),
             1,   // vault_index
             100, // slot_registered
         );
-        vault_registry[1] = VaultEntry::new(
-            &Pubkey::new_unique(),
-            &Pubkey::new_unique(),
-            5,   // vault_index
-            100, // slot_registered
-        );
-        vault_registry[2] = VaultEntry::new(
-            &Pubkey::new_unique(),
-            &Pubkey::new_unique(),
-            10,  // vault_index
-            100, // slot_registered
-        );
 
         // Initialize the table with vault entries
         table.set_vault_entries(&vault_registry).unwrap();
 
-        // Test 1: Check existing vault indices should succeed
+        // Test 1: Check existing vault index should succeed
         assert!(table.check_registry_for_vault(1).is_ok());
-        assert!(table.check_registry_for_vault(5).is_ok());
-        assert!(table.check_registry_for_vault(10).is_ok());
 
         // Test 2: Check non-existent vault indices should fail
         assert_eq!(
@@ -409,10 +396,6 @@ mod tests {
         );
         assert_eq!(
             table.check_registry_for_vault(0),
-            Err(NCNProgramError::VaultNotInRegistry)
-        );
-        assert_eq!(
-            table.check_registry_for_vault(11),
             Err(NCNProgramError::VaultNotInRegistry)
         );
 
@@ -429,10 +412,11 @@ mod tests {
         let mut table = WeightTable::new(&ncn, 0, 0, 0, 0);
         assert_eq!(table.mint_count(), 0);
 
-        let mints = get_test_mint_entries(2);
+        // With MAX_ST_MINTS=1, we can only add 1 mint
+        let mints = get_test_mint_entries(1);
 
         table.set_mint_entries(&mints).unwrap();
-        assert_eq!(table.mint_count(), 2);
+        assert_eq!(table.mint_count(), 1);
     }
 
     #[test]
@@ -448,9 +432,9 @@ mod tests {
     fn test_initialize_table_reinitialize() {
         let ncn = Pubkey::new_unique();
         let mut table = WeightTable::new(&ncn, 0, 0, 0, 0);
-        let first_mints = get_test_mint_entries(2);
+        let first_mints = get_test_mint_entries(1); // Use 1 instead of 2
         table.set_mint_entries(&first_mints).unwrap();
-        let second_mints = get_test_mint_entries(3);
+        let second_mints = get_test_mint_entries(1); // Use 1 instead of 3
 
         assert_eq!(
             table.set_mint_entries(&second_mints),
@@ -462,20 +446,20 @@ mod tests {
     fn test_set_weight_success() {
         let ncn = Pubkey::new_unique();
         let mut table = WeightTable::new(&ncn, 0, 0, 0, 0);
-        let mints = get_test_mint_entries(2);
+        let mints = get_test_mint_entries(1);
         let mint_entry = mints[0];
 
         table.set_mint_entries(&mints).unwrap();
 
-        table.set_weight(&mint_entry.st_mint(), 100, 1).unwrap();
-        assert_eq!(table.get_weight(&mint_entry.st_mint()).unwrap(), 100);
+        table.set_weight(mint_entry.st_mint(), 100, 1).unwrap();
+        assert_eq!(table.get_weight(mint_entry.st_mint()).unwrap(), 100);
     }
 
     #[test]
     fn test_set_weight_invalid_mint() {
         let ncn = Pubkey::new_unique();
         let mut table = WeightTable::new(&ncn, 0, 0, 0, 0);
-        let mints = get_test_mint_entries(2);
+        let mints = get_test_mint_entries(1);
 
         table.set_mint_entries(&mints).unwrap();
 
@@ -490,48 +474,45 @@ mod tests {
     fn test_set_weight_update_existing() {
         let ncn = Pubkey::new_unique();
         let mut table = WeightTable::new(&ncn, 0, 0, 0, 0);
-        let mints = get_test_mint_entries(2);
+        let mints = get_test_mint_entries(1);
         let mint = mints[0];
 
         table.set_mint_entries(&mints).unwrap();
 
-        table.set_weight(&mint.st_mint(), 100, 1).unwrap();
-        assert_eq!(table.get_weight(&mint.st_mint()).unwrap(), 100);
+        table.set_weight(mint.st_mint(), 100, 1).unwrap();
+        assert_eq!(table.get_weight(mint.st_mint()).unwrap(), 100);
 
-        table.set_weight(&mint.st_mint(), 200, 2).unwrap();
-        assert_eq!(table.get_weight(&mint.st_mint()).unwrap(), 200);
+        table.set_weight(mint.st_mint(), 200, 2).unwrap();
+        assert_eq!(table.get_weight(mint.st_mint()).unwrap(), 200);
     }
 
     #[test]
     fn test_set_weight_multiple_mints() {
         let ncn = Pubkey::new_unique();
         let mut table = WeightTable::new(&ncn, 0, 0, 0, 0);
-        let mints = get_test_mint_entries(2);
+        let mints = get_test_mint_entries(1);
         let mint1 = mints[0];
-        let mint2 = mints[1];
 
         table.set_mint_entries(&mints).unwrap();
 
-        table.set_weight(&mint1.st_mint(), 100, 1).unwrap();
-        table.set_weight(&mint2.st_mint(), 200, 1).unwrap();
+        table.set_weight(mint1.st_mint(), 100, 1).unwrap();
 
-        assert_eq!(table.get_weight(&mint1.st_mint()).unwrap(), 100);
-        assert_eq!(table.get_weight(&mint2.st_mint()).unwrap(), 200);
+        assert_eq!(table.get_weight(mint1.st_mint()).unwrap(), 100);
     }
 
     #[test]
     fn test_set_weight_different_slots() {
         let ncn = Pubkey::new_unique();
         let mut table = WeightTable::new(&ncn, 0, 0, 0, 0);
-        let mints = get_test_mint_entries(2);
+        let mints = get_test_mint_entries(1);
         let mint = mints[0];
 
         table.set_mint_entries(&mints).unwrap();
 
-        table.set_weight(&mint.st_mint(), 100, 1).unwrap();
-        assert_eq!(table.get_weight(&mint.st_mint()).unwrap(), 100);
+        table.set_weight(mint.st_mint(), 100, 1).unwrap();
+        assert_eq!(table.get_weight(mint.st_mint()).unwrap(), 100);
 
-        table.set_weight(&mint.st_mint(), 200, 5).unwrap();
-        assert_eq!(table.get_weight(&mint.st_mint()).unwrap(), 200);
+        table.set_weight(mint.st_mint(), 200, 5).unwrap();
+        assert_eq!(table.get_weight(mint.st_mint()).unwrap(), 200);
     }
 }

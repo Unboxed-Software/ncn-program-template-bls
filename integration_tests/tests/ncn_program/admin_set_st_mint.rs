@@ -12,10 +12,9 @@ mod tests {
         let mut vault_client = fixture.vault_client();
 
         const OPERATOR_COUNT: usize = 1;
-        const VAULT_COUNT: usize = 1;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, None)
+            .create_initial_test_ncn(OPERATOR_COUNT, None)
             .await?;
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;

@@ -44,7 +44,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
@@ -103,9 +103,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture
-            .create_initial_test_ncn(MAX_OPERATORS, 10, None)
-            .await?;
+        let test_ncn = fixture.create_initial_test_ncn(MAX_OPERATORS, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
@@ -163,7 +161,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
@@ -200,7 +198,7 @@ mod tests {
 
         // create a wrong bitmap
         let wrong_none_signers_indecies =
-            get_random_none_signers_indecies(test_ncn.operators.len(), 2); // Let's say these operators didn't sign
+            get_random_none_signers_indecies(test_ncn.operators.len(), 3); // Let's say these operators didn't sign
         let wrong_signers_bitmap =
             create_signer_bitmap(&wrong_none_signers_indecies, test_ncn.operators.len());
 
@@ -228,7 +226,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
@@ -271,7 +269,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(1, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
@@ -307,7 +305,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(10, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;

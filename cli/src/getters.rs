@@ -17,13 +17,13 @@ use jito_vault_core::{
     vault_update_state_tracker::VaultUpdateStateTracker,
 };
 use log::{info, warn};
-use ncn_program_client::accounts::OperatorRegistry;
 use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config as NCNProgramConfig,
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
+    operator_registry::OperatorRegistry,
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
@@ -33,6 +33,7 @@ use solana_client::{
     rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
 };
 use solana_sdk::clock::DEFAULT_SLOTS_PER_EPOCH;
+use solana_sdk::msg;
 use solana_sdk::{account::Account, pubkey::Pubkey};
 use tokio::time::sleep;
 
@@ -622,6 +623,37 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
     rent_cost += client
         .get_minimum_balance_for_rent_exemption(EpochSnapshot::SIZE)
         .await?;
+
+    msg!(
+        "Rent cost for EpochState {:?}",
+        client
+            .get_minimum_balance_for_rent_exemption(EpochState::SIZE)
+            .await?
+    );
+    msg!(
+        "Rent cost for WeightTable {:?}",
+        client
+            .get_minimum_balance_for_rent_exemption(WeightTable::SIZE)
+            .await?
+    );
+    msg!(
+        "Rent cost for EpochSnapshot {:?}",
+        client
+            .get_minimum_balance_for_rent_exemption(EpochSnapshot::SIZE)
+            .await?
+    );
+    msg!(
+        "Rent cost for Operator_registry {:?}",
+        client
+            .get_minimum_balance_for_rent_exemption(OperatorRegistry::SIZE)
+            .await?
+    );
+    msg!(
+        "Rent cost for VaultRegistry {:?}",
+        client
+            .get_minimum_balance_for_rent_exemption(VaultRegistry::SIZE)
+            .await?
+    );
 
     Ok(rent_cost)
 }

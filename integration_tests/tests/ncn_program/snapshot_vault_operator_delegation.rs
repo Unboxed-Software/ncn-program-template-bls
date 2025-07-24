@@ -15,7 +15,7 @@ mod tests {
         let mut vault_client = fixture.vault_program_client();
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(1, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
         fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
         fixture.warp_slot_incremental(1000).await?;
@@ -64,7 +64,7 @@ mod tests {
 
         const OPERATORS: usize = 10;
 
-        let test_ncn = fixture.create_initial_test_ncn(OPERATORS, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(OPERATORS, None).await?;
         fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
         fixture.warp_slot_incremental(1000).await?;

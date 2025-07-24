@@ -42,8 +42,6 @@ mod tests {
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
 
-        fixture.warp_epoch_incremental(2).await?;
-
         // Generate initial BLS keypair
         let initial_g1_compressed =
             G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
@@ -145,8 +143,6 @@ mod tests {
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
 
-        fixture.warp_epoch_incremental(2).await?;
-
         // Generate BLS keypair for update
         let new_private_key = PrivKey::from_random();
         let new_g1_compressed = G1CompressedPoint::try_from(new_private_key).unwrap();
@@ -213,8 +209,6 @@ mod tests {
         restaking_program_client
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
-
-        fixture.warp_epoch_incremental(2).await?;
 
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
@@ -303,8 +297,6 @@ mod tests {
         restaking_program_client
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
-
-        fixture.warp_epoch_incremental(2).await?;
 
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
@@ -395,8 +387,6 @@ mod tests {
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
 
-        fixture.warp_epoch_incremental(2).await?;
-
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
         let initial_g1_compressed = G1CompressedPoint::try_from(initial_private_key).unwrap();
@@ -481,8 +471,6 @@ mod tests {
         restaking_program_client
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
-
-        fixture.warp_epoch_incremental(2).await?;
 
         // Generate initial BLS keypair and register
         let initial_private_key = PrivKey::from_random();
@@ -609,8 +597,6 @@ mod tests {
         restaking_program_client
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
-
-        fixture.warp_epoch_incremental(2).await?;
 
         // Generate BLS keypair
         let private_key = PrivKey::from_random();

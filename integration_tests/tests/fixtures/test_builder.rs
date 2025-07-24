@@ -434,7 +434,6 @@ impl TestBuilder {
     pub async fn create_initial_test_ncn(
         &mut self,
         operator_count: usize,
-        vault_count: usize,
         operator_fees_bps: Option<u16>,
     ) -> TestResult<TestNcn> {
         self.initialize_restaking_and_vault_programs().await?;
@@ -448,8 +447,7 @@ impl TestBuilder {
 
         self.add_operators_to_test_ncn(&mut test_ncn, operator_count, operator_fees_bps)
             .await?;
-        self.add_vaults_to_test_ncn(&mut test_ncn, vault_count, None)
-            .await?;
+        self.add_vaults_to_test_ncn(&mut test_ncn, 1, None).await?;
         self.add_delegation_in_test_ncn(&test_ncn, 100).await?;
         self.add_vault_registry_to_test_ncn(&test_ncn).await?;
 
@@ -593,20 +591,11 @@ impl TestBuilder {
                 .await?;
 
             // If operator snapshot is finalized, we should not take more snapshots, it is
-            if operator_snapshot.finalized() {
+            if !operator_snapshot.is_active() {
                 continue;
             }
 
             for vault_root in test_ncn.vaults.iter() {
-                let operator_snapshot = ncn_program_client
-                    .get_operator_snapshot(operator, ncn, epoch)
-                    .await?;
-
-                // If operator snapshot is finalized, we should not take more snapshots
-                if operator_snapshot.finalized() {
-                    break;
-                }
-
                 let vault = vault_root.vault_pubkey;
 
                 let vault_is_update_needed = vault_program_client

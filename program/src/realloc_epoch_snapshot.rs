@@ -118,7 +118,6 @@ pub fn process_realloc_epoch_snapshot(
             epoch_snapshot_bump,
             current_slot,
             operator_count,
-            vault_count,
             minimum_stake_weight,
         );
 

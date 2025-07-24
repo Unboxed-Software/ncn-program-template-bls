@@ -44,8 +44,6 @@ mod tests {
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
 
-        fixture.warp_epoch_incremental(2).await?;
-
         // Generate BLS keypair
         let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
         let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
@@ -94,7 +92,7 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
-        let test_ncn = fixture.create_initial_test_ncn(1, 1, None).await?;
+        let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
 
         let operator_root = &test_ncn.operators[0];
 

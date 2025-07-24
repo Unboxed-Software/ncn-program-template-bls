@@ -131,12 +131,6 @@ pub fn process_initialize_operator_snapshot(
     };
     msg!("G1 pubkey: {:?}", g1_pubkey);
 
-    let vault_count = {
-        let epoch_snapshot_data = epoch_snapshot.data.borrow();
-        let epoch_snapshot_account = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
-        epoch_snapshot_account.vault_count()
-    };
-
     // Create operator snapshot and add it to the epoch snapshot
     let operator_snapshot = OperatorSnapshot::new(
         operator.key,
@@ -145,7 +139,6 @@ pub fn process_initialize_operator_snapshot(
         ncn_operator_index,
         operator_index,
         g1_pubkey.unwrap_or(G1CompressedPoint::default().0),
-        vault_count,
     )?;
 
     let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
@@ -161,7 +154,7 @@ pub fn process_initialize_operator_snapshot(
 
     if !is_active {
         // Increment operator registration for an inactive operator
-        epoch_snapshot_account.increment_operator_registration(current_slot, 0)?;
+        epoch_snapshot_account.increment_operator_registration(current_slot)?;
     }
 
     // Update Epoch State

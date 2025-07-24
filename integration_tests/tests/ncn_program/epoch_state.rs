@@ -12,10 +12,9 @@ mod tests {
         fixture.warp_epoch_incremental(1000).await?;
 
         const OPERATOR_COUNT: usize = 1;
-        const VAULT_COUNT: usize = 1;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(100))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(100))
             .await?;
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -38,10 +37,9 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
         const OPERATOR_COUNT: usize = 1;
-        const VAULT_COUNT: usize = 1;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, None)
+            .create_initial_test_ncn(OPERATOR_COUNT, None)
             .await?;
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -69,10 +67,9 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
 
         const OPERATOR_COUNT: usize = 2;
-        const VAULT_COUNT: usize = 3;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(100))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(100))
             .await?;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         let epoch = fixture.clock().await.epoch;
@@ -87,15 +84,6 @@ mod tests {
             fixture.add_weights_for_test_ncn(&test_ncn).await?;
             let epoch_state = ncn_program_client.get_epoch_state(ncn, epoch).await?;
             assert!(epoch_state.set_weight_progress().is_complete());
-            assert_eq!(
-                epoch_state.set_weight_progress().tally(),
-                VAULT_COUNT as u64
-            );
-            assert_eq!(
-                epoch_state.set_weight_progress().total(),
-                VAULT_COUNT as u64
-            );
-            assert_eq!(epoch_state.vault_count(), VAULT_COUNT as u64);
         }
 
         Ok(())
@@ -107,10 +95,9 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
 
         const OPERATOR_COUNT: usize = 2;
-        const VAULT_COUNT: usize = 3;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(100))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(100))
             .await?;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         let epoch = fixture.clock().await.epoch;
@@ -138,10 +125,6 @@ mod tests {
                     epoch_state.operator_snapshot_progress(i)
                 );
                 assert_eq!(epoch_state.operator_snapshot_progress(i).tally(), 0);
-                assert_eq!(
-                    epoch_state.operator_snapshot_progress(i).total(),
-                    VAULT_COUNT as u64
-                );
             }
         }
 
@@ -154,10 +137,9 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
 
         const OPERATOR_COUNT: usize = 2;
-        const VAULT_COUNT: usize = 3;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(100))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(100))
             .await?;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         let epoch = fixture.clock().await.epoch;
@@ -186,14 +168,6 @@ mod tests {
             );
 
             for i in 0..OPERATOR_COUNT {
-                assert_eq!(
-                    epoch_state.operator_snapshot_progress(i).tally(),
-                    VAULT_COUNT as u64
-                );
-                assert_eq!(
-                    epoch_state.operator_snapshot_progress(i).total(),
-                    VAULT_COUNT as u64
-                );
                 assert!(epoch_state.operator_snapshot_progress(i).is_complete());
             }
         }
@@ -206,10 +180,9 @@ mod tests {
         let mut fixture = TestBuilder::new().await;
 
         const OPERATOR_COUNT: usize = 2;
-        const VAULT_COUNT: usize = 3;
 
         let test_ncn = fixture
-            .create_initial_test_ncn(OPERATOR_COUNT, VAULT_COUNT, Some(100))
+            .create_initial_test_ncn(OPERATOR_COUNT, Some(100))
             .await?;
 
         fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;

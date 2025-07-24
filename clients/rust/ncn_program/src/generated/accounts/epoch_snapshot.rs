@@ -25,7 +25,6 @@ pub struct EpochSnapshot {
     pub slot_created: u64,
     pub slot_finalized: u64,
     pub operator_count: u64,
-    pub vault_count: u64,
     pub operators_registered: u64,
     pub operators_can_vote_count: u64,
     pub total_agg_g1_pubkey: [u8; 32],

@@ -75,8 +75,8 @@ export function getWeightTableEncoder(): Encoder<WeightTableArgs> {
     ['slotCreated', getU64Encoder()],
     ['vaultCount', getU64Encoder()],
     ['bump', getU8Encoder()],
-    ['vaultRegistry', getArrayEncoder(getVaultEntryEncoder(), { size: 10 })],
-    ['table', getArrayEncoder(getWeightEntryEncoder(), { size: 10 })],
+    ['vaultRegistry', getArrayEncoder(getVaultEntryEncoder(), { size: 1 })],
+    ['table', getArrayEncoder(getWeightEntryEncoder(), { size: 1 })],
   ]);
 }
 
@@ -88,8 +88,8 @@ export function getWeightTableDecoder(): Decoder<WeightTable> {
     ['slotCreated', getU64Decoder()],
     ['vaultCount', getU64Decoder()],
     ['bump', getU8Decoder()],
-    ['vaultRegistry', getArrayDecoder(getVaultEntryDecoder(), { size: 10 })],
-    ['table', getArrayDecoder(getWeightEntryDecoder(), { size: 10 })],
+    ['vaultRegistry', getArrayDecoder(getVaultEntryDecoder(), { size: 1 })],
+    ['table', getArrayDecoder(getWeightEntryDecoder(), { size: 1 })],
   ]);
 }
 

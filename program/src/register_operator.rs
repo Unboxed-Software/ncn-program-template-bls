@@ -1,4 +1,5 @@
 use jito_bytemuck::AccountDeserialize;
+use jito_jsm_core::slot_toggle::SlotToggleState;
 use jito_restaking_core::{ncn::Ncn, ncn_operator_state::NcnOperatorState, operator::Operator};
 use ncn_program_core::{
     config::Config,
@@ -84,15 +85,21 @@ pub fn process_register_operator(
         let ncn_operator_state_account =
             NcnOperatorState::try_from_slice_unchecked(&ncn_operator_state_data)?;
 
-        let ncn_operator_okay = ncn_operator_state_account
+        let ncn_operator_state = ncn_operator_state_account
             .ncn_opt_in_state
-            .is_active(current_slot, ncn_epoch_length)?;
+            .state(current_slot, ncn_epoch_length)?;
 
-        let operator_ncn_okay = ncn_operator_state_account
+        let operator_ncn_state = ncn_operator_state_account
             .operator_opt_in_state
-            .is_active(current_slot, ncn_epoch_length)?;
+            .state(current_slot, ncn_epoch_length)?;
 
-        ncn_operator_okay && operator_ncn_okay
+        matches!(
+            ncn_operator_state,
+            SlotToggleState::Active | SlotToggleState::WarmUp
+        ) && matches!(
+            operator_ncn_state,
+            SlotToggleState::Active | SlotToggleState::WarmUp
+        )
     };
 
     if !is_active {

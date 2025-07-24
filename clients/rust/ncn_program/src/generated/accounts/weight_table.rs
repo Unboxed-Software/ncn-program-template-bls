@@ -24,8 +24,8 @@ pub struct WeightTable {
     pub slot_created: u64,
     pub vault_count: u64,
     pub bump: u8,
-    pub vault_registry: [VaultEntry; 10],
-    pub table: [WeightEntry; 10],
+    pub vault_registry: [VaultEntry; 1],
+    pub table: [WeightEntry; 1],
 }
 
 impl WeightTable {

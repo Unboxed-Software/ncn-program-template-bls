@@ -92,8 +92,10 @@ pub enum NCNProgramError {
     NoOperators,
     #[error("Vault operator delegation is already finalized - should not happen")]
     VaultOperatorDelegationFinalized,
-    #[error("Operator is already finalized - should not happen")]
-    OperatorFinalized,
+    #[error("Operator snapshot is not active")]
+    OperatorSnapshotIsNotActive,
+    #[error("Operator snapshot is already taken")]
+    OperatorSnapshotAlreadyTaked,
     #[error("epoch snapshot already finalized")]
     EpochSnapshotAlreadyFinalized,
     #[error("Too many vault operator delegations")]
