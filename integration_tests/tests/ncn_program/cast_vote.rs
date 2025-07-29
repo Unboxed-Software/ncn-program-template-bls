@@ -9,7 +9,7 @@ mod tests {
         utils::create_signer_bitmap,
     };
     use rand::Rng;
-    use solana_sdk::msg;
+    use solana_sdk::pubkey::Pubkey;
     use std::collections::HashSet;
 
     use crate::fixtures::{
@@ -193,6 +193,108 @@ mod tests {
             .await;
 
         assert_ncn_program_error(result, NCNProgramError::OperatorSnapshotOutdated, Some(1));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_operator_snapshot_outdated_pass_if_not_signer() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+        let mut vault_program_client = fixture.vault_program_client();
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        fixture.warp_epoch_incremental(2).await?;
+
+        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
+        fixture.add_weights_for_test_ncn(&test_ncn).await?;
+
+        let clock = fixture.clock().await;
+        let slot = clock.slot;
+        let epoch = clock.epoch;
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+
+        let operators_to_skip_indexes = vec![1, 9];
+
+        let operators_for_update = test_ncn
+            .operators
+            .iter()
+            .map(|operator_root| operator_root.operator_pubkey)
+            .collect::<Vec<Pubkey>>();
+        let vault = test_ncn.vaults[0].vault_pubkey;
+
+        let vault_is_update_needed = vault_program_client
+            .get_vault_is_update_needed(&vault, slot)
+            .await?;
+
+        if vault_is_update_needed {
+            vault_program_client
+                .do_full_vault_update(&vault, &operators_for_update)
+                .await?;
+        }
+
+        for (i, operator_root) in test_ncn.operators.iter().enumerate() {
+            if operators_to_skip_indexes.contains(&i) {
+                // Skip the operator that is not signing
+                continue;
+            }
+            let operator = operator_root.operator_pubkey;
+
+            let operator_snapshot = ncn_program_client
+                .get_operator_snapshot(operator, ncn)
+                .await?;
+
+            // If operator snapshot is finalized, we should not take more snapshots, it is
+            if !operator_snapshot.is_active() {
+                continue;
+            }
+
+            ncn_program_client
+                .do_snapshot_vault_operator_delegation(vault, operator, ncn, epoch)
+                .await?;
+        }
+
+        fixture
+            .cast_vote_for_test_ncn(&test_ncn, operators_to_skip_indexes)
+            .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_operator_below_threshold_pass_if_not_signer() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut vault_client = fixture.vault_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        // Remove stake from one operator to get it to below minimum stake
+        let operator_index = 5;
+        let operator_root = &test_ncn.operators[operator_index];
+
+        vault_client
+            .do_cooldown_delegation(&test_ncn.vaults[0], &operator_root.operator_pubkey, 99)
+            .await?;
+
+        fixture.warp_epoch_incremental(2).await?;
+
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
+        let none_signers_indecies: Vec<usize> = vec![operator_index];
+        fixture
+            .cast_vote_for_test_ncn(&test_ncn, none_signers_indecies)
+            .await?;
 
         Ok(())
     }
