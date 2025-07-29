@@ -183,22 +183,13 @@ pub fn process_instruction(
         //                         VOTE                         //
         // ---------------------------------------------------- //
         NCNProgramInstruction::CastVote {
-            epoch,
             apk2,
             agg_sig,
             message,
             signers_bitmap,
         } => {
             msg!("Instruction: CastVote");
-            process_cast_vote(
-                program_id,
-                accounts,
-                epoch,
-                apk2,
-                agg_sig,
-                signers_bitmap,
-                message,
-            )
+            process_cast_vote(program_id, accounts, apk2, agg_sig, signers_bitmap, message)
         }
 
         // ---------------------------------------------------- //

@@ -253,9 +253,7 @@ mod tests {
                     .await?;
             }
 
-            let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(ncn_pubkey, epoch)
-                .await?;
+            let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn_pubkey).await?;
             msg!("Epoch snapshot: {}", epoch_snapshot);
 
             // 5.f. Take a snapshot for each vault and its delegation - records delegations
@@ -268,9 +266,7 @@ mod tests {
         {
             let epoch = fixture.clock().await.epoch;
 
-            let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(ncn_pubkey, epoch)
-                .await?;
+            let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn_pubkey).await?;
 
             msg!("Epoch snapshot: {}", epoch_snapshot);
 
@@ -322,7 +318,6 @@ mod tests {
                 ncn_program_client
                     .do_cast_vote(
                         ncn_pubkey,
-                        epoch,
                         sunny_agg_sig_compressed,
                         sunny_apk2_compressed,
                         sunny_signers_bitmap,
@@ -370,7 +365,6 @@ mod tests {
                 let result = ncn_program_client
                     .do_cast_vote(
                         ncn_pubkey,
-                        epoch,
                         agg_sig_compressed,
                         apk2_compressed,
                         signers_bitmap,

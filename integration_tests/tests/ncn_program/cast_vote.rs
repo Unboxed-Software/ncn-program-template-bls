@@ -9,6 +9,7 @@ mod tests {
         utils::create_signer_bitmap,
     };
     use rand::Rng;
+    use solana_sdk::msg;
     use std::collections::HashSet;
 
     use crate::fixtures::{
@@ -51,9 +52,7 @@ mod tests {
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
-        let clock = fixture.clock().await;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch = clock.epoch;
 
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
@@ -91,8 +90,109 @@ mod tests {
         println!("apk2: {:?}", apk2);
 
         ncn_program_client
-            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
             .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_not_enough_stake() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut vault_client = fixture.vault_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        {
+            // Remove stake from one operator to get it to below minimum stake
+            let operator_index = 5;
+            let operator_root = &test_ncn.operators[operator_index];
+
+            vault_client
+                .do_cooldown_delegation(&test_ncn.vaults[0], &operator_root.operator_pubkey, 99)
+                .await?;
+
+            fixture.warp_epoch_incremental(2).await?;
+
+            fixture
+                .update_snapshot_test_ncn_new_epoch(&test_ncn)
+                .await?;
+        }
+        let none_signers_indecies: Vec<usize> = vec![1, 9];
+        let result = fixture
+            .cast_vote_for_test_ncn(&test_ncn, none_signers_indecies)
+            .await;
+
+        assert_ncn_program_error(result, NCNProgramError::OperatorHasNoMinimumStake, Some(1));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_not_enough_stake_cant_vote_next_epoch() -> TestResult<()> {
+        // Even if you don't take the snapshot, if the operator has less than the minimum stake, it
+        // should not be able to vote
+        let mut fixture = TestBuilder::new().await;
+        let mut vault_client = fixture.vault_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        {
+            // Remove stake from one operator to get it to below minimum stake
+            let operator_index = 5;
+            let operator_root = &test_ncn.operators[operator_index];
+
+            vault_client
+                .do_cooldown_delegation(&test_ncn.vaults[0], &operator_root.operator_pubkey, 99)
+                .await?;
+
+            fixture.warp_epoch_incremental(1).await?;
+
+            fixture
+                .update_snapshot_test_ncn_new_epoch(&test_ncn)
+                .await?;
+
+            fixture.warp_epoch_incremental(1).await?;
+        }
+        let none_signers_indecies: Vec<usize> = vec![1, 9];
+
+        let result = fixture
+            .cast_vote_for_test_ncn(&test_ncn, none_signers_indecies)
+            .await;
+
+        assert_ncn_program_error(result, NCNProgramError::OperatorHasNoMinimumStake, Some(1));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_operator_snapshot_outdated_error() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let test_ncn = fixture.create_initial_test_ncn(10, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        fixture.warp_epoch_incremental(2).await?;
+
+        let none_signers_indecies: Vec<usize> = vec![1, 9];
+        let result = fixture
+            .cast_vote_for_test_ncn(&test_ncn, none_signers_indecies)
+            .await;
+
+        assert_ncn_program_error(result, NCNProgramError::OperatorSnapshotOutdated, Some(1));
 
         Ok(())
     }
@@ -110,9 +210,7 @@ mod tests {
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
-        let clock = fixture.clock().await;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch = clock.epoch;
 
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
@@ -150,7 +248,7 @@ mod tests {
         println!("apk2: {:?}", apk2);
 
         ncn_program_client
-            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
             .await?;
 
         Ok(())
@@ -168,9 +266,7 @@ mod tests {
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
-        let clock = fixture.clock().await;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch = clock.epoch;
 
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
@@ -209,7 +305,7 @@ mod tests {
         }
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, epoch, agg_sig, apk2, wrong_signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, wrong_signers_bitmap, message)
             .await;
 
         assert_ncn_program_error(
@@ -233,9 +329,7 @@ mod tests {
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
-        let clock = fixture.clock().await;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch = clock.epoch;
 
         // Create a test message
         let message = solana_nostd_sha256::hashv(&[b"test message"]);
@@ -252,7 +346,7 @@ mod tests {
         let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
             .await;
 
         assert_ncn_program_error(
@@ -276,9 +370,7 @@ mod tests {
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
-        let clock = fixture.clock().await;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch = clock.epoch;
 
         let message = solana_nostd_sha256::hashv(&[b"test message"]);
         let operator_key = test_ncn.operators[0].bn128_privkey;
@@ -292,7 +384,7 @@ mod tests {
         let signers_bitmap = vec![0u8; 2];
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
             .await;
 
         assert_ncn_program_error(result, NCNProgramError::InvalidInputLength, Some(1));
@@ -312,13 +404,7 @@ mod tests {
         fixture.snapshot_test_ncn(&test_ncn).await?;
         //////
 
-        let clock = fixture.clock().await;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let epoch = clock.epoch;
-
-        let epoch_snapshot = ncn_program_client
-            .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
 
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
@@ -349,7 +435,7 @@ mod tests {
         let wrong_message = solana_nostd_sha256::hashv(&[b"wrong message"]);
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, wrong_message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, wrong_message)
             .await;
 
         assert_ncn_program_error(

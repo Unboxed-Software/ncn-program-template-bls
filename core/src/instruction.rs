@@ -223,13 +223,12 @@ pub enum NCNProgramInstruction {
     // ---------------------------------------------------- //
     //                         VOTE                         //
     // ---------------------------------------------------- //
-    /// Cast a vote for a merkle root
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "config")]
-    #[account(2, name = "ncn")]
-    #[account(3, name = "epoch_snapshot")]
+    /// Cast a vote
+    #[account(0, name = "config")]
+    #[account(1, name = "ncn")]
+    #[account(2, name = "epoch_snapshot")]
+    #[account(3, name = "restaking_config")]
     CastVote {
-        epoch: u64,
         agg_sig: [u8; 32],
         apk2: [u8; 64],
         signers_bitmap: Vec<u8>,

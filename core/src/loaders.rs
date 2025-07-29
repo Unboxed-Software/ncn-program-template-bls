@@ -32,6 +32,28 @@ pub fn load_ncn_epoch(
     Ok((ncn_epoch, ncn_epoch_length))
 }
 
+pub fn load_ncn_epoch_and_snapshot_epoch(
+    restaking_config: &AccountInfo,
+    current_slot: u64,
+    last_snapshot_slot: u64,
+) -> Result<(u64, u64), ProgramError> {
+    let ncn_epoch_length = {
+        let config_data = restaking_config.data.borrow();
+        let config = Config::try_from_slice_unchecked(&config_data)?;
+        config.epoch_length()
+    };
+
+    let current_ncn_epoch = current_slot
+        .checked_div(ncn_epoch_length)
+        .ok_or(NCNProgramError::DenominatorIsZero)?;
+
+    let snapshot_epoch = last_snapshot_slot
+        .checked_div(ncn_epoch_length)
+        .ok_or(NCNProgramError::DenominatorIsZero)?;
+
+    Ok((current_ncn_epoch, snapshot_epoch))
+}
+
 pub fn check_load(
     program_id: &Pubkey,
     account: &AccountInfo,

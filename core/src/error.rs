@@ -96,6 +96,10 @@ pub enum NCNProgramError {
     OperatorSnapshotIsNotActive,
     #[error("Operator snapshot is already taken")]
     OperatorSnapshotAlreadyTaked,
+    #[error("Operator has no minimum stake")]
+    OperatorHasNoMinimumStake,
+    #[error("Operator snapshot is outdated")]
+    OperatorSnapshotOutdated,
     #[error("epoch snapshot already finalized")]
     EpochSnapshotAlreadyFinalized,
     #[error("Too many vault operator delegations")]

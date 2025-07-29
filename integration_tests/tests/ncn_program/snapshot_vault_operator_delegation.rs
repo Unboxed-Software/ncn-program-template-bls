@@ -2,11 +2,9 @@
 mod tests {
 
     use ncn_program_core::{
-        epoch_snapshot,
         g1_point::{G1CompressedPoint, G1Point},
         g2_point::G2CompressedPoint,
         schemes::Sha256Normalized,
-        stake_weight::StakeWeights,
     };
     use solana_sdk::msg;
 
@@ -123,7 +121,7 @@ mod tests {
         let agg_g1_pubkey = g1_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
         let agg_g1_pubkey_compressed = G1CompressedPoint::try_from(agg_g1_pubkey).unwrap();
 
-        let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn, epoch).await?;
+        let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn).await?;
 
         assert_eq!(
             epoch_snapshot.total_agg_g1_pubkey(),
@@ -238,7 +236,7 @@ mod tests {
         let all_agg_g1_pubkey = all_g1_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
         let all_agg_g1_pubkey_compressed = G1CompressedPoint::try_from(all_agg_g1_pubkey).unwrap();
 
-        let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn, epoch).await?;
+        let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn).await?;
 
         assert_eq!(
             epoch_snapshot.total_agg_g1_pubkey(),
@@ -282,7 +280,7 @@ mod tests {
                 .do_full_initialize_weight_table(ncn, current_epoch)
                 .await?;
 
-            let weight = (100) as u128; // Increase weight each epoch
+            let weight = 100; // Increase weight each epoch
             ncn_program_client
                 .do_admin_set_weight(ncn, current_epoch, mint, weight)
                 .await?;
@@ -298,11 +296,8 @@ mod tests {
                 .await?;
 
             // Get operator snapshot before delegation snapshot
-            let epoch_snapshot_before = ncn_program_client
-                .get_epoch_snapshot(ncn, current_epoch)
-                .await?;
             let operator_snapshot_before = ncn_program_client
-                .get_operator_snapshot(operator, ncn, current_epoch)
+                .get_operator_snapshot(operator, ncn)
                 .await?;
 
             println!(
@@ -337,11 +332,9 @@ mod tests {
                 .await?;
 
             // Get operator snapshot after delegation snapshot
-            let epoch_snapshot_after = ncn_program_client
-                .get_epoch_snapshot(ncn, current_epoch)
-                .await?;
+            let epoch_snapshot_after = ncn_program_client.get_epoch_snapshot(ncn).await?;
             let operator_snapshot_after = ncn_program_client
-                .get_operator_snapshot(operator, ncn, current_epoch)
+                .get_operator_snapshot(operator, ncn)
                 .await?;
 
             println!(
@@ -437,7 +430,7 @@ mod tests {
                 .await?;
 
             let operator_snapshot_before = ncn_program_client
-                .get_operator_snapshot(operator, ncn, current_epoch)
+                .get_operator_snapshot(operator, ncn)
                 .await?;
 
             println!(
@@ -471,11 +464,9 @@ mod tests {
                 .await?;
 
             // Get operator snapshot after delegation snapshot
-            let epoch_snapshot_after = ncn_program_client
-                .get_epoch_snapshot(ncn, current_epoch)
-                .await?;
+            let epoch_snapshot_after = ncn_program_client.get_epoch_snapshot(ncn).await?;
             let operator_snapshot_after = ncn_program_client
-                .get_operator_snapshot(operator, ncn, current_epoch)
+                .get_operator_snapshot(operator, ncn)
                 .await?;
 
             println!(
@@ -561,7 +552,6 @@ mod tests {
     async fn test_operator_snapshot_delegation_next_epoch_calculations() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
         let mut vault_client = fixture.vault_program_client();
-        let mut ncn_program_client = fixture.ncn_program_client();
 
         fixture.initialize_restaking_and_vault_programs().await?;
 
@@ -603,11 +593,10 @@ mod tests {
             .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
             .await?;
 
-        let epoch = fixture.clock().await.epoch;
         {
             // the operator does not have enough stake
             let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
 
@@ -629,7 +618,7 @@ mod tests {
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
             let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
 
@@ -658,7 +647,7 @@ mod tests {
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
             let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
 
@@ -684,7 +673,7 @@ mod tests {
         {
             // the operator should still have the same stake weight, but next epoch stake weight should be updated
             let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch + 1)
+                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
             assert_eq!(operator_snapshot.stake_weight().stake_weight(), 10000);
@@ -708,7 +697,7 @@ mod tests {
         {
             // after two epochs, the funds should be fully withdrawn from the operator
             let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch + 1)
+                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
             assert_eq!(operator_snapshot.stake_weight().stake_weight(), 9000);

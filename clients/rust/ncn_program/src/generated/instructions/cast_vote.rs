@@ -10,13 +10,13 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct CastVote {
-    pub epoch_state: solana_program::pubkey::Pubkey,
-
     pub config: solana_program::pubkey::Pubkey,
 
     pub ncn: solana_program::pubkey::Pubkey,
 
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
+
+    pub restaking_config: solana_program::pubkey::Pubkey,
 }
 
 impl CastVote {
@@ -33,10 +33,6 @@ impl CastVote {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.epoch_state,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.config,
             false,
@@ -46,6 +42,10 @@ impl CastVote {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.epoch_snapshot,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.restaking_config,
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
@@ -81,7 +81,6 @@ impl Default for CastVoteInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CastVoteInstructionArgs {
-    pub epoch: u64,
     pub agg_sig: [u8; 32],
     pub apk2: [u8; 64],
     pub signers_bitmap: Vec<u8>,
@@ -92,17 +91,16 @@ pub struct CastVoteInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` epoch_state
-///   1. `[]` config
-///   2. `[]` ncn
-///   3. `[]` epoch_snapshot
+///   0. `[]` config
+///   1. `[]` ncn
+///   2. `[]` epoch_snapshot
+///   3. `[]` restaking_config
 #[derive(Clone, Debug, Default)]
 pub struct CastVoteBuilder {
-    epoch_state: Option<solana_program::pubkey::Pubkey>,
     config: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
-    epoch: Option<u64>,
+    restaking_config: Option<solana_program::pubkey::Pubkey>,
     agg_sig: Option<[u8; 32]>,
     apk2: Option<[u8; 64]>,
     signers_bitmap: Option<Vec<u8>>,
@@ -113,11 +111,6 @@ pub struct CastVoteBuilder {
 impl CastVoteBuilder {
     pub fn new() -> Self {
         Self::default()
-    }
-    #[inline(always)]
-    pub fn epoch_state(&mut self, epoch_state: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.epoch_state = Some(epoch_state);
-        self
     }
     #[inline(always)]
     pub fn config(&mut self, config: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -135,8 +128,11 @@ impl CastVoteBuilder {
         self
     }
     #[inline(always)]
-    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
-        self.epoch = Some(epoch);
+    pub fn restaking_config(
+        &mut self,
+        restaking_config: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.restaking_config = Some(restaking_config);
         self
     }
     #[inline(always)]
@@ -180,13 +176,12 @@ impl CastVoteBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = CastVote {
-            epoch_state: self.epoch_state.expect("epoch_state is not set"),
             config: self.config.expect("config is not set"),
             ncn: self.ncn.expect("ncn is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
+            restaking_config: self.restaking_config.expect("restaking_config is not set"),
         };
         let args = CastVoteInstructionArgs {
-            epoch: self.epoch.clone().expect("epoch is not set"),
             agg_sig: self.agg_sig.clone().expect("agg_sig is not set"),
             apk2: self.apk2.clone().expect("apk2 is not set"),
             signers_bitmap: self
@@ -202,13 +197,13 @@ impl CastVoteBuilder {
 
 /// `cast_vote` CPI accounts.
 pub struct CastVoteCpiAccounts<'a, 'b> {
-    pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `cast_vote` CPI instruction.
@@ -216,13 +211,13 @@ pub struct CastVoteCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: CastVoteInstructionArgs,
 }
@@ -235,10 +230,10 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            epoch_state: accounts.epoch_state,
             config: accounts.config,
             ncn: accounts.ncn,
             epoch_snapshot: accounts.epoch_snapshot,
+            restaking_config: accounts.restaking_config,
             __args: args,
         }
     }
@@ -276,10 +271,6 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.epoch_state.key,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
             false,
@@ -290,6 +281,10 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.epoch_snapshot.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.restaking_config.key,
             false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -310,10 +305,10 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
         };
         let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.epoch_state.clone());
         account_infos.push(self.config.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.epoch_snapshot.clone());
+        account_infos.push(self.restaking_config.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -330,10 +325,10 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` epoch_state
-///   1. `[]` config
-///   2. `[]` ncn
-///   3. `[]` epoch_snapshot
+///   0. `[]` config
+///   1. `[]` ncn
+///   2. `[]` epoch_snapshot
+///   3. `[]` restaking_config
 #[derive(Clone, Debug)]
 pub struct CastVoteCpiBuilder<'a, 'b> {
     instruction: Box<CastVoteCpiBuilderInstruction<'a, 'b>>,
@@ -343,11 +338,10 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(CastVoteCpiBuilderInstruction {
             __program: program,
-            epoch_state: None,
             config: None,
             ncn: None,
             epoch_snapshot: None,
-            epoch: None,
+            restaking_config: None,
             agg_sig: None,
             apk2: None,
             signers_bitmap: None,
@@ -355,14 +349,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn epoch_state(
-        &mut self,
-        epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.epoch_state = Some(epoch_state);
-        self
     }
     #[inline(always)]
     pub fn config(
@@ -386,8 +372,11 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
-        self.instruction.epoch = Some(epoch);
+    pub fn restaking_config(
+        &mut self,
+        restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.restaking_config = Some(restaking_config);
         self
     }
     #[inline(always)]
@@ -452,7 +441,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = CastVoteInstructionArgs {
-            epoch: self.instruction.epoch.clone().expect("epoch is not set"),
             agg_sig: self
                 .instruction
                 .agg_sig
@@ -473,11 +461,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         let instruction = CastVoteCpi {
             __program: self.instruction.__program,
 
-            epoch_state: self
-                .instruction
-                .epoch_state
-                .expect("epoch_state is not set"),
-
             config: self.instruction.config.expect("config is not set"),
 
             ncn: self.instruction.ncn.expect("ncn is not set"),
@@ -486,6 +469,11 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
                 .instruction
                 .epoch_snapshot
                 .expect("epoch_snapshot is not set"),
+
+            restaking_config: self
+                .instruction
+                .restaking_config
+                .expect("restaking_config is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -498,11 +486,10 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CastVoteCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    epoch_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    epoch: Option<u64>,
+    restaking_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     agg_sig: Option<[u8; 32]>,
     apk2: Option<[u8; 64]>,
     signers_bitmap: Option<Vec<u8>>,

@@ -503,7 +503,6 @@ mod fuzz_tests {
             ncn_program_client
                 .do_cast_vote(
                     ncn_pubkey,
-                    epoch,
                     agg_sig_compressed,
                     apk2_compressed,
                     signers_bitmap,

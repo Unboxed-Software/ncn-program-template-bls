@@ -9,7 +9,9 @@ use jito_bytemuck::{
 use jito_vault_core::vault_operator_delegation::VaultOperatorDelegation;
 use shank::{ShankAccount, ShankType};
 use solana_bn254::compression::prelude::alt_bn128_g1_decompress;
-use solana_program::{account_info::AccountInfo, msg, program_error::ProgramError, pubkey::Pubkey};
+use solana_program::{
+    account_info::AccountInfo, epoch_rewards, msg, program_error::ProgramError, pubkey::Pubkey,
+};
 use spl_math::precise_number::PreciseNumber;
 
 use crate::{
@@ -447,6 +449,22 @@ impl OperatorSnapshot {
         self.has_minimum_stake_weight.into()
     }
 
+    pub fn has_minimum_stake_weight_now(
+        &self,
+        current_epoch: u64,
+        snapshot_epoch: u64,
+    ) -> Result<bool, NCNProgramError> {
+        let epoch_diff = current_epoch - snapshot_epoch;
+        match epoch_diff {
+            0 => Ok(self.has_minimum_stake_weight.into()),
+            1 => Ok(self.has_minimum_stake_weight_next_epoch.into()),
+            _ => {
+                msg!("Operator snapshot is outdated: {}", self.operator());
+                Err(NCNProgramError::OperatorSnapshotOutdated)
+            }
+        }
+    }
+
     pub fn has_minimum_stake_weight_next_epoch(&self) -> bool {
         self.has_minimum_stake_weight_next_epoch.into()
     }
@@ -598,6 +616,7 @@ impl fmt::Display for EpochSnapshot {
        writeln!(f, "  Operators can vote:           {}", self.operators_can_vote_count())?;
        writeln!(f, "  Last Snapshot Slot:           {}", self.last_snapshot_slot())?;
        writeln!(f, "  Total Agg G1 Pubkey:          {:?}", self.total_agg_g1_pubkey())?;
+       writeln!(f, "  Minimum Stake Weight:         {:?}", self.minimum_stake_weight())?;
        writeln!(f, "  operators snapshots:")?;
        for operator_snapshot in self.operator_snapshots.iter() {
         if operator_snapshot.ncn_operator_index() != u64::MAX {

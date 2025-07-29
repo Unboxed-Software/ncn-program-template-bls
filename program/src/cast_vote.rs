@@ -1,15 +1,14 @@
 use jito_bytemuck::AccountDeserialize;
-use jito_restaking_core::ncn::Ncn;
+use jito_jsm_core::get_epoch;
+use jito_restaking_core::{config::Config, ncn::Ncn};
 use ncn_program_core::{
     config::Config as NcnConfig,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE},
     epoch_snapshot::EpochSnapshot,
-    epoch_state::EpochState,
     error::NCNProgramError,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
     schemes::Sha256Normalized,
-    stake_weight::StakeWeights,
 };
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -27,48 +26,49 @@ use solana_program::{
 /// - `epoch`: The target epoch
 ///
 /// ### Accounts:
-/// 1. `[writable]` epoch_state: The epoch state account for the target epoch
-/// 2. `[]` config: NCN configuration account (named `ncn_config` in code)
-/// 4. `[]` ncn: The NCN account
-/// 5. `[]` epoch_snapshot: Epoch snapshot containing stake weights and operator snapshots
+/// 1. `[]` config: NCN configuration account (named `ncn_config` in code)
+/// 2. `[]` ncn: The NCN account
+/// 3. `[]` epoch_snapshot: Epoch snapshot containing stake weights and operator snapshots
+/// 4. `[]` restaking_config: Restaking configuration account
 pub fn process_cast_vote(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    epoch: u64,
     apk2: [u8; G2_COMPRESSED_POINT_SIZE],
     agg_sig: [u8; G1_COMPRESSED_POINT_SIZE],
     non_signers_bitmap: Vec<u8>,
     message: [u8; 32],
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
-    let epoch_state = next_account_info(account_info_iter)?;
     let ncn_config = next_account_info(account_info_iter)?;
     let ncn = next_account_info(account_info_iter)?;
     let epoch_snapshot = next_account_info(account_info_iter)?;
+    let restaking_config = next_account_info(account_info_iter)?;
 
-    EpochState::load(program_id, epoch_state, ncn.key, epoch, false)?;
     NcnConfig::load(program_id, ncn_config, ncn.key, false)?;
+    Config::load(&jito_restaking_program::id(), restaking_config, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, false)?;
+
+    let ncn_epoch_length = {
+        let config_data = restaking_config.data.borrow();
+        let config = Config::try_from_slice_unchecked(&config_data)?;
+        config.epoch_length()
+    };
+
+    let current_slot = Clock::get()?.slot;
 
     let epoch_snapshot_data = epoch_snapshot.data.borrow();
     let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
 
-    let total_stake_weights =
-        { StakeWeights::new(epoch_snapshot.operators_can_vote_count() as u128) };
+    let operator_count = epoch_snapshot.operator_count();
 
-    msg!("Total operators: {}", total_stake_weights.stake_weight());
-
-    // let operator_stake_weights = StakeWeights::new(1);
+    msg!("Total operators: {}", operator_count);
 
     let slot = Clock::get()?.slot;
     msg!("Current slot: {}", slot);
 
-    let registered_operators = epoch_snapshot.operators_registered();
-    msg!("Registered operators: {}", registered_operators);
-
     // Check bitmap size
-    let required_bitmap_bytes = (registered_operators + 7) / 8;
+    let required_bitmap_bytes = (operator_count + 7) / 8;
     if non_signers_bitmap.len() as u64 != required_bitmap_bytes {
         msg!("Invalid bitmap size");
         return Err(NCNProgramError::InvalidInputLength.into());
@@ -77,7 +77,7 @@ pub fn process_cast_vote(
     msg!(
         "Bitmap is: {:?} , {:?}",
         non_signers_bitmap.len(),
-        registered_operators
+        operator_count
     );
 
     // Convert apk2 to G2Point
@@ -90,7 +90,7 @@ pub fn process_cast_vote(
     let mut non_signers_count = 0;
 
     for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumerate() {
-        if i >= registered_operators as usize {
+        if i >= operator_count as usize {
             break;
         }
 
@@ -98,9 +98,21 @@ pub fn process_cast_vote(
         let bit_index = i % 8;
         let signed = (non_signers_bitmap[byte_index] >> bit_index) & 1 == 1;
 
-        if !signed {
+        if signed {
+            let snapshot_epoch =
+                get_epoch(operator_snapshot.last_snapshot_slot(), ncn_epoch_length)?;
+            let current_epoch = get_epoch(current_slot, ncn_epoch_length)?;
+            let has_minimum_stake =
+                operator_snapshot.has_minimum_stake_weight_now(current_epoch, snapshot_epoch)?;
+            if !has_minimum_stake {
+                msg!(
+                    "The operator {} does not have enough stake to vote",
+                    operator_snapshot.operator()
+                );
+                return Err(NCNProgramError::OperatorHasNoMinimumStake.into());
+            }
+        } else {
             non_signers_count += 1;
-            // msg!("Operator {} didn't signed", i);
 
             // Convert bytes to G1Point
             let g1_compressed = G1CompressedPoint::from(operator_snapshot.g1_pubkey());
@@ -114,17 +126,15 @@ pub fn process_cast_vote(
                 let current = aggregated_nonsigners_pubkey.unwrap();
                 aggregated_nonsigners_pubkey = Some(current + g1_point);
             }
-        } else {
-            // msg!("Operator {} did not sign", i);
         }
     }
 
     // If non_signers_count is more than 1/3 of registered operators, throw an error because quorum didn't meet
-    if non_signers_count > registered_operators / 3 {
+    if non_signers_count > operator_count / 3 {
         msg!(
             "Quorum not met: non-signers count ({}) exceeds 1/3 of registered operators ({})",
             non_signers_count,
-            registered_operators
+            operator_count
         );
         return Err(NCNProgramError::QuorumNotMet.into());
     }

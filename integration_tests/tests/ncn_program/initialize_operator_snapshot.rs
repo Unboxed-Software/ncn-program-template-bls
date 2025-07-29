@@ -39,7 +39,7 @@ mod tests {
 
         // Get operator snapshot from the epoch snapshot and verify it was initialized correctly
         let operator_snapshot = ncn_program_client
-            .get_operator_snapshot(operator, ncn, epoch)
+            .get_operator_snapshot(operator, ncn)
             .await?;
 
         // Verify initial state - operator snapshot should exist in the epoch snapshot

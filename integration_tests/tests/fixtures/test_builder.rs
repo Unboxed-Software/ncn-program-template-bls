@@ -3,7 +3,6 @@ use std::fmt::{Debug, Formatter};
 use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
 use ncn_program_core::{
     constants::WEIGHT,
-    epoch_snapshot::EpochSnapshot,
     epoch_state::EpochState,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
@@ -562,6 +561,52 @@ impl TestBuilder {
         Ok(())
     }
 
+    pub async fn cast_vote_for_test_ncn(
+        &mut self,
+        test_ncn: &TestNcn,
+        none_signers_indecies: Vec<usize>,
+    ) -> TestResult<()> {
+        let mut ncn_program_client = self.ncn_program_client();
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+
+        // Create a test message to sign
+        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+
+        let mut signitures: Vec<G1Point> = vec![];
+        let mut apk2_pubkeys: Vec<G2Point> = vec![];
+        for (i, operator) in test_ncn.operators.iter().enumerate() {
+            if !none_signers_indecies.contains(&i) {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .unwrap();
+                signitures.push(signature);
+            }
+        }
+
+        let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+        let agg_sig = signitures.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+        // Create signers bitmap - all operators signed (bit 0 = 0 means they signed)
+        let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
+
+        // print the signers_bitmap as a binary string
+        let mut binary_string = String::new();
+        for byte in signers_bitmap.clone() {
+            binary_string.push_str(&format!("{:08b}", byte));
+        }
+        println!("signers_bitmap: {}", binary_string);
+        println!("apk2: {:?}", apk2);
+
+        ncn_program_client
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
+            .await
+    }
+
     /// Takes snapshots of VaultOperatorDelegation for all active operator-vault pairs in the TestNcn for the current epoch.
     /// Ensures vaults are updated if necessary before snapshotting.
     // 9. Take all VaultOperatorDelegation snapshots
@@ -587,7 +632,7 @@ impl TestBuilder {
             let operator = operator_root.operator_pubkey;
 
             let operator_snapshot = ncn_program_client
-                .get_operator_snapshot(operator, ncn, epoch)
+                .get_operator_snapshot(operator, ncn)
                 .await?;
 
             // If operator snapshot is finalized, we should not take more snapshots, it is
@@ -687,7 +732,7 @@ impl TestBuilder {
         for operator_root in test_ncn.operators.iter() {
             let operator = operator_root.operator_pubkey;
             let operator_snapshot = ncn_program_client
-                .get_operator_snapshot(operator, ncn, epoch)
+                .get_operator_snapshot(operator, ncn)
                 .await?;
 
             if operator_snapshot.is_active() {
@@ -733,7 +778,6 @@ impl TestBuilder {
         ncn_program_client
             .do_cast_vote(
                 ncn,
-                epoch,
                 aggregated_signature_compressed,
                 aggregated_apk2_compressed,
                 signers_bitmap,

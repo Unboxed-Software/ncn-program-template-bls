@@ -184,11 +184,7 @@ impl NCNProgramClient {
     }
 
     /// Fetches the EpochSnapshot account for a given NCN and epoch.
-    pub async fn get_epoch_snapshot(
-        &mut self,
-        ncn: Pubkey,
-        ncn_epoch: u64,
-    ) -> TestResult<Box<EpochSnapshot>> {
+    pub async fn get_epoch_snapshot(&mut self, ncn: Pubkey) -> TestResult<Box<EpochSnapshot>> {
         let address = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let raw_account = Box::new(self.banks_client.get_account(address).await?.unwrap());
@@ -206,10 +202,9 @@ impl NCNProgramClient {
         &mut self,
         operator: Pubkey,
         ncn: Pubkey,
-        ncn_epoch: u64,
     ) -> TestResult<OperatorSnapshot> {
         // Get the epoch snapshot which contains the operator snapshots
-        let epoch_snapshot = self.get_epoch_snapshot(ncn, ncn_epoch).await?;
+        let epoch_snapshot = self.get_epoch_snapshot(ncn).await?;
 
         // Find the operator snapshot by operator pubkey
         let operator_snapshot = epoch_snapshot.find_operator_snapshot(&operator);
@@ -254,7 +249,7 @@ impl NCNProgramClient {
             10000,
             &ncn_fee_wallet.pubkey(),
             400,
-            minimum_stake_weight.unwrap_or(100),
+            minimum_stake_weight.unwrap_or(1000),
         )
         .await
     }
@@ -961,7 +956,6 @@ impl NCNProgramClient {
     pub async fn do_cast_vote(
         &mut self,
         ncn: Pubkey,
-        epoch: u64,
         agg_sig: [u8; 32],
         apk2: [u8; 64],
         signers_bitmap: Vec<u8>,
@@ -969,12 +963,13 @@ impl NCNProgramClient {
     ) -> Result<(), TestError> {
         let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
         let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
+        let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
 
         self.cast_vote(
             ncn_config,
             ncn,
             epoch_snapshot,
-            epoch,
+            restaking_config,
             agg_sig,
             apk2,
             signers_bitmap,
@@ -984,28 +979,26 @@ impl NCNProgramClient {
     }
 
     /// Sends a transaction to cast a vote using BLS signature verification.
+    #[allow(clippy::too_many_arguments)]
     pub async fn cast_vote(
         &mut self,
         ncn_config: Pubkey,
         ncn: Pubkey,
         epoch_snapshot: Pubkey,
-        epoch: u64,
+        restaking_config: Pubkey,
         agg_sig: [u8; 32],
         apk2: [u8; 64],
         signers_bitmap: Vec<u8>,
         message: [u8; 32],
     ) -> Result<(), TestError> {
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
         let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(2_000_000);
 
         let ix = CastVoteBuilder::new()
-            .epoch_state(epoch_state)
             .config(ncn_config)
             .ncn(ncn)
             .epoch_snapshot(epoch_snapshot)
-            .epoch(epoch)
             .agg_sig(agg_sig)
+            .restaking_config(restaking_config)
             .apk2(apk2)
             .signers_bitmap(signers_bitmap)
             .message(message)
@@ -1026,7 +1019,6 @@ impl NCNProgramClient {
     pub async fn do_cast_simple_vote(
         &mut self,
         ncn: Pubkey,
-        epoch: u64,
         operator_key: PrivKey,
         message: [u8; 32],
     ) -> Result<(), TestError> {
@@ -1042,7 +1034,7 @@ impl NCNProgramClient {
         // Create signers bitmap - single operator signed (all bits 0 = all signed)
         let signers_bitmap = vec![0u8; 1];
 
-        self.do_cast_vote(ncn, epoch, agg_sig, apk2, signers_bitmap, message)
+        self.do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
             .await
     }
 

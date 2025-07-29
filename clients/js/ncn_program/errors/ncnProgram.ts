@@ -106,130 +106,134 @@ export const NCN_PROGRAM_ERROR__VAULT_OPERATOR_DELEGATION_FINALIZED = 0x2221; //
 export const NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_IS_NOT_ACTIVE = 0x2222; // 8738
 /** OperatorSnapshotAlreadyTaked: Operator snapshot is already taken */
 export const NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_ALREADY_TAKED = 0x2223; // 8739
+/** OperatorHasNoMinimumStake: Operator has no minimum stake */
+export const NCN_PROGRAM_ERROR__OPERATOR_HAS_NO_MINIMUM_STAKE = 0x2224; // 8740
+/** OperatorSnapshotOutdated: Operator snapshot is outdated */
+export const NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_OUTDATED = 0x2225; // 8741
 /** EpochSnapshotAlreadyFinalized: epoch snapshot already finalized */
-export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_ALREADY_FINALIZED = 0x2224; // 8740
+export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_ALREADY_FINALIZED = 0x2226; // 8742
 /** TooManyVaultOperatorDelegations: Too many vault operator delegations */
-export const NCN_PROGRAM_ERROR__TOO_MANY_VAULT_OPERATOR_DELEGATIONS = 0x2225; // 8741
+export const NCN_PROGRAM_ERROR__TOO_MANY_VAULT_OPERATOR_DELEGATIONS = 0x2227; // 8743
 /** DuplicateVaultOperatorDelegation: Duplicate vault operator delegation */
-export const NCN_PROGRAM_ERROR__DUPLICATE_VAULT_OPERATOR_DELEGATION = 0x2226; // 8742
+export const NCN_PROGRAM_ERROR__DUPLICATE_VAULT_OPERATOR_DELEGATION = 0x2228; // 8744
 /** DuplicateVoteCast: Duplicate Vote Cast */
-export const NCN_PROGRAM_ERROR__DUPLICATE_VOTE_CAST = 0x2227; // 8743
+export const NCN_PROGRAM_ERROR__DUPLICATE_VOTE_CAST = 0x2229; // 8745
 /** CannotVoteWithZeroStake: Cannot Vote With Zero Delegation */
-export const NCN_PROGRAM_ERROR__CANNOT_VOTE_WITH_ZERO_STAKE = 0x2228; // 8744
+export const NCN_PROGRAM_ERROR__CANNOT_VOTE_WITH_ZERO_STAKE = 0x222a; // 8746
 /** OperatorAlreadyVoted: Operator Already Voted */
-export const NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED = 0x2229; // 8745
+export const NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED = 0x222b; // 8747
 /** OperatorVotesFull: Operator votes full */
-export const NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL = 0x222a; // 8746
+export const NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL = 0x222c; // 8748
 /** BallotTallyFull: Merkle root tally full */
-export const NCN_PROGRAM_ERROR__BALLOT_TALLY_FULL = 0x222b; // 8747
+export const NCN_PROGRAM_ERROR__BALLOT_TALLY_FULL = 0x222d; // 8749
 /** BallotTallyNotFoundFull: Ballot tally not found */
-export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_FOUND_FULL = 0x222c; // 8748
+export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_FOUND_FULL = 0x222e; // 8750
 /** BallotTallyNotEmpty: Ballot tally not empty */
-export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_EMPTY = 0x222d; // 8749
+export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_EMPTY = 0x222f; // 8751
 /** ConsensusAlreadyReached: Consensus already reached, cannot change vote */
-export const NCN_PROGRAM_ERROR__CONSENSUS_ALREADY_REACHED = 0x222e; // 8750
+export const NCN_PROGRAM_ERROR__CONSENSUS_ALREADY_REACHED = 0x2230; // 8752
 /** ConsensusNotReached: Consensus not reached */
-export const NCN_PROGRAM_ERROR__CONSENSUS_NOT_REACHED = 0x222f; // 8751
+export const NCN_PROGRAM_ERROR__CONSENSUS_NOT_REACHED = 0x2231; // 8753
 /** EpochSnapshotNotFinalized: Epoch snapshot not finalized */
-export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED = 0x2230; // 8752
+export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED = 0x2232; // 8754
 /** VotingNotValid: Voting not valid, too many slots after consensus reached */
-export const NCN_PROGRAM_ERROR__VOTING_NOT_VALID = 0x2231; // 8753
+export const NCN_PROGRAM_ERROR__VOTING_NOT_VALID = 0x2233; // 8755
 /** TieBreakerAdminInvalid: Tie breaker admin invalid */
-export const NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID = 0x2232; // 8754
+export const NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID = 0x2234; // 8756
 /** VotingNotFinalized: Voting not finalized */
-export const NCN_PROGRAM_ERROR__VOTING_NOT_FINALIZED = 0x2233; // 8755
+export const NCN_PROGRAM_ERROR__VOTING_NOT_FINALIZED = 0x2235; // 8757
 /** TieBreakerNotInPriorVotes: Tie breaking ballot must be one of the prior votes */
-export const NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES = 0x2234; // 8756
+export const NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES = 0x2236; // 8758
 /** InvalidMerkleProof: Invalid merkle proof */
-export const NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF = 0x2235; // 8757
+export const NCN_PROGRAM_ERROR__INVALID_MERKLE_PROOF = 0x2237; // 8759
 /** InvalidOperatorVoter: Operator voter needs to sign its vote */
-export const NCN_PROGRAM_ERROR__INVALID_OPERATOR_VOTER = 0x2236; // 8758
+export const NCN_PROGRAM_ERROR__INVALID_OPERATOR_VOTER = 0x2238; // 8760
 /** InvalidNcnFeeGroup: Not a valid NCN fee group */
-export const NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP = 0x2237; // 8759
+export const NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP = 0x2239; // 8761
 /** InvalidBaseFeeGroup: Not a valid base fee group */
-export const NCN_PROGRAM_ERROR__INVALID_BASE_FEE_GROUP = 0x2238; // 8760
+export const NCN_PROGRAM_ERROR__INVALID_BASE_FEE_GROUP = 0x223a; // 8762
 /** DestinationMismatch: Destination mismatch */
-export const NCN_PROGRAM_ERROR__DESTINATION_MISMATCH = 0x2239; // 8761
+export const NCN_PROGRAM_ERROR__DESTINATION_MISMATCH = 0x223b; // 8763
 /** FeeNotActive: Fee not active */
-export const NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE = 0x223a; // 8762
+export const NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE = 0x223c; // 8764
 /** WeightNotSet: Weight not set */
-export const NCN_PROGRAM_ERROR__WEIGHT_NOT_SET = 0x223b; // 8763
+export const NCN_PROGRAM_ERROR__WEIGHT_NOT_SET = 0x223d; // 8765
 /** InvalidEpochsBeforeStall: Invalid epochs before stall */
-export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_STALL = 0x223c; // 8764
+export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_STALL = 0x223e; // 8766
 /** InvalidEpochsBeforeClose: Invalid epochs before accounts can close */
-export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_CLOSE = 0x223d; // 8765
+export const NCN_PROGRAM_ERROR__INVALID_EPOCHS_BEFORE_CLOSE = 0x223f; // 8767
 /** InvalidSlotsAfterConsensus: Invalid slots after consensus */
-export const NCN_PROGRAM_ERROR__INVALID_SLOTS_AFTER_CONSENSUS = 0x223e; // 8766
+export const NCN_PROGRAM_ERROR__INVALID_SLOTS_AFTER_CONSENSUS = 0x2240; // 8768
 /** VaultNeedsUpdate: Vault needs to be updated */
-export const NCN_PROGRAM_ERROR__VAULT_NEEDS_UPDATE = 0x223f; // 8767
+export const NCN_PROGRAM_ERROR__VAULT_NEEDS_UPDATE = 0x2241; // 8769
 /** InvalidAccountStatus: Invalid Account Status */
-export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_STATUS = 0x2240; // 8768
+export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_STATUS = 0x2242; // 8770
 /** AccountAlreadyInitialized: Account already initialized */
-export const NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x2241; // 8769
+export const NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED = 0x2243; // 8771
 /** BadBallot: Cannot vote with uninitialized account */
-export const NCN_PROGRAM_ERROR__BAD_BALLOT = 0x2242; // 8770
+export const NCN_PROGRAM_ERROR__BAD_BALLOT = 0x2244; // 8772
 /** OperatorIsNotInSnapshot: Operator is not in snapshot */
-export const NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT = 0x2243; // 8771
+export const NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT = 0x2245; // 8773
 /** InvalidAccountToCloseDiscriminator: Invalid account_to_close Discriminator */
-export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_TO_CLOSE_DISCRIMINATOR = 0x2244; // 8772
+export const NCN_PROGRAM_ERROR__INVALID_ACCOUNT_TO_CLOSE_DISCRIMINATOR = 0x2246; // 8774
 /** CannotCloseAccount: Cannot close account */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT = 0x2245; // 8773
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT = 0x2247; // 8775
 /** CannotCloseAccountAlreadyClosed: Cannot close account - Already closed */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_ALREADY_CLOSED = 0x2246; // 8774
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_ALREADY_CLOSED = 0x2248; // 8776
 /** CannotCloseAccountNotEnoughEpochs: Cannot close account - Not enough epochs have passed since consensus reached */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NOT_ENOUGH_EPOCHS = 0x2247; // 8775
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NOT_ENOUGH_EPOCHS = 0x2249; // 8777
 /** CannotCloseAccountNoReceiverProvided: Cannot close account - No receiver provided */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_RECEIVER_PROVIDED = 0x2248; // 8776
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_RECEIVER_PROVIDED = 0x224a; // 8778
 /** CannotCloseAccountNoEnoughAccounts: Cannot close account - Not enough accounts */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_ENOUGH_ACCOUNTS = 0x2249; // 8777
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_ACCOUNT_NO_ENOUGH_ACCOUNTS = 0x224b; // 8779
 /** CannotCloseEpochStateAccount: Cannot close epoch state account - Epoch state needs all other accounts to be closed first */
-export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_EPOCH_STATE_ACCOUNT = 0x224a; // 8778
+export const NCN_PROGRAM_ERROR__CANNOT_CLOSE_EPOCH_STATE_ACCOUNT = 0x224c; // 8780
 /** InvalidNCNFeeWallet: Invalid NCN Fee wallet */
-export const NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET = 0x224b; // 8779
+export const NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET = 0x224d; // 8781
 /** EpochIsClosingDown: Epoch is closing down */
-export const NCN_PROGRAM_ERROR__EPOCH_IS_CLOSING_DOWN = 0x224c; // 8780
+export const NCN_PROGRAM_ERROR__EPOCH_IS_CLOSING_DOWN = 0x224e; // 8782
 /** MarkerExists: Marker exists */
-export const NCN_PROGRAM_ERROR__MARKER_EXISTS = 0x224d; // 8781
+export const NCN_PROGRAM_ERROR__MARKER_EXISTS = 0x224f; // 8783
 /** SecretKeyError: Secret key error */
-export const NCN_PROGRAM_ERROR__SECRET_KEY_ERROR = 0x224e; // 8782
+export const NCN_PROGRAM_ERROR__SECRET_KEY_ERROR = 0x2250; // 8784
 /** AltBN128AddError: AltBN128 add error */
-export const NCN_PROGRAM_ERROR__ALT_B_N128_ADD_ERROR = 0x224f; // 8783
+export const NCN_PROGRAM_ERROR__ALT_B_N128_ADD_ERROR = 0x2251; // 8785
 /** AltBN128MulError: AltBN128 mul error */
-export const NCN_PROGRAM_ERROR__ALT_B_N128_MUL_ERROR = 0x2250; // 8784
+export const NCN_PROGRAM_ERROR__ALT_B_N128_MUL_ERROR = 0x2252; // 8786
 /** AltBN128PairingError: AltBN128 pairing error */
-export const NCN_PROGRAM_ERROR__ALT_B_N128_PAIRING_ERROR = 0x2251; // 8785
+export const NCN_PROGRAM_ERROR__ALT_B_N128_PAIRING_ERROR = 0x2253; // 8787
 /** HashToCurveError: Hash to curve error */
-export const NCN_PROGRAM_ERROR__HASH_TO_CURVE_ERROR = 0x2252; // 8786
+export const NCN_PROGRAM_ERROR__HASH_TO_CURVE_ERROR = 0x2254; // 8788
 /** BLSSigningError: BLSSigning error */
-export const NCN_PROGRAM_ERROR__B_L_S_SIGNING_ERROR = 0x2253; // 8787
+export const NCN_PROGRAM_ERROR__B_L_S_SIGNING_ERROR = 0x2255; // 8789
 /** BLSVerificationError: BLSVerification error */
-export const NCN_PROGRAM_ERROR__B_L_S_VERIFICATION_ERROR = 0x2254; // 8788
+export const NCN_PROGRAM_ERROR__B_L_S_VERIFICATION_ERROR = 0x2256; // 8790
 /** SerializationError: Serialization error */
-export const NCN_PROGRAM_ERROR__SERIALIZATION_ERROR = 0x2255; // 8789
+export const NCN_PROGRAM_ERROR__SERIALIZATION_ERROR = 0x2257; // 8791
 /** G1PointCompressionError: G1 point compression error */
-export const NCN_PROGRAM_ERROR__G1_POINT_COMPRESSION_ERROR = 0x2256; // 8790
+export const NCN_PROGRAM_ERROR__G1_POINT_COMPRESSION_ERROR = 0x2258; // 8792
 /** G1PointDecompressionError: G1 point decompression error */
-export const NCN_PROGRAM_ERROR__G1_POINT_DECOMPRESSION_ERROR = 0x2257; // 8791
+export const NCN_PROGRAM_ERROR__G1_POINT_DECOMPRESSION_ERROR = 0x2259; // 8793
 /** G2PointCompressionError: G2 point compression error */
-export const NCN_PROGRAM_ERROR__G2_POINT_COMPRESSION_ERROR = 0x2258; // 8792
+export const NCN_PROGRAM_ERROR__G2_POINT_COMPRESSION_ERROR = 0x225a; // 8794
 /** G2PointDecompressionError: G2 point decompression error */
-export const NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR = 0x2259; // 8793
+export const NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR = 0x225b; // 8795
 /** InvalidInputLength: Invalid input length */
-export const NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH = 0x225a; // 8794
+export const NCN_PROGRAM_ERROR__INVALID_INPUT_LENGTH = 0x225c; // 8796
 /** InvalidG1Pubkey: Invalid G1 Pubkey */
-export const NCN_PROGRAM_ERROR__INVALID_G1_PUBKEY = 0x225b; // 8795
+export const NCN_PROGRAM_ERROR__INVALID_G1_PUBKEY = 0x225d; // 8797
 /** InvalidMinimumStakeWeight: Invalid Minimum Stake Weight */
-export const NCN_PROGRAM_ERROR__INVALID_MINIMUM_STAKE_WEIGHT = 0x225c; // 8796
+export const NCN_PROGRAM_ERROR__INVALID_MINIMUM_STAKE_WEIGHT = 0x225e; // 8798
 /** MissingRequiredSignature: Missing required signature */
-export const NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE = 0x225d; // 8797
+export const NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE = 0x225f; // 8799
 /** SignatureVerificationFailed: Signature verification failed */
-export const NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED = 0x225e; // 8798
+export const NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED = 0x2260; // 8800
 /** NoNonSignersAggregatedPubkey: No non signers aggregated pubkey */
-export const NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY = 0x225f; // 8799
+export const NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY = 0x2261; // 8801
 /** QuorumNotMet: Quorum not met */
-export const NCN_PROGRAM_ERROR__QUORUM_NOT_MET = 0x2260; // 8800
+export const NCN_PROGRAM_ERROR__QUORUM_NOT_MET = 0x2262; // 8802
 /** OperatorNcnConnectionNotActive: Operator <> NCN connection is not active */
-export const NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE = 0x2261; // 8801
+export const NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE = 0x2263; // 8803
 
 export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -308,11 +312,13 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__NO_VAULTS_IN_REGISTRY
   | typeof NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED
   | typeof NCN_PROGRAM_ERROR__OPERATOR_ENTRY_NOT_FOUND
+  | typeof NCN_PROGRAM_ERROR__OPERATOR_HAS_NO_MINIMUM_STAKE
   | typeof NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT
   | typeof NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE
   | typeof NCN_PROGRAM_ERROR__OPERATOR_REGISTRY_LIST_FULL
   | typeof NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_ALREADY_TAKED
   | typeof NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_IS_NOT_ACTIVE
+  | typeof NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_OUTDATED
   | typeof NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL
   | typeof NCN_PROGRAM_ERROR__QUORUM_NOT_MET
   | typeof NCN_PROGRAM_ERROR__REGISTRY_NOT_INITIALIZED
@@ -420,11 +426,13 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__NO_VAULTS_IN_REGISTRY]: `There are no vaults in the registry`,
     [NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED]: `Operator Already Voted`,
     [NCN_PROGRAM_ERROR__OPERATOR_ENTRY_NOT_FOUND]: `Operator Entry not found`,
+    [NCN_PROGRAM_ERROR__OPERATOR_HAS_NO_MINIMUM_STAKE]: `Operator has no minimum stake`,
     [NCN_PROGRAM_ERROR__OPERATOR_IS_NOT_IN_SNAPSHOT]: `Operator is not in snapshot`,
     [NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE]: `Operator <> NCN connection is not active`,
     [NCN_PROGRAM_ERROR__OPERATOR_REGISTRY_LIST_FULL]: `Operator Registry operators are at capacity`,
     [NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_ALREADY_TAKED]: `Operator snapshot is already taken`,
     [NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_IS_NOT_ACTIVE]: `Operator snapshot is not active`,
+    [NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_OUTDATED]: `Operator snapshot is outdated`,
     [NCN_PROGRAM_ERROR__OPERATOR_VOTES_FULL]: `Operator votes full`,
     [NCN_PROGRAM_ERROR__QUORUM_NOT_MET]: `Quorum not met`,
     [NCN_PROGRAM_ERROR__REGISTRY_NOT_INITIALIZED]: `Registry not initialized`,

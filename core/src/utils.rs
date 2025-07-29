@@ -25,6 +25,11 @@ pub fn assert_ncn_program_error<T>(
     assert_eq!(test_error.err().unwrap(), ncn_program_error);
 }
 
+pub fn get_epoch(slot: u64, ncn_epoch_length: u64) -> Result<u64, NCNProgramError> {
+    slot.checked_div(ncn_epoch_length)
+        .ok_or(NCNProgramError::DenominatorIsZero)
+}
+
 /// Determines if an operator is eligible to vote in the current epoch
 ///
 /// An operator can vote if:
