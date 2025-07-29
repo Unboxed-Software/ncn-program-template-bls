@@ -13,9 +13,9 @@ use ncn_program_client::{
         InitializeConfigBuilder, InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
         InitializeOperatorRegistryBuilder, InitializeOperatorSnapshotBuilder,
         InitializeVaultRegistryBuilder, InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder,
-        ReallocOperatorRegistryBuilder, ReallocVaultRegistryBuilder, ReallocWeightTableBuilder,
-        RegisterOperatorBuilder, RegisterVaultBuilder, SetEpochWeightsBuilder,
-        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorBN128KeysBuilder,
+        ReallocOperatorRegistryBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
+        SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
+        UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -28,11 +28,7 @@ use ncn_program_core::{
     epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
-    g1_point::G1CompressedPoint,
-    g2_point::G2CompressedPoint,
     operator_registry::OperatorRegistry,
-    privkey::PrivKey,
-    schemes::Sha256Normalized,
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
@@ -44,7 +40,6 @@ use solana_program_test::{BanksClient, ProgramTestBanksClientExt};
 use solana_sdk::{
     commitment_config::CommitmentLevel,
     compute_budget::ComputeBudgetInstruction,
-    hash::Hash,
     signature::{Keypair, Signer},
     system_program,
     transaction::{Transaction, TransactionError},
@@ -102,14 +97,6 @@ impl NCNProgramClient {
         Ok(())
     }
 
-    /// Gets the current balance of the payer account.
-    pub async fn get_payer_balance(&mut self) -> TestResult<u64> {
-        Ok(self
-            .banks_client
-            .get_balance_with_commitment(self.payer.pubkey(), CommitmentLevel::Processed)
-            .await?)
-    }
-
     /// Sets up the NCN program by initializing the config and vault registry.
     pub async fn setup_ncn_program(&mut self, ncn_root: &NcnRoot) -> TestResult<()> {
         self.do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
@@ -122,16 +109,6 @@ impl NCNProgramClient {
             .await?;
 
         Ok(())
-    }
-
-    pub async fn get_best_latest_blockhash(&mut self) -> TestResult<Hash> {
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        let new_blockhash = self
-            .banks_client
-            .get_new_latest_blockhash(&blockhash)
-            .await?;
-
-        Ok(new_blockhash)
     }
 
     /// Fetches the EpochMarker account for a given NCN and epoch.
@@ -525,48 +502,6 @@ impl NCNProgramClient {
         let blockhash = self.banks_client.get_latest_blockhash().await?;
         self.process_transaction(&Transaction::new_signed_with_payer(
             &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
-    /// Reallocates the vault registry account multiple times.
-    pub async fn do_realloc_vault_registry(
-        &mut self,
-        ncn: Pubkey,
-        num_reallocations: u64,
-    ) -> TestResult<()> {
-        let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let vault_registry = VaultRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-        self.realloc_vault_registry(&ncn, &ncn_config, &vault_registry, num_reallocations)
-            .await
-    }
-
-    /// Sends transactions to reallocate the vault registry account.
-    pub async fn realloc_vault_registry(
-        &mut self,
-        ncn: &Pubkey,
-        config: &Pubkey,
-        vault_registry: &Pubkey,
-        num_reallocations: u64,
-    ) -> TestResult<()> {
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
-
-        let ix = ReallocVaultRegistryBuilder::new()
-            .ncn(*ncn)
-            .account_payer(account_payer)
-            .config(*config)
-            .vault_registry(*vault_registry)
-            .system_program(system_program::id())
-            .instruction();
-
-        let ixs = vec![ix; num_reallocations as usize];
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &ixs,
             Some(&self.payer.pubkey()),
             &[&self.payer],
             blockhash,
@@ -1014,89 +949,6 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Helper method to create a simple single-operator BLS vote for testing.
-    /// This generates a basic signature from one operator for testing purposes.
-    pub async fn do_cast_simple_vote(
-        &mut self,
-        ncn: Pubkey,
-        operator_key: PrivKey,
-        message: [u8; 32],
-    ) -> Result<(), TestError> {
-        // Generate signature from the operator
-        let signature = operator_key
-            .sign::<Sha256Normalized, &[u8; 32]>(&message)
-            .unwrap();
-        let agg_sig = G1CompressedPoint::try_from(signature).unwrap().0;
-
-        // Get the G2 public key
-        let apk2 = G2CompressedPoint::try_from(&operator_key).unwrap().0;
-
-        // Create signers bitmap - single operator signed (all bits 0 = all signed)
-        let signers_bitmap = vec![0u8; 1];
-
-        self.do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
-            .await
-    }
-
-    /// Reallocates the weight table account multiple times.
-    pub async fn do_realloc_weight_table(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-        num_reallocations: u64,
-    ) -> Result<(), TestError> {
-        let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let weight_table = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let vault_registry = VaultRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-
-        self.realloc_weight_table(
-            ncn_config,
-            weight_table,
-            ncn,
-            vault_registry,
-            epoch,
-            num_reallocations,
-        )
-        .await
-    }
-
-    /// Sends transactions to reallocate the weight table account.
-    pub async fn realloc_weight_table(
-        &mut self,
-        ncn_config: Pubkey,
-        weight_table: Pubkey,
-        ncn: Pubkey,
-        vault_registry: Pubkey,
-        epoch: u64,
-        num_reallocations: u64,
-    ) -> Result<(), TestError> {
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let ix = ReallocWeightTableBuilder::new()
-            .epoch_state(epoch_state)
-            .config(ncn_config)
-            .weight_table(weight_table)
-            .ncn(ncn)
-            .vault_registry(vault_registry)
-            .epoch(epoch)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        let ixs = vec![ix; num_reallocations as usize];
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &ixs,
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
     /// Closes an epoch-specific account (e.g., BallotBox, EpochSnapshot) after the epoch is finished.
     pub async fn do_close_epoch_account(
         &mut self,
@@ -1120,41 +972,6 @@ impl NCNProgramClient {
             config,
             account_to_close,
             account_payer,
-            None,
-            None,
-            epoch,
-        )
-        .await
-    }
-
-    pub async fn do_close_router_epoch_account(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-        account_to_close: Pubkey,
-        receiver_to_close: Pubkey,
-    ) -> TestResult<()> {
-        let (epoch_marker, _, _) =
-            EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let (config, _, _) = NcnConfig::find_program_address(&ncn_program::id(), &ncn);
-
-        let config_account = self.get_ncn_config(ncn).await?;
-        let ncn_fee_wallet = *config_account.fee_config.ncn_fee_wallet();
-
-        self.close_epoch_account(
-            epoch_marker,
-            epoch_state,
-            ncn,
-            config,
-            account_to_close,
-            account_payer,
-            Some(receiver_to_close),
-            Some(ncn_fee_wallet),
             epoch,
         )
         .await
@@ -1171,9 +988,6 @@ impl NCNProgramClient {
         account_to_close: Pubkey,
         account_payer: Pubkey,
 
-        receiver_to_close: Option<Pubkey>,
-        ncn_fee_wallet: Option<Pubkey>,
-
         epoch: u64,
     ) -> TestResult<()> {
         let mut ix = CloseEpochAccountBuilder::new();
@@ -1186,14 +1000,6 @@ impl NCNProgramClient {
             .ncn(ncn)
             .system_program(system_program::id())
             .epoch(epoch);
-
-        if let Some(receiver_to_close) = receiver_to_close {
-            ix.receiver_to_close(Some(receiver_to_close));
-        }
-
-        if let Some(ncn_fee_wallet) = ncn_fee_wallet {
-            ix.ncn_fee_wallet(Some(ncn_fee_wallet));
-        }
 
         let ix = ix.instruction();
 
@@ -1460,6 +1266,7 @@ impl NCNProgramClient {
     }
 
     /// Updates an operator's BLS keys in the operator registry with full parameter control
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_operator_bn128_keys(
         &mut self,
         config: Pubkey,

@@ -14,8 +14,6 @@ mod initialize_vault_registry;
 mod initialize_weight_table;
 mod realloc_epoch_snapshot;
 mod realloc_operator_registry;
-mod realloc_vault_registry;
-mod realloc_weight_table;
 mod register_operator;
 mod register_vault;
 mod set_epoch_weights;
@@ -46,8 +44,6 @@ use crate::{
     initialize_weight_table::process_initialize_weight_table,
     realloc_epoch_snapshot::process_realloc_epoch_snapshot,
     realloc_operator_registry::process_realloc_operator_registry,
-    realloc_vault_registry::process_realloc_vault_registry,
-    realloc_weight_table::process_realloc_weight_table,
     register_operator::process_register_operator, register_vault::process_register_vault,
     set_epoch_weights::process_set_epoch_weights,
     snapshot_vault_operator_delegation::process_snapshot_vault_operator_delegation,
@@ -108,10 +104,6 @@ pub fn process_instruction(
             msg!("Instruction: InitializeVaultRegistry");
             process_initialize_vault_registry(program_id, accounts)
         }
-        NCNProgramInstruction::ReallocVaultRegistry => {
-            msg!("Instruction: ReallocVaultRegistry");
-            process_realloc_vault_registry(program_id, accounts)
-        }
         NCNProgramInstruction::RegisterVault => {
             msg!("Instruction: RegisterVault");
             process_register_vault(program_id, accounts)
@@ -153,10 +145,6 @@ pub fn process_instruction(
         NCNProgramInstruction::InitializeWeightTable { epoch } => {
             msg!("Instruction: InitializeWeightTable");
             process_initialize_weight_table(program_id, accounts, epoch)
-        }
-        NCNProgramInstruction::ReallocWeightTable { epoch } => {
-            msg!("Instruction: ReallocWeightTable");
-            process_realloc_weight_table(program_id, accounts, epoch)
         }
         NCNProgramInstruction::SetEpochWeights { epoch } => {
             msg!("Instruction: SetEpochWeights");

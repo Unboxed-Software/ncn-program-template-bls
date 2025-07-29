@@ -35,7 +35,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REGISTER_OPERATOR_DISCRIMINATOR = 5;
+export const REGISTER_OPERATOR_DISCRIMINATOR = 4;
 
 export function getRegisterOperatorDiscriminatorBytes() {
   return getU8Encoder().encode(REGISTER_OPERATOR_DISCRIMINATOR);

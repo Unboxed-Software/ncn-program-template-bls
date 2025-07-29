@@ -67,7 +67,7 @@ pub struct RegisterVaultInstructionData {
 
 impl RegisterVaultInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 3 }
+        Self { discriminator: 2 }
     }
 }
 

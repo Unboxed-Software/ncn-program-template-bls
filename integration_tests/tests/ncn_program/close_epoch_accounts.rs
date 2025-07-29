@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
 
-    use ncn_program_core::epoch_snapshot::EpochSnapshot;
-    use ncn_program_core::weight_table::WeightTable;
-    use ncn_program_core::{epoch_state::EpochState, error::NCNProgramError};
+    use ncn_program_core::{
+        epoch_state::EpochState, error::NCNProgramError, weight_table::WeightTable,
+    };
 
     use crate::fixtures::TestResult;
     use crate::fixtures::{

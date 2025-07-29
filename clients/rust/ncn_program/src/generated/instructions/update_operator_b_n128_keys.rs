@@ -76,7 +76,7 @@ pub struct UpdateOperatorBN128KeysInstructionData {
 
 impl UpdateOperatorBN128KeysInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 6 }
+        Self { discriminator: 5 }
     }
 }
 

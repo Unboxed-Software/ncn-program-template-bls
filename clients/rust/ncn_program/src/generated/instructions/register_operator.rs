@@ -86,7 +86,7 @@ pub struct RegisterOperatorInstructionData {
 
 impl RegisterOperatorInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 5 }
+        Self { discriminator: 4 }
     }
 }
 

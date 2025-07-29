@@ -106,7 +106,7 @@ pub struct InitializeOperatorSnapshotInstructionData {
 
 impl InitializeOperatorSnapshotInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 14 }
+        Self { discriminator: 12 }
     }
 }
 

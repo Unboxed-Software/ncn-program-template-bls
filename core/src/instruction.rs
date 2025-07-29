@@ -48,13 +48,6 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "system_program")]
     InitializeVaultRegistry,
 
-    /// Resizes the vault registry account
-    #[account(0, name = "config")]
-    #[account(1, writable, name = "vault_registry")]
-    #[account(2, name = "ncn")]
-    #[account(3, writable, name = "account_payer")]
-    #[account(4, name = "system_program")]
-    ReallocVaultRegistry,
 
     /// Registers a vault to the vault registry
     #[account(0, name = "config")]
@@ -152,18 +145,6 @@ pub enum NCNProgramInstruction {
         epoch: u64,
     },
 
-    /// Resizes the weight table account
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "config")]
-    #[account(2, writable, name = "weight_table")]
-    #[account(3, name = "ncn")]
-    #[account(4, name = "vault_registry")]
-    #[account(5, writable, name = "account_payer")]
-    #[account(6, name = "system_program")]
-    ReallocWeightTable {
-        epoch: u64,
-    },
-
 
 
     /// Initializes the Epoch Snapshot
@@ -243,8 +224,6 @@ pub enum NCNProgramInstruction {
     #[account(4, writable, name = "account_to_close")]
     #[account(5, writable, name = "account_payer")]
     #[account(6, name = "system_program")]
-    #[account(7, writable, optional, name = "ncn_fee_wallet")]
-    #[account(8, writable, optional, name = "receiver_to_close")]
     CloseEpochAccount {
         epoch: u64,
     },

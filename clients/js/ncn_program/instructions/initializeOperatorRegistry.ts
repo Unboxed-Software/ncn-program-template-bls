@@ -27,7 +27,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_OPERATOR_REGISTRY_DISCRIMINATOR = 4;
+export const INITIALIZE_OPERATOR_REGISTRY_DISCRIMINATOR = 3;
 
 export function getInitializeOperatorRegistryDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_OPERATOR_REGISTRY_DISCRIMINATOR);

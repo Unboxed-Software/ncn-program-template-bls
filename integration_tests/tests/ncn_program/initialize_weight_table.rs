@@ -1,10 +1,7 @@
 #[cfg(test)]
 mod tests {
     use jito_bytemuck::Discriminator;
-    use ncn_program_core::{
-        constants::{MAX_REALLOC_BYTES, MAX_VAULTS},
-        weight_table::WeightTable,
-    };
+    use ncn_program_core::weight_table::WeightTable;
 
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
 

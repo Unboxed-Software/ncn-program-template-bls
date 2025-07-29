@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_OPERATOR_SNAPSHOT_DISCRIMINATOR = 14;
+export const INITIALIZE_OPERATOR_SNAPSHOT_DISCRIMINATOR = 12;
 
 export function getInitializeOperatorSnapshotDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_OPERATOR_SNAPSHOT_DISCRIMINATOR);

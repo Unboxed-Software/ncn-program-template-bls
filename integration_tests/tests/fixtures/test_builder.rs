@@ -15,7 +15,6 @@ use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestC
 use solana_sdk::{
     account::Account,
     clock::DEFAULT_SLOTS_PER_EPOCH,
-    epoch_schedule::EpochSchedule,
     signature::{Keypair, Signer},
 };
 
@@ -134,11 +133,6 @@ impl TestBuilder {
 
     /// Retrieves the current Clock sysvar.
     pub async fn clock(&mut self) -> Clock {
-        self.context.banks_client.get_sysvar().await.unwrap()
-    }
-
-    /// Retrieves the current EpochSchedule sysvar.
-    pub async fn epoch_schedule(&mut self) -> EpochSchedule {
         self.context.banks_client.get_sysvar().await.unwrap()
     }
 

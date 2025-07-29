@@ -32,9 +32,8 @@ pub fn process_close_epoch_account(
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let (required_accounts, optional_accounts) = accounts.split_at(7);
     let [epoch_marker, epoch_state, config, ncn, account_to_close, account_payer, system_program] =
-        required_accounts
+        accounts
     else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);

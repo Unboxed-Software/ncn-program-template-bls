@@ -104,41 +104,6 @@
       }
     },
     {
-      "name": "ReallocVaultRegistry",
-      "accounts": [
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vaultRegistry",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [],
-      "discriminant": {
-        "type": "u8",
-        "value": 2
-      }
-    },
-    {
       "name": "RegisterVault",
       "accounts": [
         {
@@ -170,7 +135,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 3
+        "value": 2
       }
     },
     {
@@ -205,7 +170,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 4
+        "value": 3
       }
     },
     {
@@ -278,7 +243,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 5
+        "value": 4
       }
     },
     {
@@ -341,7 +306,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 5
       }
     },
     {
@@ -376,7 +341,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 6
       }
     },
     {
@@ -421,7 +386,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 7
       }
     },
     {
@@ -471,7 +436,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 8
       }
     },
     {
@@ -506,57 +471,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
-      }
-    },
-    {
-      "name": "ReallocWeightTable",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightTable",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vaultRegistry",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 11
+        "value": 9
       }
     },
     {
@@ -601,7 +516,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 10
       }
     },
     {
@@ -651,7 +566,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 11
       }
     },
     {
@@ -716,7 +631,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 14
+        "value": 12
       }
     },
     {
@@ -786,7 +701,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 15
+        "value": 13
       }
     },
     {
@@ -848,7 +763,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 16
+        "value": 14
       }
     },
     {
@@ -888,18 +803,6 @@
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "ncnFeeWallet",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
-        },
-        {
-          "name": "receiverToClose",
-          "isMut": true,
-          "isSigner": false,
-          "isOptional": true
         }
       ],
       "args": [
@@ -910,7 +813,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 17
+        "value": 15
       }
     },
     {
@@ -966,7 +869,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 18
+        "value": 16
       }
     },
     {
@@ -1003,7 +906,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 19
+        "value": 17
       }
     },
     {
@@ -1046,7 +949,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 20
+        "value": 18
       }
     },
     {
@@ -1088,7 +991,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 21
+        "value": 19
       }
     },
     {
@@ -1129,7 +1032,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 22
+        "value": 20
       }
     }
   ],

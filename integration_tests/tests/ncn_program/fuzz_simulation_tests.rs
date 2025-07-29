@@ -269,14 +269,6 @@ mod fuzz_tests {
                     )
                     .await?;
 
-                // Track vault costs
-                for vault_idx in 0..mint_config.vault_count {
-                    cost_tracker.add_account_cost("Vault", 1200);
-                    cost_tracker.add_account_cost("NCN-Vault Ticket", 300);
-                    cost_tracker.add_transaction_cost("Initialize Vault", 1);
-                    cost_tracker.add_transaction_cost("Create NCN-Vault Relationship", 1);
-                }
-
                 println!(
                     "  ✅ Created {} vaults for mint {}",
                     mint_config.vault_count,

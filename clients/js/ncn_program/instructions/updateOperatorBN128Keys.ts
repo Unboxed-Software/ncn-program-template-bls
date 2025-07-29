@@ -35,7 +35,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR = 6;
+export const UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR = 5;
 
 export function getUpdateOperatorBN128KeysDiscriminatorBytes() {
   return getU8Encoder().encode(UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR);

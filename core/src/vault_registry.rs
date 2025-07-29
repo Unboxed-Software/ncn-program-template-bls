@@ -338,8 +338,8 @@ mod tests {
 
         let expected_total = size_of::<Pubkey>() // ncn
             + 1 // bump
-            + size_of::<StMintEntry>() * 1 // st_mint_list
-            + size_of::<VaultEntry>() * 1; // vault_list
+            + size_of::<StMintEntry>() // st_mint_list
+            + size_of::<VaultEntry>(); // vault_list
 
         assert_eq!(size_of::<VaultRegistry>(), expected_total);
 

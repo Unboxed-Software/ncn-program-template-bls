@@ -27,7 +27,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REGISTER_VAULT_DISCRIMINATOR = 3;
+export const REGISTER_VAULT_DISCRIMINATOR = 2;
 
 export function getRegisterVaultDiscriminatorBytes() {
   return getU8Encoder().encode(REGISTER_VAULT_DISCRIMINATOR);

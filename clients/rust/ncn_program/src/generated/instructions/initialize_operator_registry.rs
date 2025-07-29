@@ -70,7 +70,7 @@ pub struct InitializeOperatorRegistryInstructionData {
 
 impl InitializeOperatorRegistryInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 4 }
+        Self { discriminator: 3 }
     }
 }
 

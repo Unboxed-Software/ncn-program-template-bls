@@ -9,9 +9,7 @@ use jito_bytemuck::{
 use jito_vault_core::vault_operator_delegation::VaultOperatorDelegation;
 use shank::{ShankAccount, ShankType};
 use solana_bn254::compression::prelude::alt_bn128_g1_decompress;
-use solana_program::{
-    account_info::AccountInfo, epoch_rewards, msg, program_error::ProgramError, pubkey::Pubkey,
-};
+use solana_program::{account_info::AccountInfo, msg, program_error::ProgramError, pubkey::Pubkey};
 use spl_math::precise_number::PreciseNumber;
 
 use crate::{

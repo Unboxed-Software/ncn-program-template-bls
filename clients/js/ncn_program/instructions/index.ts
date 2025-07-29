@@ -22,8 +22,6 @@ export * from './initializeVaultRegistry';
 export * from './initializeWeightTable';
 export * from './reallocEpochSnapshot';
 export * from './reallocOperatorRegistry';
-export * from './reallocVaultRegistry';
-export * from './reallocWeightTable';
 export * from './registerOperator';
 export * from './registerVault';
 export * from './setEpochWeights';

@@ -107,7 +107,6 @@ mod tests {
 
         {
             fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
-            let epoch_state = ncn_program_client.get_epoch_state(ncn, epoch).await?;
         }
 
         {

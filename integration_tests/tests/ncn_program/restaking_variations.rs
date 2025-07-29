@@ -2,7 +2,7 @@
 mod tests {
 
     use jito_restaking_core::MAX_FEE_BPS;
-    use ncn_program_core::{epoch_snapshot, error::NCNProgramError};
+    use ncn_program_core::error::NCNProgramError;
     use solana_sdk::msg;
 
     use crate::fixtures::{

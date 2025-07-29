@@ -27,7 +27,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REALLOC_OPERATOR_REGISTRY_DISCRIMINATOR = 7;
+export const REALLOC_OPERATOR_REGISTRY_DISCRIMINATOR = 6;
 
 export function getReallocOperatorRegistryDiscriminatorBytes() {
   return getU8Encoder().encode(REALLOC_OPERATOR_REGISTRY_DISCRIMINATOR);
