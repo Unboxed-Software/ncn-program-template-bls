@@ -317,7 +317,7 @@ mod tests {
         // Create a test message to sign
         let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
 
-        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 100); // Let's say these operators didn't sign
+        let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 85); // Let's say these operators didn't sign
 
         let mut signitures: Vec<G1Point> = vec![];
         let mut apk2_pubkeys: Vec<G2Point> = vec![];
