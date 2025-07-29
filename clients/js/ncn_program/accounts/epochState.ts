@@ -53,7 +53,6 @@ export type EpochState = {
   epoch: bigint;
   bump: number;
   slotCreated: bigint;
-  operatorCount: bigint;
   vaultCount: bigint;
   accountStatus: EpochAccountStatus;
   setWeightProgress: Progress;
@@ -67,7 +66,6 @@ export type EpochStateArgs = {
   epoch: number | bigint;
   bump: number;
   slotCreated: number | bigint;
-  operatorCount: number | bigint;
   vaultCount: number | bigint;
   accountStatus: EpochAccountStatusArgs;
   setWeightProgress: ProgressArgs;
@@ -82,7 +80,6 @@ export function getEpochStateEncoder(): Encoder<EpochStateArgs> {
     ['epoch', getU64Encoder()],
     ['bump', getU8Encoder()],
     ['slotCreated', getU64Encoder()],
-    ['operatorCount', getU64Encoder()],
     ['vaultCount', getU64Encoder()],
     ['accountStatus', getEpochAccountStatusEncoder()],
     ['setWeightProgress', getProgressEncoder()],
@@ -101,7 +98,6 @@ export function getEpochStateDecoder(): Decoder<EpochState> {
     ['epoch', getU64Decoder()],
     ['bump', getU8Decoder()],
     ['slotCreated', getU64Decoder()],
-    ['operatorCount', getU64Decoder()],
     ['vaultCount', getU64Decoder()],
     ['accountStatus', getEpochAccountStatusDecoder()],
     ['setWeightProgress', getProgressDecoder()],

@@ -163,10 +163,6 @@ pub struct EpochState {
     /// The time this snapshot was created
     slot_created: PodU64,
 
-    /// The number of operators
-    // TODO: check if we need this
-    operator_count: PodU64,
-
     /// The number of vaults
     vault_count: PodU64,
 
@@ -197,7 +193,6 @@ impl EpochState {
             epoch: PodU64::from(epoch),
             bump,
             slot_created: PodU64::from(slot_created),
-            operator_count: PodU64::from(0),
             vault_count: PodU64::from(0),
             account_status: EpochAccountStatus::default(),
             set_weight_progress: Progress::default(),
@@ -312,10 +307,6 @@ impl EpochState {
 
     pub fn is_closing(&self) -> bool {
         self.is_closing.into()
-    }
-
-    pub fn operator_count(&self) -> u64 {
-        self.operator_count.into()
     }
 
     pub fn vault_count(&self) -> u64 {
@@ -467,7 +458,6 @@ impl fmt::Display for EpochState {
        writeln!(f, "  Epoch:                        {}", self.epoch())?;
        writeln!(f, "  Bump:                         {}", self.bump)?;
        writeln!(f, "  Slot Created:                 {}", self.slot_created())?;
-       writeln!(f, "  Operator Count:               {}", self.operator_count())?;
        writeln!(f, "  Vault Count:                  {}", self.vault_count())?;
 
        writeln!(f, "\nAccount Status:")?;

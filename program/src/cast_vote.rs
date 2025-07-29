@@ -54,15 +54,8 @@ pub fn process_cast_vote(
     let epoch_snapshot_data = epoch_snapshot.data.borrow();
     let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
 
-    let total_stake_weights = {
-        // TODO: Check if we need this
-        // if !epoch_snapshot.finalized() {
-        //     msg!("Error: Epoch snapshot not finalized for epoch: {}", epoch);
-        //     return Err(NCNProgramError::EpochSnapshotNotFinalized.into());
-        // }
-
-        StakeWeights::new(epoch_snapshot.operators_can_vote_count() as u128)
-    };
+    let total_stake_weights =
+        { StakeWeights::new(epoch_snapshot.operators_can_vote_count() as u128) };
 
     msg!("Total operators: {}", total_stake_weights.stake_weight());
 

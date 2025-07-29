@@ -126,12 +126,6 @@ pub fn process_snapshot_vault_operator_delegation(
 
     if !cloned_operator_snapshot.is_active() {}
 
-    // TODO: Check if we need this
-    // if cloned_operator_snapshot.last_snapshot_epoch() >= epoch {
-    //     msg!("Error: Operator snapshot is already taked");
-    //     return Err(NCNProgramError::OperatorSnapshotAlreadyTaked.into());
-    // }
-
     // Check if operator has valid BN128 G1 pubkey and determine active status
     let is_active = {
         if !cloned_operator_snapshot.have_valid_bn128_g1_pubkey() {

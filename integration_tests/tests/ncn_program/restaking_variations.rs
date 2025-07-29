@@ -3,7 +3,6 @@ mod tests {
 
     use jito_restaking_core::MAX_FEE_BPS;
     use ncn_program_core::error::NCNProgramError;
-    use solana_sdk::msg;
 
     use crate::fixtures::{
         ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,

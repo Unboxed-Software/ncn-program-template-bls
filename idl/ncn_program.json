@@ -1322,12 +1322,6 @@
             }
           },
           {
-            "name": "operatorCount",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
             "name": "vaultCount",
             "type": {
               "defined": "PodU64"
