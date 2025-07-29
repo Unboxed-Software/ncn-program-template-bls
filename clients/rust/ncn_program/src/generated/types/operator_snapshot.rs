@@ -20,10 +20,12 @@ pub struct OperatorSnapshot {
     pub operator: Pubkey,
     pub g1_pubkey: [u8; 32],
     pub slot_created: u64,
-    pub slot_last_snapshoted: u64,
+    pub last_snapshot_slot: u64,
     pub is_active: bool,
     pub ncn_operator_index: u64,
     pub operator_index: u64,
     pub has_minimum_stake_weight: bool,
+    pub has_minimum_stake_weight_next_epoch: bool,
     pub stake_weight: StakeWeights,
+    pub next_epoch_stake_weight: StakeWeights,
 }

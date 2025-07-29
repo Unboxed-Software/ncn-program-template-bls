@@ -1244,12 +1244,6 @@
             }
           },
           {
-            "name": "slotFinalized",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
             "name": "operatorCount",
             "type": {
               "defined": "PodU64"
@@ -1291,6 +1285,12 @@
             "name": "minimumStakeWeight",
             "type": {
               "defined": "StakeWeights"
+            }
+          },
+          {
+            "name": "lastSnapshotSlot",
+            "type": {
+              "defined": "PodU64"
             }
           }
         ]
@@ -1341,12 +1341,6 @@
           },
           {
             "name": "setWeightProgress",
-            "type": {
-              "defined": "Progress"
-            }
-          },
-          {
-            "name": "epochSnapshotProgress",
             "type": {
               "defined": "Progress"
             }
@@ -1519,7 +1513,7 @@
             }
           },
           {
-            "name": "slotLastSnapshoted",
+            "name": "lastSnapshotSlot",
             "type": {
               "defined": "PodU64"
             }
@@ -1549,7 +1543,19 @@
             }
           },
           {
+            "name": "hasMinimumStakeWeightNextEpoch",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
             "name": "stakeWeight",
+            "type": {
+              "defined": "StakeWeights"
+            }
+          },
+          {
+            "name": "nextEpochStakeWeight",
             "type": {
               "defined": "StakeWeights"
             }
@@ -1592,10 +1598,6 @@
           },
           {
             "name": "weightTable",
-            "type": "u8"
-          },
-          {
-            "name": "epochSnapshot",
             "type": "u8"
           }
         ]

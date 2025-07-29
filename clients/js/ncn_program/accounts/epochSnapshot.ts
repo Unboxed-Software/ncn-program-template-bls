@@ -56,13 +56,13 @@ export type EpochSnapshot = {
   epoch: bigint;
   bump: number;
   slotCreated: bigint;
-  slotFinalized: bigint;
   operatorCount: bigint;
   operatorsRegistered: bigint;
   operatorsCanVoteCount: bigint;
   totalAggG1Pubkey: ReadonlyUint8Array;
   operatorSnapshots: Array<OperatorSnapshot>;
   minimumStakeWeight: StakeWeights;
+  lastSnapshotSlot: bigint;
 };
 
 export type EpochSnapshotArgs = {
@@ -71,13 +71,13 @@ export type EpochSnapshotArgs = {
   epoch: number | bigint;
   bump: number;
   slotCreated: number | bigint;
-  slotFinalized: number | bigint;
   operatorCount: number | bigint;
   operatorsRegistered: number | bigint;
   operatorsCanVoteCount: number | bigint;
   totalAggG1Pubkey: ReadonlyUint8Array;
   operatorSnapshots: Array<OperatorSnapshotArgs>;
   minimumStakeWeight: StakeWeightsArgs;
+  lastSnapshotSlot: number | bigint;
 };
 
 export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
@@ -87,7 +87,6 @@ export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
     ['epoch', getU64Encoder()],
     ['bump', getU8Encoder()],
     ['slotCreated', getU64Encoder()],
-    ['slotFinalized', getU64Encoder()],
     ['operatorCount', getU64Encoder()],
     ['operatorsRegistered', getU64Encoder()],
     ['operatorsCanVoteCount', getU64Encoder()],
@@ -97,6 +96,7 @@ export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
       getArrayEncoder(getOperatorSnapshotEncoder(), { size: 256 }),
     ],
     ['minimumStakeWeight', getStakeWeightsEncoder()],
+    ['lastSnapshotSlot', getU64Encoder()],
   ]);
 }
 
@@ -107,7 +107,6 @@ export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
     ['epoch', getU64Decoder()],
     ['bump', getU8Decoder()],
     ['slotCreated', getU64Decoder()],
-    ['slotFinalized', getU64Decoder()],
     ['operatorCount', getU64Decoder()],
     ['operatorsRegistered', getU64Decoder()],
     ['operatorsCanVoteCount', getU64Decoder()],
@@ -117,6 +116,7 @@ export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
       getArrayDecoder(getOperatorSnapshotDecoder(), { size: 256 }),
     ],
     ['minimumStakeWeight', getStakeWeightsDecoder()],
+    ['lastSnapshotSlot', getU64Decoder()],
   ]);
 }
 

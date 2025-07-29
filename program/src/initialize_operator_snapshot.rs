@@ -54,7 +54,7 @@ pub fn process_initialize_operator_snapshot(
         operator,
         false,
     )?;
-    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, true)?;
+    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, true)?;
     OperatorRegistry::load(program_id, operator_registry, ncn.key, false)?;
     load_system_program(system_program)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
@@ -155,14 +155,6 @@ pub fn process_initialize_operator_snapshot(
     if !is_active {
         // Increment operator registration for an inactive operator
         epoch_snapshot_account.increment_operator_registration(current_slot)?;
-    }
-
-    // Update Epoch State
-    {
-        let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
-        let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
-        epoch_state_account
-            .update_initialize_operator_snapshot(ncn_operator_index as usize, is_active)?;
     }
 
     Ok(())

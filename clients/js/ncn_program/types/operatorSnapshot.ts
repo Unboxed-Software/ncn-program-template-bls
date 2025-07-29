@@ -37,24 +37,28 @@ export type OperatorSnapshot = {
   operator: Address;
   g1Pubkey: ReadonlyUint8Array;
   slotCreated: bigint;
-  slotLastSnapshoted: bigint;
+  lastSnapshotSlot: bigint;
   isActive: number;
   ncnOperatorIndex: bigint;
   operatorIndex: bigint;
   hasMinimumStakeWeight: number;
+  hasMinimumStakeWeightNextEpoch: number;
   stakeWeight: StakeWeights;
+  nextEpochStakeWeight: StakeWeights;
 };
 
 export type OperatorSnapshotArgs = {
   operator: Address;
   g1Pubkey: ReadonlyUint8Array;
   slotCreated: number | bigint;
-  slotLastSnapshoted: number | bigint;
+  lastSnapshotSlot: number | bigint;
   isActive: number;
   ncnOperatorIndex: number | bigint;
   operatorIndex: number | bigint;
   hasMinimumStakeWeight: number;
+  hasMinimumStakeWeightNextEpoch: number;
   stakeWeight: StakeWeightsArgs;
+  nextEpochStakeWeight: StakeWeightsArgs;
 };
 
 export function getOperatorSnapshotEncoder(): Encoder<OperatorSnapshotArgs> {
@@ -62,12 +66,14 @@ export function getOperatorSnapshotEncoder(): Encoder<OperatorSnapshotArgs> {
     ['operator', getAddressEncoder()],
     ['g1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
     ['slotCreated', getU64Encoder()],
-    ['slotLastSnapshoted', getU64Encoder()],
+    ['lastSnapshotSlot', getU64Encoder()],
     ['isActive', getBoolEncoder()],
     ['ncnOperatorIndex', getU64Encoder()],
     ['operatorIndex', getU64Encoder()],
     ['hasMinimumStakeWeight', getBoolEncoder()],
+    ['hasMinimumStakeWeightNextEpoch', getBoolEncoder()],
     ['stakeWeight', getStakeWeightsEncoder()],
+    ['nextEpochStakeWeight', getStakeWeightsEncoder()],
   ]);
 }
 
@@ -76,12 +82,14 @@ export function getOperatorSnapshotDecoder(): Decoder<OperatorSnapshot> {
     ['operator', getAddressDecoder()],
     ['g1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],
     ['slotCreated', getU64Decoder()],
-    ['slotLastSnapshoted', getU64Decoder()],
+    ['lastSnapshotSlot', getU64Decoder()],
     ['isActive', getBoolDecoder()],
     ['ncnOperatorIndex', getU64Decoder()],
     ['operatorIndex', getU64Decoder()],
     ['hasMinimumStakeWeight', getBoolDecoder()],
+    ['hasMinimumStakeWeightNextEpoch', getBoolDecoder()],
     ['stakeWeight', getStakeWeightsDecoder()],
+    ['nextEpochStakeWeight', getStakeWeightsDecoder()],
   ]);
 }
 

@@ -42,7 +42,7 @@ pub fn process_initialize_epoch_snapshot(
     load_system_program(system_program)?;
 
     let (epoch_snapshot_pubkey, epoch_snapshot_bump, mut epoch_snapshot_seeds) =
-        EpochSnapshot::find_program_address(program_id, ncn.key, epoch);
+        EpochSnapshot::find_program_address(program_id, ncn.key);
     epoch_snapshot_seeds.push(vec![epoch_snapshot_bump]);
 
     if epoch_snapshot_pubkey.ne(epoch_snapshot.key) {

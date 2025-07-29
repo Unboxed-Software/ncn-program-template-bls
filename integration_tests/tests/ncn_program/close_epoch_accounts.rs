@@ -227,33 +227,6 @@ mod tests {
             assert!(result.is_none());
         }
 
-        // Close Epoch Snapshot
-        {
-            let (epoch_snapshot, _, _) =
-                EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, epoch_snapshot)
-                .await?;
-
-            let result = fixture.get_account(&epoch_snapshot).await?;
-            assert!(result.is_none());
-        }
-        // Try To Create Epoch Snapshot again
-        {
-            let (epoch_snapshot, _, _) =
-                EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            let result = ncn_program_client
-                .do_initialize_epoch_snapshot(ncn, epoch_to_close)
-                .await;
-
-            assert_ncn_program_error(result, NCNProgramError::EpochIsClosingDown, None);
-
-            let result = fixture.get_account(&epoch_snapshot).await?;
-            assert!(result.is_none());
-        }
-
         // Close Epoch State
         {
             let (epoch_state, _, _) =
@@ -359,31 +332,6 @@ mod tests {
 
             ncn_program_client
                 .do_close_epoch_account(ncn, epoch_to_close, good_weight_table)
-                .await?;
-        }
-
-        // Try Close Bad Epoch Snapshot
-        {
-            let (bad_epoch_epoch_snapshot, _, _) =
-                EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch_to_close + 1);
-            let (bad_ncn_epoch_snapshot, _, _) =
-                EpochSnapshot::find_program_address(&ncn_program::id(), &bad_ncn, epoch_to_close);
-            let (good_epoch_snapshot, _, _) =
-                EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            let bad_epoch_result = ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, bad_epoch_epoch_snapshot)
-                .await;
-
-            let bad_ncn_result = ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, bad_ncn_epoch_snapshot)
-                .await;
-
-            assert!(bad_epoch_result.is_err());
-            assert!(bad_ncn_result.is_err());
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, good_epoch_snapshot)
                 .await?;
         }
 

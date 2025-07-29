@@ -33,7 +33,7 @@ mod tests {
         // Check initial size is MAX_REALLOC_BYTES
         // OperatorSnapshot is now embedded in EpochSnapshot, so we verify the epoch snapshot exists
         let epoch_snapshot_address =
-            EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
+            EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let raw_account = fixture.get_account(&epoch_snapshot_address).await?.unwrap();
         assert_eq!(raw_account.owner, ncn_program::id());
 

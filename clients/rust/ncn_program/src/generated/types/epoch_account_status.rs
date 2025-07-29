@@ -13,5 +13,4 @@ use borsh::BorshSerialize;
 pub struct EpochAccountStatus {
     pub epoch_state: u8,
     pub weight_table: u8,
-    pub epoch_snapshot: u8,
 }

@@ -108,8 +108,8 @@ mod tests {
         {
             fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
             let epoch_state = ncn_program_client.get_epoch_state(ncn, epoch).await?;
-            assert_eq!(epoch_state.operator_count(), OPERATOR_COUNT as u64);
-            assert!(!epoch_state.epoch_snapshot_progress().is_invalid());
+            // TODO: epoch state is not tracking operator count now, check if we need that
+            // assert_eq!(epoch_state.operator_count(), OPERATOR_COUNT as u64);
         }
 
         {
@@ -156,16 +156,6 @@ mod tests {
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
             let epoch_state = ncn_program_client.get_epoch_state(ncn, epoch).await?;
-
-            assert!(epoch_state.epoch_snapshot_progress().is_complete());
-            assert_eq!(
-                epoch_state.epoch_snapshot_progress().tally(),
-                OPERATOR_COUNT as u64
-            );
-            assert_eq!(
-                epoch_state.epoch_snapshot_progress().total(),
-                OPERATOR_COUNT as u64
-            );
 
             for i in 0..OPERATOR_COUNT {
                 assert!(epoch_state.operator_snapshot_progress(i).is_complete());

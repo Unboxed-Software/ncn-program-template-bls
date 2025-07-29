@@ -44,7 +44,6 @@ mod tests {
     #[tokio::test]
     async fn test_intermission_test_ncn_functions() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
-        let mut ncn_program_client = fixture.ncn_program_client();
 
         const OPERATOR_COUNT: usize = 1;
 
@@ -52,15 +51,6 @@ mod tests {
             .create_initial_test_ncn(OPERATOR_COUNT, None)
             .await?;
         fixture.snapshot_test_ncn(&test_ncn).await?;
-
-        let clock = fixture.clock().await;
-        let epoch = clock.epoch;
-
-        let epoch_snapshot = ncn_program_client
-            .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        assert!(epoch_snapshot.finalized());
 
         fixture.vote_test_ncn(&test_ncn).await?;
 
@@ -70,22 +60,12 @@ mod tests {
     #[tokio::test]
     async fn test_multiple_operators() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
-        let mut ncn_program_client = fixture.ncn_program_client();
         const OPERATOR_COUNT: usize = 10;
 
         let test_ncn = fixture
             .create_initial_test_ncn(OPERATOR_COUNT, None)
             .await?;
         fixture.snapshot_test_ncn(&test_ncn).await?;
-
-        let clock = fixture.clock().await;
-        let epoch = clock.epoch;
-
-        let epoch_snapshot = ncn_program_client
-            .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        assert!(epoch_snapshot.finalized());
 
         fixture.vote_test_ncn(&test_ncn).await?;
 

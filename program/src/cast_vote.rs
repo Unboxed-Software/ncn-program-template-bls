@@ -49,16 +49,17 @@ pub fn process_cast_vote(
     EpochState::load(program_id, epoch_state, ncn.key, epoch, false)?;
     NcnConfig::load(program_id, ncn_config, ncn.key, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
-    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, false)?;
+    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, false)?;
 
     let epoch_snapshot_data = epoch_snapshot.data.borrow();
     let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
 
     let total_stake_weights = {
-        if !epoch_snapshot.finalized() {
-            msg!("Error: Epoch snapshot not finalized for epoch: {}", epoch);
-            return Err(NCNProgramError::EpochSnapshotNotFinalized.into());
-        }
+        // TODO: Check if we need this
+        // if !epoch_snapshot.finalized() {
+        //     msg!("Error: Epoch snapshot not finalized for epoch: {}", epoch);
+        //     return Err(NCNProgramError::EpochSnapshotNotFinalized.into());
+        // }
 
         StakeWeights::new(epoch_snapshot.operators_can_vote_count() as u128)
     };

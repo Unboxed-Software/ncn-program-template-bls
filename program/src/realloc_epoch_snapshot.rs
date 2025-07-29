@@ -42,7 +42,7 @@ pub fn process_realloc_epoch_snapshot(
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
 
     let (epoch_snapshot_pda, epoch_snapshot_bump, _) =
-        EpochSnapshot::find_program_address(program_id, ncn.key, epoch);
+        EpochSnapshot::find_program_address(program_id, ncn.key);
 
     if epoch_snapshot_pda != *epoch_snapshot.key {
         msg!("Error: Epoch snapshot account is not at the correct PDA");
@@ -120,13 +120,6 @@ pub fn process_realloc_epoch_snapshot(
             operator_count,
             minimum_stake_weight,
         );
-
-        {
-            let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
-            let epoch_state_account =
-                EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
-            epoch_state_account.update_initialize_epoch_snapshot(operator_count);
-        }
     } else {
         msg!("Epoch snapshot already initialized, skipping initialization");
     }

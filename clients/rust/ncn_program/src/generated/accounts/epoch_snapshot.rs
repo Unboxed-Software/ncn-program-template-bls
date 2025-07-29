@@ -23,7 +23,6 @@ pub struct EpochSnapshot {
     pub epoch: u64,
     pub bump: u8,
     pub slot_created: u64,
-    pub slot_finalized: u64,
     pub operator_count: u64,
     pub operators_registered: u64,
     pub operators_can_vote_count: u64,
@@ -31,6 +30,7 @@ pub struct EpochSnapshot {
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub operator_snapshots: [OperatorSnapshot; 256],
     pub minimum_stake_weight: StakeWeights,
+    pub last_snapshot_slot: u64,
 }
 
 impl EpochSnapshot {

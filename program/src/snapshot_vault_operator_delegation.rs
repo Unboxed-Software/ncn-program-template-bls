@@ -89,7 +89,7 @@ pub fn process_snapshot_vault_operator_delegation(
     let (_, ncn_epoch_length) = load_ncn_epoch(restaking_config, current_slot, None)?;
 
     WeightTable::load(program_id, weight_table, ncn.key, epoch, false)?;
-    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, epoch, true)?;
+    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, true)?;
 
     // check vault is up to date
     let vault_needs_update = {
@@ -126,10 +126,11 @@ pub fn process_snapshot_vault_operator_delegation(
 
     if !cloned_operator_snapshot.is_active() {}
 
-    if cloned_operator_snapshot.slot_last_snapshoted() >= current_slot {
-        msg!("Error: Operator snapshot is already taked");
-        return Err(NCNProgramError::OperatorSnapshotAlreadyTaked.into());
-    }
+    // TODO: Check if we need this
+    // if cloned_operator_snapshot.last_snapshot_epoch() >= epoch {
+    //     msg!("Error: Operator snapshot is already taked");
+    //     return Err(NCNProgramError::OperatorSnapshotAlreadyTaked.into());
+    // }
 
     // Check if operator has valid BN128 G1 pubkey and determine active status
     let is_active = {
@@ -172,43 +173,44 @@ pub fn process_snapshot_vault_operator_delegation(
 
     msg!("Vault operator delegation active status: {}", is_active);
 
-    let total_stake_weight = {
+    let (total_stake_weight, next_epoch_stake_weight) = {
         let weight_table_data = weight_table.data.borrow();
         let weight_table_account = WeightTable::try_from_slice_unchecked(&weight_table_data)?;
 
         weight_table_account.check_registry_for_vault(vault_index)?;
 
-        let total_stake_weight: u128 = if is_active {
+        let (total_stake_weight, next_epoch_stake_weight): (u128, u128) = if is_active {
             let vault_operator_delegation_data = vault_operator_delegation.data.borrow();
             let vault_operator_delegation_account =
                 VaultOperatorDelegation::try_from_slice_unchecked(&vault_operator_delegation_data)?;
 
-            OperatorSnapshot::calculate_stake_weight(
+            OperatorSnapshot::calculate_stake_weights(
                 vault_operator_delegation_account,
                 weight_table_account,
                 &st_mint,
             )?
         } else {
-            0u128
+            (0u128, 0u128)
         };
 
-        total_stake_weight
+        (total_stake_weight, next_epoch_stake_weight)
     };
 
     // Increment vault operator delegation and check if finalized
-    let stake_weights = StakeWeights::snapshot(total_stake_weight)?;
-    let (has_minimum_stake_weight, ncn_operator_index, is_snapshoted) = {
+    let this_epoch_stake_weight = StakeWeights::snapshot(total_stake_weight)?;
+    let next_epoch_stake_weight = StakeWeights::snapshot(next_epoch_stake_weight)?;
+    let (ncn_operator_index, is_snapshoted) = {
         let is_snapshoted = cloned_operator_snapshot.is_snapshoted();
         cloned_operator_snapshot.snapshot_vault_operator_delegation(
             current_slot,
-            &stake_weights,
+            &this_epoch_stake_weight,
+            &next_epoch_stake_weight,
             epoch_snapshot_account.minimum_stake_weight(),
         )?;
 
-        let has_minimum_stake_weight = cloned_operator_snapshot.has_minimum_stake_weight();
         let ncn_operator_index = cloned_operator_snapshot.ncn_operator_index();
 
-        (has_minimum_stake_weight, ncn_operator_index, is_snapshoted)
+        (ncn_operator_index, is_snapshoted)
     };
 
     // If operator is finalized, increment operator registration

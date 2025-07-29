@@ -17,11 +17,7 @@ import {
   type Encoder,
 } from '@solana/web3.js';
 
-export type EpochAccountStatus = {
-  epochState: number;
-  weightTable: number;
-  epochSnapshot: number;
-};
+export type EpochAccountStatus = { epochState: number; weightTable: number };
 
 export type EpochAccountStatusArgs = EpochAccountStatus;
 
@@ -29,7 +25,6 @@ export function getEpochAccountStatusEncoder(): Encoder<EpochAccountStatusArgs> 
   return getStructEncoder([
     ['epochState', getU8Encoder()],
     ['weightTable', getU8Encoder()],
-    ['epochSnapshot', getU8Encoder()],
   ]);
 }
 
@@ -37,7 +32,6 @@ export function getEpochAccountStatusDecoder(): Decoder<EpochAccountStatus> {
   return getStructDecoder([
     ['epochState', getU8Decoder()],
     ['weightTable', getU8Decoder()],
-    ['epochSnapshot', getU8Decoder()],
   ]);
 }
 

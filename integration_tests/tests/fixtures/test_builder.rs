@@ -661,6 +661,18 @@ impl TestBuilder {
         Ok(())
     }
 
+    pub async fn update_snapshot_test_ncn_new_epoch(
+        &mut self,
+        test_ncn: &TestNcn,
+    ) -> TestResult<()> {
+        self.add_epoch_state_for_test_ncn(test_ncn).await?;
+        self.add_weights_for_test_ncn(test_ncn).await?;
+        self.add_vault_operator_delegation_snapshots_to_test_ncn(test_ncn)
+            .await?;
+
+        Ok(())
+    }
+
     /// Casts votes (default WeatherStatus) for all active operators in the TestNcn for the current epoch.
     // 11 - Cast all votes for active operators
     pub async fn cast_votes_for_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
@@ -765,19 +777,6 @@ impl TestBuilder {
         }
 
         // Close Accounts in reverse order of creation
-
-        // Epoch Snapshot
-        {
-            let (epoch_snapshot, _, _) =
-                EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, epoch_snapshot)
-                .await?;
-
-            let result = self.get_account(&epoch_snapshot).await?;
-            assert!(result.is_none());
-        }
 
         // Weight Table
         {

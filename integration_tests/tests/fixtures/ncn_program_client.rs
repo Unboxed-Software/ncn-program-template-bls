@@ -189,7 +189,7 @@ impl NCNProgramClient {
         ncn: Pubkey,
         ncn_epoch: u64,
     ) -> TestResult<Box<EpochSnapshot>> {
-        let address = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, ncn_epoch).0;
+        let address = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let raw_account = Box::new(self.banks_client.get_account(address).await?.unwrap());
 
@@ -383,9 +383,6 @@ impl NCNProgramClient {
         epoch: u64,
     ) -> TestResult<()> {
         self.do_initialize_weight_table(ncn, epoch).await?;
-        // let num_reallocs = (WeightTable::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-        // self.do_realloc_weight_table(ncn, epoch, num_reallocs)
-        //     .await?;
         Ok(())
     }
 
@@ -740,7 +737,7 @@ impl NCNProgramClient {
         let (epoch_marker, _, _) =
             EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
         let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
+        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
@@ -787,7 +784,7 @@ impl NCNProgramClient {
     ) -> TestResult<()> {
         let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let weight_table = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
+        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
         self.realloc_epoch_snapshot(
@@ -865,7 +862,7 @@ impl NCNProgramClient {
             NcnOperatorState::find_program_address(&jito_restaking_program::id(), &ncn, &operator)
                 .0;
         let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
+        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
@@ -918,7 +915,7 @@ impl NCNProgramClient {
 
         let config_pda = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
+        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let vault_ncn_ticket =
             VaultNcnTicket::find_program_address(&jito_vault_program::id(), &vault, &ncn).0;
@@ -971,7 +968,7 @@ impl NCNProgramClient {
         message: [u8; 32],
     ) -> Result<(), TestError> {
         let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn, epoch).0;
+        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         self.cast_vote(
             ncn_config,
