@@ -16,7 +16,6 @@ use crate::{
         crank_snapshot, create_epoch_snapshot, create_epoch_state, create_operator_registry,
         create_operator_snapshot, create_vault_registry, create_weight_table, full_vault_update,
         register_operator, register_vault, set_epoch_weights, snapshot_vault_operator_delegation,
-        update_all_vaults_in_network,
     },
     keeper::keeper_loop::startup_ncn_keeper,
 };
@@ -183,7 +182,6 @@ impl CliHandler {
 
             // Cranks
             ProgramCommand::CrankRegisterVaults {} => crank_register_vaults(self).await,
-            ProgramCommand::CrankUpdateAllVaults {} => update_all_vaults_in_network(self).await,
 
             ProgramCommand::CrankSnapshot {} => crank_snapshot(self, self.epoch).await,
             ProgramCommand::CrankCloseEpochAccounts {} => {
@@ -646,7 +644,7 @@ impl CliHandler {
 
                 Ok(())
             }
-            ProgramCommand::FullUpdateVaults {} => {
+            ProgramCommand::FullUpdateVault {} => {
                 full_vault_update(self, self.vault()).await?;
                 Ok(())
             }

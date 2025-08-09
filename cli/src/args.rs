@@ -134,7 +134,6 @@ pub enum ProgramCommand {
     },
 
     /// Crank Functions
-    CrankUpdateAllVaults {},
     CrankRegisterVaults {},
     CrankSnapshot {},
     CrankCloseEpochAccounts {},
@@ -291,7 +290,7 @@ pub enum ProgramCommand {
     GetVaultOperatorStakes,
 
     // GetAllOptedInValidators,
-    FullUpdateVaults {},
+    FullUpdateVault {},
 }
 
 #[rustfmt::skip]

@@ -1060,15 +1060,6 @@ pub async fn check_created(handler: &CliHandler, address: &Pubkey) -> Result<()>
     Ok(())
 }
 
-pub async fn update_all_vaults_in_network(handler: &CliHandler) -> Result<()> {
-    let vaults = get_all_vaults(handler).await?;
-    for vault in vaults {
-        full_vault_update(handler, &vault).await?;
-    }
-
-    Ok(())
-}
-
 pub async fn full_vault_update(handler: &CliHandler, vault: &Pubkey) -> Result<()> {
     let payer = handler.keypair()?;
 
