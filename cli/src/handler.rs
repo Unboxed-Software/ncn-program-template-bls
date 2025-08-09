@@ -19,7 +19,6 @@ use crate::{
         update_all_vaults_in_network,
     },
     keeper::keeper_loop::startup_ncn_keeper,
-    operator::operator_loop::startup_operator_loop,
 };
 use anyhow::{anyhow, Result};
 use base64::{engine::general_purpose, Engine};
@@ -182,16 +181,6 @@ impl CliHandler {
                 error_timeout_ms,
             } => startup_ncn_keeper(self, loop_timeout_ms, error_timeout_ms).await,
 
-            // Operator Keeper
-            ProgramCommand::RunOperator {
-                loop_timeout_ms,
-                error_timeout_ms,
-                operator,
-            } => {
-                let operator = Pubkey::from_str(&operator)
-                    .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
-                startup_operator_loop(self, loop_timeout_ms, error_timeout_ms, operator).await
-            }
             // Cranks
             ProgramCommand::CrankRegisterVaults {} => crank_register_vaults(self).await,
             ProgramCommand::CrankUpdateAllVaults {} => update_all_vaults_in_network(self).await,

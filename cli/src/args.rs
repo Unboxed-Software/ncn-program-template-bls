@@ -133,25 +133,6 @@ pub enum ProgramCommand {
         error_timeout_ms: u64,
     },
 
-    /// Operator Keeper
-    RunOperator {
-        #[arg(long, help = "Operator address")]
-        operator: String,
-        #[arg(
-            long,
-            env,
-            default_value_t = 600_000, // 10 minutes
-            help = "Maximum time in milliseconds between keeper loop iterations"
-        )]
-        loop_timeout_ms: u64,
-        #[arg(
-            long,
-            env,
-            default_value_t = 10_000, // 10 seconds
-            help = "Timeout in milliseconds when an error occurs before retrying"
-        )]
-        error_timeout_ms: u64,
-    },
     /// Crank Functions
     CrankUpdateAllVaults {},
     CrankRegisterVaults {},
