@@ -107,7 +107,11 @@ pub fn process_initialize_operator_snapshot(
 
         ncn_operator_okay && operator_ncn_okay
     };
-    msg!("Operator is active: {}", is_active);
+
+    if !is_active {
+        msg!("NCN <> operator Opt-in state is inactive");
+        return Err(NCNProgramError::NCNOperatorOptInInactive.into());
+    }
 
     let operator_index = {
         let operator_data = operator.data.borrow();

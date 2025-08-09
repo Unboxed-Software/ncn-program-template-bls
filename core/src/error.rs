@@ -23,6 +23,8 @@ pub enum NCNProgramError {
     CastToU64Error,
     #[error("Cast to u128 error")]
     CastToU128Error,
+    #[error("NCN Operator Opt In Inactive")]
+    NCNOperatorOptInInactive,
 
     #[error("Incorrect weight table admin")]
     IncorrectWeightTableAdmin = 0x2200,
