@@ -18,7 +18,6 @@ A CLI for creating and managing the ncn program
 ###### **Subcommands:**
 
 - `run-keeper` — NCN Keeper
-- `run-operator` — Operator Keeper
 - `crank-update-all-vaults` — Crank Functions
 - `crank-register-vaults` —
 - `crank-snapshot` —
@@ -121,12 +120,6 @@ NCN Keeper
 - `--error-timeout-ms <ERROR_TIMEOUT_MS>` — Timeout in milliseconds when an error occurs before retrying
 
   Default value: `10000`
-
-## `ncn-program-bls-cli run-operator`
-
-Operator Keeper
-
-**Usage:** `ncn-program-bls-cli run-operator [OPTIONS] --operator <OPERATOR>`
 
 ###### **Options:**
 
