@@ -50,7 +50,7 @@ use crate::{
     update_operator_bn128_keys::process_update_operator_bn128_keys,
 };
 
-declare_id!("5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf");
+declare_id!("3fKQSi6VzzDUJSmeksS8qK6RB3Gs3UoZWtsQD3xagy45");
 
 #[cfg(not(feature = "no-entrypoint"))]
 security_txt! {

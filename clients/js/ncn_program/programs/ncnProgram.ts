@@ -37,7 +37,7 @@ import {
 } from '../instructions';
 
 export const NCN_PROGRAM_PROGRAM_ADDRESS =
-  '5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf' as Address<'5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf'>;
+  '3fKQSi6VzzDUJSmeksS8qK6RB3Gs3UoZWtsQD3xagy45' as Address<'3fKQSi6VzzDUJSmeksS8qK6RB3Gs3UoZWtsQD3xagy45'>;
 
 export enum NcnProgramAccount {
   Config,
@@ -146,7 +146,7 @@ export function identifyNcnProgramInstruction(
 }
 
 export type ParsedNcnProgramInstruction<
-  TProgram extends string = '5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf',
+  TProgram extends string = '3fKQSi6VzzDUJSmeksS8qK6RB3Gs3UoZWtsQD3xagy45',
 > =
   | ({
       instructionType: NcnProgramInstruction.InitializeConfig;
