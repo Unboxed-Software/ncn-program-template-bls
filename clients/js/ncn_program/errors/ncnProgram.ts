@@ -34,6 +34,8 @@ export const NCN_PROGRAM_ERROR__CAST_TO_IMPRECISE_NUMBER_ERROR = 0x2106; // 8454
 export const NCN_PROGRAM_ERROR__CAST_TO_U64_ERROR = 0x2107; // 8455
 /** CastToU128Error: Cast to u128 error */
 export const NCN_PROGRAM_ERROR__CAST_TO_U128_ERROR = 0x2108; // 8456
+/** NCNOperatorOptInInactive: NCN Operator Opt In Inactive */
+export const NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE = 0x2109; // 8457
 /** IncorrectWeightTableAdmin: Incorrect weight table admin */
 export const NCN_PROGRAM_ERROR__INCORRECT_WEIGHT_TABLE_ADMIN = 0x2200; // 8704
 /** DuplicateMintsInTable: Duplicate mints in table */
@@ -304,6 +306,7 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__MINT_IN_TABLE
   | typeof NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE
   | typeof NCN_PROGRAM_ERROR__MODULO_OVERFLOW
+  | typeof NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE
   | typeof NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR
   | typeof NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE
   | typeof NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY
@@ -418,6 +421,7 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__MINT_IN_TABLE]: `Mint is already in the table`,
     [NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE]: `Missing required signature`,
     [NCN_PROGRAM_ERROR__MODULO_OVERFLOW]: `Modulo Overflow`,
+    [NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE]: `NCN Operator Opt In Inactive`,
     [NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR]: `New precise number error`,
     [NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE]: `There are no mints in the table`,
     [NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY]: `No non signers aggregated pubkey`,

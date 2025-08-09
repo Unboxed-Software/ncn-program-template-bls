@@ -1800,6 +1800,11 @@
       "msg": "Cast to u128 error"
     },
     {
+      "code": 8457,
+      "name": "NCNOperatorOptInInactive",
+      "msg": "NCN Operator Opt In Inactive"
+    },
+    {
       "code": 8704,
       "name": "IncorrectWeightTableAdmin",
       "msg": "Incorrect weight table admin"
@@ -2302,6 +2307,6 @@
   ],
   "metadata": {
     "origin": "shank",
-    "address": "5SiK283D1iFSqHvr8vbNWCBjbjRXeEYS79CLax7nosPf"
+    "address": "3fKQSi6VzzDUJSmeksS8qK6RB3Gs3UoZWtsQD3xagy45"
   }
 }
