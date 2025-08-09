@@ -200,30 +200,45 @@ impl EpochSnapshot {
         Ok(())
     }
 
+    /// Adds a G1 pubkey to the total aggregated pubkey
+    pub fn add_g1_pubkey_to_total_agg(
+        &mut self,
+        pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
+    ) -> Result<(), NCNProgramError> {
+        alt_bn128_g1_decompress(pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
+        if self.total_agg_g1_pubkey == [0u8; G1_COMPRESSED_POINT_SIZE] {
+            self.total_agg_g1_pubkey = *pubkey;
+        } else {
+            let total_agg_g1_pubkey_point =
+                G1Point::try_from(&G1CompressedPoint(self.total_agg_g1_pubkey))?;
+            let pk_point = G1Point::try_from(&G1CompressedPoint(*pubkey))?;
+            let new_point = total_agg_g1_pubkey_point + pk_point;
+            let compressed = G1CompressedPoint::try_from(new_point)?;
+            self.total_agg_g1_pubkey = compressed.0;
+        }
+        Ok(())
+    }
+
+    /// Subtracts a G1 pubkey from the total aggregated pubkey
+    pub fn subtract_g1_pubkey_from_total_agg(
+        &mut self,
+        pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
+    ) -> Result<(), NCNProgramError> {
+        alt_bn128_g1_decompress(pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
+        let total_agg_g1_pubkey_point =
+            G1Point::try_from(&G1CompressedPoint(self.total_agg_g1_pubkey))?;
+        let pk_point = G1Point::try_from(&G1CompressedPoint(*pubkey))?;
+        let new_point = total_agg_g1_pubkey_point + pk_point.negate();
+        let compressed = G1CompressedPoint::try_from(new_point)?;
+        self.total_agg_g1_pubkey = compressed.0;
+        Ok(())
+    }
+
     pub fn register_operator_g1_pubkey(
         &mut self,
         operator_g1_pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<(), NCNProgramError> {
-        alt_bn128_g1_decompress(operator_g1_pubkey)
-            .map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
-
-        // If the current aggregated pubkey is all zeros, replace it with the operator's pubkey
-        if self.total_agg_g1_pubkey == [0u8; G1_COMPRESSED_POINT_SIZE] {
-            self.total_agg_g1_pubkey = *operator_g1_pubkey;
-        } else {
-            // Otherwise, add them together
-            let total_agg_g1_pubkey_point =
-                G1Point::try_from(&G1CompressedPoint(self.total_agg_g1_pubkey))?;
-            let operator_g1_pubkey_point =
-                G1Point::try_from(&G1CompressedPoint(*operator_g1_pubkey))?;
-            let new_total_agg_g1_pubkey_point =
-                total_agg_g1_pubkey_point + operator_g1_pubkey_point;
-            let compressed_point = G1CompressedPoint::try_from(new_total_agg_g1_pubkey_point)?;
-
-            self.total_agg_g1_pubkey = compressed_point.0;
-        }
-
-        Ok(())
+        self.add_g1_pubkey_to_total_agg(operator_g1_pubkey)
     }
 
     pub fn operator_snapshots(&self) -> &[OperatorSnapshot] {
@@ -764,6 +779,50 @@ mod tests {
                 1,
             )
             .unwrap();
+    }
+
+    #[test]
+    fn test_add_g1_pubkey_to_total_agg_and_subtract() {
+        // Create an epoch snapshot
+        let mut epoch_snapshot = EpochSnapshot::new(
+            &Pubkey::new_unique(),
+            1,                    // ncn_epoch
+            1,                    // bump
+            100,                  // current_slot
+            2,                    // operator_count
+            StakeWeights::new(1), // minimum_stake_weight
+        );
+        // Initial aggregated is zero
+        assert_eq!(
+            epoch_snapshot.total_agg_g1_pubkey(),
+            [0u8; G1_COMPRESSED_POINT_SIZE]
+        );
+
+        // Add first pubkey
+        let pk1 = G1CompressedPoint::from_random().0;
+        epoch_snapshot.add_g1_pubkey_to_total_agg(&pk1).unwrap();
+        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), pk1);
+
+        // Add second pubkey
+        let pk2 = G1CompressedPoint::from_random().0;
+        epoch_snapshot.add_g1_pubkey_to_total_agg(&pk2).unwrap();
+        let after_add = epoch_snapshot.total_agg_g1_pubkey();
+        assert_ne!(after_add, pk1);
+        assert_ne!(after_add, pk2);
+
+        // Subtract second pubkey
+        epoch_snapshot
+            .subtract_g1_pubkey_from_total_agg(&pk2)
+            .unwrap();
+        let after_subtract = epoch_snapshot.total_agg_g1_pubkey();
+        assert_eq!(after_subtract, pk1);
+
+        // Subtract first pubkey, should give zero point (identity)
+        epoch_snapshot
+            .subtract_g1_pubkey_from_total_agg(&pk1)
+            .unwrap();
+        let after_zero = epoch_snapshot.total_agg_g1_pubkey();
+        assert_eq!(after_zero, G1CompressedPoint::default().0);
     }
 
     #[test]
