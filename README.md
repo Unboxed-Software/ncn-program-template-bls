@@ -467,45 +467,86 @@ solana program close --buffers
 ## Optimization Opportunities and Development TODOs
 
 1. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
-2. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
-3. Remove weight table since it is only one vault, no need to init and set weights every epoch.
-4. since it is only one vault, the vault registry is not needed, consider removing it.
-5. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
-6. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
-7. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
-8. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params
+1. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
+1. instead of having two Instuctions (`ResgiterOperator` and `InitOperatorSnapshot`) they could be only one
+1. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
+1. Remove weight table since it is only one vault, no need to init and set weights every epoch.
+1. since it is only one vault, the vault registry is not needed, consider removing it.
+1. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
+1. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
+1. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
+1. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params
+1. CLI: crank-update-all-vaults are updating
 
-## 🚧 Known Issues & Limitations
+## The command that you need to run to get started
 
-## 🎯 Future Roadmap
+- Build the program and the cli:
 
-### Short-term Improvements (1-3 months)
+```bash
+cargo build-sbf
+```
 
-1. **Enhanced Vault Support**: Multiple vaults per NCN
-2. **Improved CLI UX**: Better error messages and help text
-3. **Performance Optimizations**: Reduce compute unit costs
-4. **Documentation**: Complete API documentation
-5. **Security Audit**: Third-party security review
+- Deploy the program:
 
-### Medium-term Features (3-6 months)
+```bash
+solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_program.so
+```
 
-1. **Automated Rewards**: Keeper-driven fee distribution
-2. **Slashing Implementation**: Economic security mechanisms
-3. **Multi-Token Support**: Multiple stake token mints
-4. **Governance Integration**: On-chain parameter updates
-5. **Monitoring Dashboard**: Real-time consensus metrics
+- build and Configure the CLI: refer to the [cli/getting_started.md](cli/getting_started.md) file for more details
 
-### Long-term Vision (6-12 months)
+- Configure the NCN program:
 
-1. **Cross-Chain Consensus**: Bridge to other blockchain networks
-2. **Advanced Cryptography**: Post-quantum signature schemes
-3. **Layer 2 Integration**: High-frequency consensus on L2
-4. **Decentralized Governance**: Community-driven development
-5. **Enterprise Features**: SLA guarantees and support
+```bash
+# Fund the payer account with 20 SOL for transaction fees
+./target/debug/ncn-program-bls-cli admin-fund-account-payer --amount-in-sol 20
+sleep 2
+# Create and initialize the NCN program configuration with fee wallet, fee bps, consensus slots, and minimum stake weight
+./target/debug/ncn-program-bls-cli admin-create-config --ncn-fee-wallet 3ogGQ7nFX6nCa9bkkZ6hwud6VaEQCekCCmNj6ZoWh8MF --ncn-fee-bps 100 --valid-slots-after-consensus 10000 --minimum-stake-weight 100
+sleep 2
+# Create the vault registry to track supported stake vaults
+./target/debug/ncn-program-bls-cli create-vault-registry
+sleep 2
+# Register vaults that are pending approval and add them to the registry
+./target/debug/ncn-program-bls-cli crank-register-vaults
+sleep 2
+# Register a supported stake token mint and set its weight
+./target/debug/ncn-program-bls-cli admin-register-st-mint --weight 10
+sleep 2
+# Create the operator registry to track BLS operators
+./target/debug/ncn-program-bls-cli create-operator-registry
+```
 
-### Resources
+- Register all the Operators: Repeat the command for all operators
 
-- [Jito Restaking Documentation](https://docs.restaking.jito.network)
-- [NCN Implementation Guide](https://docs.restaking.jito.network/ncn/00_implementation)
-- [Solana Program Development](https://docs.solana.com/developing/on-chain-programs)
-- [BLS Signature Specification](https://tools.ietf.org/html/draft-irtf-cfrg-bls-signature)
+```bash
+./target/debug/ncn-program-bls-cli register-operator --operator <Operator Pubkey> --keypair-path <operator-admin-keypair>
+sleep 2
+```
+
+- init the epoch_snapshot account:
+  Notice that for now you will need to init the epoch_state and the weight table before initing the epoch_snapshot, but this should change later
+
+```bash
+
+./target/debug/ncn-program-bls-cli create-epoch-state
+sleep 2
+./target/debug/ncn-program-bls-cli create-weight-table
+sleep 2
+./target/debug/ncn-program-bls-cli set-epoch-weights
+sleep 2
+./target/debug/ncn-program-bls-cli create-epoch-snapshot
+```
+
+- init the operator_snapshot for each operator:
+
+```bash
+./target/debug/ncn-program-bls-cli create-operator-snapshot --operator <Operator Pubkey>
+```
+
+- Snapshot the vault-operator delegations: and to do so, you will need to make sure that the vault are up to date first:
+
+```bash
+./target/debug/ncn-program-bls-cli full-update-vault
+sleep 2
+./target/debug/ncn-program-bls-cli snapshot-vault-operator-delegation --operator <Operator Pubkey>
+```
