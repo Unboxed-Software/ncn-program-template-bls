@@ -84,6 +84,9 @@ pub struct Args {
     #[arg(long, global = true, env = "NCN", help = "NCN Account Address")]
     pub ncn: Option<String>,
 
+    #[arg(long, env = "VAULT", help = "Vault Account Address")]
+    pub vault: String,
+
     #[arg(
         long,
         global = true,
@@ -175,17 +178,18 @@ pub enum ProgramCommand {
         epochs_after_consensus_before_close: u64,
         #[arg(long, help = "Tie breaker admin address")]
         tie_breaker_admin: Option<String>,
+        #[arg(
+            long,
+            help = "Minimum stake weight required for operators (in lamports)"
+        )]
+        minimum_stake_weight: u128,
     },
     AdminRegisterStMint {
-        #[arg(long, help = "Vault address")]
-        vault: String,
         #[arg(long, help = "Weight")]
         weight: Option<u128>,
     },
 
     AdminSetWeight {
-        #[arg(long, help = "Vault address")]
-        vault: String,
         #[arg(long, help = "Weight value")]
         weight: u128,
     },
@@ -217,9 +221,34 @@ pub enum ProgramCommand {
     /// Instructions
     CreateVaultRegistry,
 
-    RegisterVault {
-        #[arg(long, help = "Vault address")]
-        vault: String,
+    CreateOperatorRegistry,
+
+    RegisterVault {},
+
+    RegisterOperator {
+        #[arg(long, help = "Operator address")]
+        operator: String,
+        #[arg(
+            long,
+            help = "G1 public key (32 bytes as hex string) - auto-generated if not provided"
+        )]
+        g1_pubkey: Option<String>,
+        #[arg(
+            long,
+            help = "G2 public key (64 bytes as hex string) - auto-generated if not provided"
+        )]
+        g2_pubkey: Option<String>,
+        #[arg(
+            long,
+            help = "BLS signature (64 bytes as hex string) - auto-generated if not provided"
+        )]
+        signature: Option<String>,
+        #[arg(
+            long,
+            help = "Path to save/load BLS keys JSON file",
+            default_value = "bls-keys.json"
+        )]
+        keys_file: String,
     },
 
     CreateEpochState,
@@ -234,8 +263,6 @@ pub enum ProgramCommand {
     },
 
     SnapshotVaultOperatorDelegation {
-        #[arg(long, help = "Vault address")]
-        vault: String,
         #[arg(long, help = "Operator address")]
         operator: String,
     },
@@ -255,17 +282,9 @@ pub enum ProgramCommand {
         #[arg(long, env = "OPERATOR", help = "Operator Account Address")]
         operator: String,
     },
-    GetVaultNcnTicket {
-        #[arg(long, env = "VAULT", help = "Vault Account Address")]
-        vault: String,
-    },
-    GetNcnVaultTicket {
-        #[arg(long, env = "VAULT", help = "Vault Account Address")]
-        vault: String,
-    },
+    GetVaultNcnTicket {},
+    GetNcnVaultTicket {},
     GetVaultOperatorDelegation {
-        #[arg(long, env = "VAULT", help = "Vault Account Address")]
-        vault: String,
         #[arg(long, env = "OPERATOR", help = "Operator Account Address")]
         operator: String,
     },
@@ -291,10 +310,7 @@ pub enum ProgramCommand {
     GetVaultOperatorStakes,
 
     // GetAllOptedInValidators,
-    FullUpdateVaults {
-        #[arg(long, help = "Vault address")]
-        vault: Option<String>,
-    },
+    FullUpdateVaults {},
 }
 
 #[rustfmt::skip]
@@ -310,9 +326,9 @@ impl fmt::Display for Args {
 
         // Program IDs
         writeln!(f, "\n🔑 Program IDs:")?;
-        writeln!(f, "  • NCN Program:        {}", self.ncn_program_id)?;
+        writeln!(f, "  • NCN Program:       {}", self.ncn_program_id)?;
         writeln!(f, "  • Restaking:         {}", self.restaking_program_id)?;
-        writeln!(f, "  • Vault:             {}", self.vault_program_id)?;
+        writeln!(f, "  • Vault program:     {}", self.vault_program_id)?;
         writeln!(f, "  • Token:             {}", self.token_program_id)?;
 
         // Solana Settings

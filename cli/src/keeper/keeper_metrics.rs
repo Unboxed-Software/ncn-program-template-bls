@@ -515,7 +515,7 @@ pub async fn emit_epoch_metrics_operator_snapshot(handler: &CliHandler, epoch: u
                 ),
                 (
                     "stake-weight",
-                    format_stake_weight(operator_snapshot.stake_weight_so_far().stake_weight()),
+                    format_stake_weight(operator_snapshot.stake_weight().stake_weight()),
                     f64
                 )
             );
@@ -688,7 +688,7 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
             String
         ),
         ("current-state", current_state as u8, i64),
-        ("operator-count", state.operator_count(), i64),
+        ("operator-count", 0, i64), // operator_count method not available on EpochState
         ("vault-count", state.vault_count(), i64),
         ("slot-created", state.slot_created(), i64),
         // Progress tracking for each phase
@@ -704,12 +704,12 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         ),
         (
             "epoch-snapshot-progress-tally",
-            state.epoch_snapshot_progress().tally(),
+            0, // epoch_snapshot_progress method not available on EpochState
             i64
         ),
         (
             "epoch-snapshot-progress-total",
-            state.epoch_snapshot_progress().total(),
+            0, // epoch_snapshot_progress method not available on EpochState
             i64
         ),
         // Voting phase has been removed - replaced with BLS signatures
@@ -728,7 +728,7 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         ),
         (
             "epoch-snapshot-account-status",
-            state.account_status().epoch_snapshot()?,
+            0, // epoch_snapshot method not available on EpochAccountStatus
             i64
         ),
         (

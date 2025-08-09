@@ -1,4 +1,5 @@
 pub mod args;
+pub mod bls_keys;
 pub mod getters;
 pub mod handler;
 pub mod instructions;

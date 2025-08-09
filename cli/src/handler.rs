@@ -13,9 +13,9 @@ use crate::{
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
         admin_set_parameters, admin_set_weight, crank_close_epoch_accounts, crank_register_vaults,
-        crank_snapshot, create_epoch_snapshot, create_epoch_state, create_operator_snapshot,
-        create_vault_registry, create_weight_table, full_vault_update, operator_cast_vote,
-        register_vault, set_epoch_weights, snapshot_vault_operator_delegation,
+        crank_snapshot, create_epoch_snapshot, create_epoch_state, create_operator_registry,
+        create_operator_snapshot, create_vault_registry, create_weight_table, full_vault_update,
+        register_operator, register_vault, set_epoch_weights, snapshot_vault_operator_delegation,
         update_all_vaults_in_network,
     },
     keeper::keeper_loop::startup_ncn_keeper,
@@ -47,6 +47,7 @@ pub struct CliHandler {
     pub ncn_program_id: Pubkey,
     pub token_program_id: Pubkey,
     pub ncn: Option<Pubkey>,
+    pub vault: Pubkey,
     pub epoch: u64,
     pub rpc_client: RpcClient,
     pub retries: u64,
@@ -85,6 +86,8 @@ impl CliHandler {
             .map(|id| Pubkey::from_str(&id))
             .transpose()?;
 
+        let vault = Pubkey::from_str(&args.vault.clone())?;
+
         let rpc_client = RpcClient::new_with_commitment(rpc_url.clone(), commitment);
 
         let mut handler = Self {
@@ -96,6 +99,7 @@ impl CliHandler {
             ncn_program_id,
             token_program_id,
             ncn,
+            vault,
             epoch: u64::MAX,
             rpc_client,
             retries: args.transaction_retries,
@@ -164,6 +168,10 @@ impl CliHandler {
         self.ncn.as_ref().ok_or_else(|| anyhow!("No NCN address"))
     }
 
+    pub fn vault(&self) -> &Pubkey {
+        &self.vault
+    }
+
     #[allow(clippy::large_stack_frames)]
     pub async fn handle(&self, action: ProgramCommand) -> Result<()> {
         match action {
@@ -203,6 +211,7 @@ impl CliHandler {
                 valid_slots_after_consensus,
                 epochs_after_consensus_before_close,
                 tie_breaker_admin,
+                minimum_stake_weight,
             } => {
                 let tie_breaker = if let Some(admin_str) = tie_breaker_admin {
                     Some(
@@ -224,18 +233,15 @@ impl CliHandler {
                     epochs_before_stall,
                     valid_slots_after_consensus,
                     epochs_after_consensus_before_close,
+                    minimum_stake_weight,
                 )
                 .await
             }
-            ProgramCommand::AdminRegisterStMint { vault, weight } => {
-                let vault =
-                    Pubkey::from_str(&vault).map_err(|e| anyhow!("Error parsing vault: {}", e))?;
-                admin_register_st_mint(self, &vault, weight).await
+            ProgramCommand::AdminRegisterStMint { weight } => {
+                admin_register_st_mint(self, self.vault(), weight).await
             }
-            ProgramCommand::AdminSetWeight { vault, weight } => {
-                let vault =
-                    Pubkey::from_str(&vault).map_err(|e| anyhow!("Error parsing vault: {}", e))?;
-                admin_set_weight(self, &vault, self.epoch, weight).await
+            ProgramCommand::AdminSetWeight { weight } => {
+                admin_set_weight(self, self.vault(), self.epoch, weight).await
             }
             ProgramCommand::AdminSetTieBreaker { weather_status } => {
                 // Tie breaker functionality has been removed
@@ -281,10 +287,49 @@ impl CliHandler {
             // Instructions
             ProgramCommand::CreateVaultRegistry {} => create_vault_registry(self).await,
 
-            ProgramCommand::RegisterVault { vault } => {
-                let vault =
-                    Pubkey::from_str(&vault).map_err(|e| anyhow!("Error parsing vault: {}", e))?;
-                register_vault(self, &vault).await
+            ProgramCommand::CreateOperatorRegistry {} => create_operator_registry(self).await,
+
+            ProgramCommand::RegisterVault {} => register_vault(self, self.vault()).await,
+
+            ProgramCommand::RegisterOperator {
+                operator,
+                g1_pubkey,
+                g2_pubkey,
+                signature,
+                keys_file,
+            } => {
+                let operator = Pubkey::from_str(&operator)
+                    .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
+
+                // Handle BLS key generation/loading vs manual input
+                let (g1_array, g2_array, sig_array) = match (g1_pubkey, g2_pubkey, signature) {
+                    // All keys provided manually
+                    (Some(g1), Some(g2), Some(sig)) => {
+                        use crate::bls_keys::hex_to_bytes;
+                        (
+                            hex_to_bytes::<32>(&g1)?,
+                            hex_to_bytes::<64>(&g2)?,
+                            hex_to_bytes::<64>(&sig)?,
+                        )
+                    }
+                    // No keys provided - generate or load from file
+                    (None, None, None) => {
+                        use crate::bls_keys::{generate_signature, get_or_generate_keys};
+
+                        let key_set = get_or_generate_keys(&operator, &keys_file)?;
+                        let signature = generate_signature(&key_set)?;
+
+                        (key_set.g1_pubkey, key_set.g2_pubkey, signature)
+                    }
+                    // Partial keys provided - not allowed
+                    _ => {
+                        return Err(anyhow!(
+                            "Either provide all BLS keys (--g1-pubkey, --g2-pubkey, --signature) or none for auto-generation"
+                        ));
+                    }
+                };
+
+                register_operator(self, &operator, g1_array, g2_array, sig_array).await
             }
 
             ProgramCommand::CreateEpochState {} => create_epoch_state(self, self.epoch).await,
@@ -297,12 +342,10 @@ impl CliHandler {
                     .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
                 create_operator_snapshot(self, &operator, self.epoch).await
             }
-            ProgramCommand::SnapshotVaultOperatorDelegation { vault, operator } => {
-                let vault =
-                    Pubkey::from_str(&vault).map_err(|e| anyhow!("Error parsing vault: {}", e))?;
+            ProgramCommand::SnapshotVaultOperatorDelegation { operator } => {
                 let operator = Pubkey::from_str(&operator)
                     .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
-                snapshot_vault_operator_delegation(self, &vault, &operator, self.epoch).await
+                snapshot_vault_operator_delegation(self, self.vault(), &operator, self.epoch).await
             }
 
             ProgramCommand::CreateBallotBox {} => {
@@ -332,28 +375,22 @@ impl CliHandler {
                 info!("NCN Operator State: {:?}", ncn_operator_state);
                 Ok(())
             }
-            ProgramCommand::GetVaultNcnTicket { vault } => {
-                let vault =
-                    Pubkey::from_str(&vault).map_err(|e| anyhow!("Error parsing vault: {}", e))?;
-                let ncn_ticket = get_vault_ncn_ticket(self, &vault).await?;
+            ProgramCommand::GetVaultNcnTicket {} => {
+                let ncn_ticket = get_vault_ncn_ticket(self, self.vault()).await?;
                 info!("Vault NCN Ticket: {:?}", ncn_ticket);
                 Ok(())
             }
-            ProgramCommand::GetNcnVaultTicket { vault } => {
-                let vault =
-                    Pubkey::from_str(&vault).map_err(|e| anyhow!("Error parsing vault: {}", e))?;
-                let ncn_ticket = get_ncn_vault_ticket(self, &vault).await?;
+            ProgramCommand::GetNcnVaultTicket {} => {
+                let ncn_ticket = get_ncn_vault_ticket(self, self.vault()).await?;
                 info!("NCN Vault Ticket: {:?}", ncn_ticket);
                 Ok(())
             }
-            ProgramCommand::GetVaultOperatorDelegation { vault, operator } => {
-                let vault =
-                    Pubkey::from_str(&vault).map_err(|e| anyhow!("Error parsing vault: {}", e))?;
+            ProgramCommand::GetVaultOperatorDelegation { operator } => {
                 let operator = Pubkey::from_str(&operator)
                     .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
 
                 let vault_operator_delegation =
-                    get_vault_operator_delegation(self, &vault, &operator).await?;
+                    get_vault_operator_delegation(self, self.vault(), &operator).await?;
 
                 info!("Vault Operator Delegation: {:?}", vault_operator_delegation);
                 Ok(())
@@ -488,10 +525,8 @@ impl CliHandler {
                 for operator in operators.iter() {
                     let operator_snapshot = get_operator_snapshot(self, operator, self.epoch).await;
                     if let Ok(operator_snapshot) = operator_snapshot {
-                        operator_stakes.push((
-                            operator,
-                            operator_snapshot.stake_weight_so_far().stake_weight(),
-                        ));
+                        operator_stakes
+                            .push((operator, operator_snapshot.stake_weight().stake_weight()));
                     } else if let Err(e) = operator_snapshot {
                         log::warn!("Failed to get operator snapshot for {}: {}", operator, e);
                     }
@@ -524,8 +559,7 @@ impl CliHandler {
                     if let Ok(operator_snapshot) = operator_snapshot {
                         // Note: This functionality needs to be reimplemented based on the actual data structure
                         // For now, we'll use the operator's total stake weight
-                        let total_stake_weight =
-                            operator_snapshot.stake_weight_so_far().stake_weight();
+                        let total_stake_weight = operator_snapshot.stake_weight().stake_weight();
                         if total_stake_weight > 0 {
                             // This is a simplified approach - in reality, you'd need to get vault-specific weights
                             // from the vault operator delegations
@@ -568,8 +602,7 @@ impl CliHandler {
                     if let Ok(operator_snapshot) = operator_snapshot {
                         // Note: This functionality needs to be reimplemented based on the actual data structure
                         // For now, we'll use the operator's total stake weight
-                        let total_stake_weight =
-                            operator_snapshot.stake_weight_so_far().stake_weight();
+                        let total_stake_weight = operator_snapshot.stake_weight().stake_weight();
                         if total_stake_weight > 0 {
                             // This is a simplified approach - in reality, you'd need to get vault-specific weights
                             // from the vault operator delegations
@@ -624,23 +657,8 @@ impl CliHandler {
 
                 Ok(())
             }
-            ProgramCommand::FullUpdateVaults { vault } => {
-                let mut vaults_to_update = vec![];
-
-                if let Some(vault) = vault {
-                    let vault = Pubkey::from_str(&vault)
-                        .map_err(|e| anyhow!("Error parsing vault: {}", e))?;
-                    vaults_to_update.push(vault);
-                } else {
-                    let vaults = get_all_vaults(self).await?;
-                    println!("Updating {:?} Vaults", vaults.len());
-                    vaults_to_update.extend(vaults.iter().cloned());
-                }
-
-                for vault in vaults_to_update.iter() {
-                    println!("Updating {:?}", vault);
-                    full_vault_update(self, vault).await?;
-                }
+            ProgramCommand::FullUpdateVaults {} => {
+                full_vault_update(self, self.vault()).await?;
                 Ok(())
             }
         }

@@ -194,7 +194,7 @@ pub async fn get_weight_table(handler: &CliHandler, epoch: u64) -> Result<Weight
 
 pub async fn get_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<EpochSnapshot> {
     let (address, _, _) =
-        EpochSnapshot::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
+        EpochSnapshot::find_program_address(&handler.ncn_program_id, handler.ncn()?);
 
     let account = get_account(handler, &address).await?;
 
