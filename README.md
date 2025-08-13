@@ -371,6 +371,59 @@ The main simulation test demonstrates:
 - Pre-generated keypairs and test data
 - Configurable test scenarios
 
+## 🏗️ Local Test Validator
+
+### Overview
+
+The `local-test-validator/` submodule provides a complete testing environment that automatically sets up the Jito Restaking Protocol with all dependencies. This is the fastest way to get a working development environment.
+
+### Quick Start
+
+```bash
+# Navigate to the local test validator directory
+cd local-test-validator
+
+# Make scripts executable
+chmod +x *.sh
+
+# Run the complete setup (one command does everything)
+./run.sh
+```
+
+This single command will:
+
+1. Start Solana test validator with pre-loaded programs
+2. Initialize the complete restaking network
+3. Set up 3 operators with proper handshakes
+4. Create a vault and delegate tokens
+5. Advance validator by epochs for connection warm-up
+
+### What's Included
+
+The local test validator provides:
+
+- **Pre-built Programs**: Jito restaking, vault, and SPL programs
+- **Automated Setup**: Complete network initialization script
+- **Test Operators**: 3 pre-configured operators with BLS keypairs
+- **Time Simulation**: Scripts to advance validator time for epoch testing
+- **Clean State**: Fresh ledger on each run with `--reset`
+
+### Key Scripts
+
+- `run.sh`: Main orchestration script that sets up everything
+- `validator.sh`: Starts Solana test validator with required programs
+- `setup-testing-env.sh`: Initializes the complete restaking network
+- `rerun-validator.sh`: Advances validator time for epoch testing
+
+### Generated Assets
+
+After setup, you'll have:
+
+- **Keypairs**: NCN admin, vault admin, operator admins in `./keys/`
+- **Addresses**: All important addresses saved in `setup_summary.txt`
+
+For detailed setup instructions and troubleshooting, see the [local-test-validator README](local-test-validator/README.md).
+
 ## 🔧 Development Workflow
 
 ### Building the Project
