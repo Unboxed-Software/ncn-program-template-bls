@@ -1,0 +1,3 @@
+[submodule "local-test-validator"]
+	path = local-test-validator
+	url = git@github.com:Unboxed-Software/jito-restaking-test-validator.git
