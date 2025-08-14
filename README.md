@@ -1,5 +1,47 @@
 # NCN Program Template - BLS Implementation
 
+## Table of Contents
+
+- [🎯 Core Purpose](#-core-purpose)
+- [🏛️ Architecture Overview](#️-architecture-overview)
+  - [System Components Hierarchy](#system-components-hierarchy)
+  - [📁 Directory Structure Deep Dive](#-directory-structure-deep-dive)
+- [🔧 Core Components Deep Dive](#-core-components-deep-dive)
+  - [1. Program Instructions (21 Total)](#1-program-instructions-21-total)
+  - [2. Account Types (8 Primary Accounts)](#2-account-types-8-primary-accounts)
+  - [3. BLS Cryptography Implementation](#3-bls-cryptography-implementation)
+- [🔄 Consensus Workflow](#-consensus-workflow)
+  - [Phase 1: Initialization (Per NCN)](#phase-1-initialization-per-ncn)
+  - [Phase 2: Epoch Setup (Per Epoch)](#phase-2-epoch-setup-per-epoch)
+  - [Phase 3: Consensus Voting](#phase-3-consensus-voting)
+  - [Phase 4: Cleanup](#phase-4-cleanup)
+- [🛠️ CLI Tools & Automation](#️-cli-tools--automation)
+  - [NCN Program CLI](#ncn-program-cli-ncn-program-bls-cli)
+  - [Keeper Service](#keeper-service-run-keeper)
+  - [Operator Service](#operator-service)
+- [🧪 Testing Infrastructure](#-testing-infrastructure)
+  - [Integration Tests (15+ Test Modules)](#integration-tests-15-test-modules)
+  - [Test Fixtures](#test-fixtures)
+- [🏗️ Local Test Validator](#️-local-test-validator)
+  - [Overview](#overview)
+  - [Quick Start](#quick-start)
+  - [What's Included](#whats-included)
+  - [Key Scripts](#key-scripts)
+  - [Generated Assets](#generated-assets)
+- [🔧 Development Workflow](#-development-workflow)
+  - [Building the Project](#building-the-project)
+  - [Code Generation Pipeline](#code-generation-pipeline)
+- [🚀 Deployment Guide](#-deployment-guide)
+  - [Environment Configuration](#environment-configuration)
+  - [Program Deployment](#program-deployment)
+- [🔐 Security Considerations](#-security-considerations)
+  - [Key Security Features](#key-security-features)
+  - [Potential Security Risks](#potential-security-risks)
+- [📈 Performance & Scalability](#-performance--scalability)
+  - [Current Limitations](#current-limitations)
+- [Optimization Opportunities and Development TODOs](#optimization-opportunities-and-development-todos)
+- [The command that you need to run to get started](#the-command-that-you-need-to-run-to-get-started)
+
 ### 🎯 Core Purpose
 
 This program serves as a template for building decentralized consensus networks where multiple operators can collectively agree on shared state through:
