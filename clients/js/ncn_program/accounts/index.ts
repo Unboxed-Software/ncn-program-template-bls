@@ -12,4 +12,5 @@ export * from './epochSnapshot';
 export * from './epochState';
 export * from './operatorRegistry';
 export * from './vaultRegistry';
+export * from './voteCounter';
 export * from './weightTable';

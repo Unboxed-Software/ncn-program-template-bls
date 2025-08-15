@@ -11,6 +11,7 @@ pub(crate) mod r#epoch_snapshot;
 pub(crate) mod r#epoch_state;
 pub(crate) mod r#operator_registry;
 pub(crate) mod r#vault_registry;
+pub(crate) mod r#vote_counter;
 pub(crate) mod r#weight_table;
 
 pub use self::r#config::*;
@@ -19,4 +20,5 @@ pub use self::r#epoch_snapshot::*;
 pub use self::r#epoch_state::*;
 pub use self::r#operator_registry::*;
 pub use self::r#vault_registry::*;
+pub use self::r#vote_counter::*;
 pub use self::r#weight_table::*;

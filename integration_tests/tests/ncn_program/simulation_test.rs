@@ -164,6 +164,10 @@ mod tests {
                 )
                 .await?;
 
+            ncn_program_client
+                .do_initialize_vote_counter(test_ncn.ncn_root.ncn_pubkey)
+                .await?;
+
             // 4.b Initialize the vault_registry - creates accounts to track vaults
             ncn_program_client
                 .do_full_initialize_vault_registry(test_ncn.ncn_root.ncn_pubkey)

@@ -19,6 +19,7 @@ export * from './initializeEpochState';
 export * from './initializeOperatorRegistry';
 export * from './initializeOperatorSnapshot';
 export * from './initializeVaultRegistry';
+export * from './initializeVoteCounter';
 export * from './initializeWeightTable';
 export * from './reallocEpochSnapshot';
 export * from './reallocOperatorRegistry';

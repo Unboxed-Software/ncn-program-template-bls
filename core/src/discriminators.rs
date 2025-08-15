@@ -15,4 +15,5 @@ pub enum Discriminators {
     // State Tracking
     EpochState = 0x50,
     EpochMarker = 0x51,
+    VoteCounter = 0x52,
 }

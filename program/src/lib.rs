@@ -11,6 +11,7 @@ mod initialize_epoch_state;
 mod initialize_operator_registry;
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
+mod initialize_vote_counter;
 mod initialize_weight_table;
 mod realloc_epoch_snapshot;
 mod realloc_operator_registry;
@@ -41,6 +42,7 @@ use crate::{
     initialize_operator_registry::process_initialize_operator_registry,
     initialize_operator_snapshot::process_initialize_operator_snapshot,
     initialize_vault_registry::process_initialize_vault_registry,
+    initialize_vote_counter::process_initialize_vote_counter,
     initialize_weight_table::process_initialize_weight_table,
     realloc_epoch_snapshot::process_realloc_epoch_snapshot,
     realloc_operator_registry::process_realloc_operator_registry,
@@ -133,6 +135,10 @@ pub fn process_instruction(
         NCNProgramInstruction::ReallocOperatorRegistry => {
             msg!("Instruction: ReallocOperatorRegistry");
             process_realloc_operator_registry(program_id, accounts)
+        }
+        NCNProgramInstruction::InitializeVoteCounter => {
+            msg!("Instruction: InitializeVoteCounter");
+            process_initialize_vote_counter(program_id, accounts)
         }
 
         // ---------------------------------------------------- //

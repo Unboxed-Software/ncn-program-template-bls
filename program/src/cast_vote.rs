@@ -9,6 +9,7 @@ use ncn_program_core::{
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
     schemes::Sha256Normalized,
+    vote_counter::VoteCounter,
 };
 
 use num::CheckedAdd;
@@ -36,6 +37,7 @@ use solana_program::{
 /// 2. `[]` ncn: The NCN account
 /// 3. `[]` epoch_snapshot: Epoch snapshot containing stake weights and operator snapshots
 /// 4. `[]` restaking_config: Restaking configuration account
+/// 5. `[writable]` vote_counter: Vote counter PDA to increment on successful vote
 pub fn process_cast_vote(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -49,11 +51,13 @@ pub fn process_cast_vote(
     let ncn = next_account_info(account_info_iter)?;
     let epoch_snapshot = next_account_info(account_info_iter)?;
     let restaking_config = next_account_info(account_info_iter)?;
+    let vote_counter = next_account_info(account_info_iter)?;
 
     NcnConfig::load(program_id, ncn_config, ncn.key, false)?;
     Config::load(&jito_restaking_program::id(), restaking_config, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, false)?;
+    VoteCounter::load(program_id, vote_counter, ncn.key, true)?;
 
     let ncn_epoch_length = {
         let config_data = restaking_config.data.borrow();
@@ -190,11 +194,21 @@ pub fn process_cast_vote(
             .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
     }
 
-    // TODO: add a PDA for the NCN that will hold a counter that will get incremented here
-    // the message should be the counter count, and we don't have to pass the counter, we should
-    // read it form the PDA
-    // when you do that, add a note to tell the reader that this could be anything, but by making
-    // it the counter count, we can enforce on duplicate signatures
+    // Increment the vote counter PDA after successful signature verification
+    // NOTE: This counter could track anything, but by using the counter value as the message
+    // in future implementations, you can enforce protection against duplicate signatures
+    let mut vote_counter_data = vote_counter.try_borrow_mut_data()?;
+    let vote_counter_account = VoteCounter::try_from_slice_unchecked_mut(&mut vote_counter_data)?;
+
+    let previous_count = vote_counter_account.count();
+    vote_counter_account.increment()?;
+    let new_count = vote_counter_account.count();
+
+    msg!(
+        "Vote successfully cast! Counter incremented from {} to {}",
+        previous_count,
+        new_count
+    );
 
     Ok(())
 }

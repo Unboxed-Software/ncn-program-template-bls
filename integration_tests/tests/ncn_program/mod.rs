@@ -10,6 +10,7 @@ mod initialize_epoch_snapshot;
 mod initialize_operator_registry;
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
+mod initialize_vote_counter;
 mod initialize_weight_table;
 mod meta_tests;
 mod register_operator;

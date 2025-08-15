@@ -345,6 +345,41 @@
       }
     },
     {
+      "name": "InitializeVoteCounter",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "voteCounter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ncn",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "accountPayer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 7
+      }
+    },
+    {
       "name": "InitializeEpochState",
       "accounts": [
         {
@@ -386,7 +421,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 8
       }
     },
     {
@@ -436,7 +471,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 9
       }
     },
     {
@@ -471,7 +506,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 10
       }
     },
     {
@@ -516,7 +551,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 11
       }
     },
     {
@@ -566,7 +601,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
+        "value": 12
       }
     },
     {
@@ -631,7 +666,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 13
       }
     },
     {
@@ -701,7 +736,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 14
       }
     },
     {
@@ -725,6 +760,11 @@
         {
           "name": "restakingConfig",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "voteCounter",
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -763,7 +803,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 14
+        "value": 15
       }
     },
     {
@@ -813,7 +853,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 15
+        "value": 16
       }
     },
     {
@@ -869,7 +909,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 16
+        "value": 17
       }
     },
     {
@@ -906,7 +946,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 17
+        "value": 18
       }
     },
     {
@@ -949,7 +989,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 18
+        "value": 19
       }
     },
     {
@@ -991,7 +1031,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 19
+        "value": 20
       }
     },
     {
@@ -1032,7 +1072,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 20
+        "value": 21
       }
     }
   ],
@@ -1317,6 +1357,37 @@
                   "defined": "VaultEntry"
                 },
                 1
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "VoteCounter",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ncn",
+            "type": "publicKey"
+          },
+          {
+            "name": "count",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                7
               ]
             }
           }

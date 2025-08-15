@@ -12,9 +12,9 @@ use ncn_program_client::{
         AdminSetStMintBuilder, AdminSetWeightBuilder, CastVoteBuilder, CloseEpochAccountBuilder,
         InitializeConfigBuilder, InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
         InitializeOperatorRegistryBuilder, InitializeOperatorSnapshotBuilder,
-        InitializeVaultRegistryBuilder, InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder,
-        ReallocOperatorRegistryBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
-        SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
+        InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, InitializeWeightTableBuilder,
+        ReallocEpochSnapshotBuilder, ReallocOperatorRegistryBuilder, RegisterOperatorBuilder,
+        RegisterVaultBuilder, SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
         UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
@@ -30,6 +30,7 @@ use ncn_program_core::{
     fees::FeeConfig,
     operator_registry::OperatorRegistry,
     vault_registry::VaultRegistry,
+    vote_counter::VoteCounter,
     weight_table::WeightTable,
 };
 use solana_program::{
@@ -102,6 +103,8 @@ impl NCNProgramClient {
         self.do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
+        self.do_initialize_vote_counter(ncn_root.ncn_pubkey).await?;
+
         self.do_full_initialize_vault_registry(ncn_root.ncn_pubkey)
             .await?;
 
@@ -109,6 +112,42 @@ impl NCNProgramClient {
             .await?;
 
         Ok(())
+    }
+
+    /// Initializes the vote counter account for a given NCN.
+    pub async fn do_initialize_vote_counter(&mut self, ncn: Pubkey) -> TestResult<()> {
+        let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
+        let (vote_counter, _, _) = VoteCounter::find_program_address(&ncn_program::id(), &ncn);
+        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
+
+        self.initialize_vote_counter(config, vote_counter, ncn, account_payer)
+            .await
+    }
+
+    /// Sends a transaction to initialize the vote counter account.
+    pub async fn initialize_vote_counter(
+        &mut self,
+        config: Pubkey,
+        vote_counter: Pubkey,
+        ncn: Pubkey,
+        account_payer: Pubkey,
+    ) -> TestResult<()> {
+        let ix = InitializeVoteCounterBuilder::new()
+            .config(config)
+            .vote_counter(vote_counter)
+            .ncn(ncn)
+            .account_payer(account_payer)
+            .system_program(system_program::id())
+            .instruction();
+
+        let blockhash = self.banks_client.get_latest_blockhash().await?;
+        self.process_transaction(&Transaction::new_signed_with_payer(
+            &[ix],
+            Some(&self.payer.pubkey()),
+            &[&self.payer],
+            blockhash,
+        ))
+        .await
     }
 
     /// Fetches the EpochMarker account for a given NCN and epoch.
@@ -123,6 +162,17 @@ impl NCNProgramClient {
         let config_pda = NcnConfig::find_program_address(&ncn_program::id(), &ncn_pubkey).0;
         let config = self.banks_client.get_account(config_pda).await?.unwrap();
         Ok(*NcnConfig::try_from_slice_unchecked(config.data.as_slice()).unwrap())
+    }
+
+    /// Fetches the VoteCounter account for a given NCN pubkey.
+    pub async fn get_vote_counter(&mut self, ncn_pubkey: Pubkey) -> TestResult<VoteCounter> {
+        let vote_counter_pda = VoteCounter::find_program_address(&ncn_program::id(), &ncn_pubkey).0;
+        let vote_counter = self
+            .banks_client
+            .get_account(vote_counter_pda)
+            .await?
+            .unwrap();
+        Ok(*VoteCounter::try_from_slice_unchecked(vote_counter.data.as_slice()).unwrap())
     }
 
     /// Fetches the VaultRegistry account for a given NCN pubkey.
@@ -899,12 +949,14 @@ impl NCNProgramClient {
         let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
         let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
+        let vote_counter = VoteCounter::find_program_address(&ncn_program::id(), &ncn).0;
 
         self.cast_vote(
             ncn_config,
             ncn,
             epoch_snapshot,
             restaking_config,
+            vote_counter,
             agg_sig,
             apk2,
             signers_bitmap,
@@ -921,6 +973,7 @@ impl NCNProgramClient {
         ncn: Pubkey,
         epoch_snapshot: Pubkey,
         restaking_config: Pubkey,
+        vote_counter: Pubkey,
         agg_sig: [u8; 32],
         apk2: [u8; 64],
         signers_bitmap: Vec<u8>,
@@ -932,8 +985,9 @@ impl NCNProgramClient {
             .config(ncn_config)
             .ncn(ncn)
             .epoch_snapshot(epoch_snapshot)
-            .aggregated_signature(agg_sig)
             .restaking_config(restaking_config)
+            .vote_counter(vote_counter)
+            .aggregated_signature(agg_sig)
             .aggregated_g2(apk2)
             .operators_signature_bitmap(signers_bitmap)
             .message(message)

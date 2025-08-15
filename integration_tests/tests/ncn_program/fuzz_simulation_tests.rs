@@ -146,13 +146,16 @@ mod fuzz_tests {
         // 3. Setting up the NCN-program
         // The following instructions would be executed by the NCN admin in a production environment
         {
-            // 3.a. Initialize the config for the NCN program
+            // 3.a. Initialize the config for the NCN program and the vote counter
             ncn_program_client
                 .do_initialize_config(
                     test_ncn.ncn_root.ncn_pubkey,
                     &test_ncn.ncn_root.ncn_admin,
                     None,
                 )
+                .await?;
+            ncn_program_client
+                .do_initialize_vote_counter(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
 
             // 3.b Initialize the vault_registry - creates accounts to track vaults

@@ -105,6 +105,15 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "system_program")]
     ReallocOperatorRegistry,
 
+    /// Initializes the vote counter PDA for tracking successful votes
+    /// This should be called after InitializeConfig to set up vote tracking
+    #[account(0, name = "config")]
+    #[account(1, writable, name = "vote_counter")]
+    #[account(2, name = "ncn")]
+    #[account(3, writable, name = "account_payer")]
+    #[account(4, name = "system_program")]
+    InitializeVoteCounter,
+
     // ---------------------------------------------------- //
     //                       SNAPSHOT                       //
     // ---------------------------------------------------- //
@@ -209,6 +218,7 @@ pub enum NCNProgramInstruction {
     #[account(1, name = "ncn")]
     #[account(2, name = "epoch_snapshot")]
     #[account(3, name = "restaking_config")]
+    #[account(4, writable, name = "vote_counter")]
     CastVote {
         aggregated_signature: [u8; 32],
         aggregated_g2: [u8; 64],

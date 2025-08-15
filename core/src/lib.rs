@@ -19,5 +19,6 @@ pub mod schemes;
 pub mod stake_weight;
 pub mod utils;
 pub mod vault_registry;
+pub mod vote_counter;
 pub mod weight_entry;
 pub mod weight_table;
