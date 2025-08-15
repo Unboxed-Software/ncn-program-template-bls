@@ -578,4 +578,384 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_cast_vote_counter_advancement() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(5, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+
+        // Check initial counter value
+        let initial_vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let initial_count = initial_vote_counter.count();
+        println!("Initial vote counter: {}", initial_count);
+
+        // Cast first vote
+        {
+            // Get the current vote counter to use as the message
+            let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+            let current_count = vote_counter.count();
+
+            // Create message from the current counter value (padded to 32 bytes)
+            let count_bytes = current_count.to_le_bytes();
+            let mut message = [0u8; 32];
+            message[..8].copy_from_slice(&count_bytes);
+
+            let none_signers_indices = vec![]; // All operators sign
+
+            let mut signatures: Vec<G1Point> = vec![];
+            let mut apk2_pubkeys: Vec<G2Point> = vec![];
+            for operator in test_ncn.operators.iter() {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .unwrap();
+                signatures.push(signature);
+            }
+
+            let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+            let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+            let signers_bitmap =
+                create_signer_bitmap(&none_signers_indices, test_ncn.operators.len());
+
+            ncn_program_client
+                .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
+                .await?;
+        }
+
+        // Check counter after first vote
+        let first_vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let first_count = first_vote_counter.count();
+        println!("Counter after first vote: {}", first_count);
+        assert_eq!(
+            first_count,
+            initial_count + 1,
+            "Counter should increment by 1 after first vote"
+        );
+
+        // Cast second vote
+        {
+            // Get the updated vote counter to use as the message
+            let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+            let current_count = vote_counter.count();
+
+            // Create message from the current counter value (padded to 32 bytes)
+            let count_bytes = current_count.to_le_bytes();
+            let mut message = [0u8; 32];
+            message[..8].copy_from_slice(&count_bytes);
+
+            let none_signers_indices = vec![1]; // One operator doesn't sign this time
+
+            let mut signatures: Vec<G1Point> = vec![];
+            let mut apk2_pubkeys: Vec<G2Point> = vec![];
+            for (i, operator) in test_ncn.operators.iter().enumerate() {
+                if !none_signers_indices.contains(&i) {
+                    apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                    let signature = operator
+                        .bn128_privkey
+                        .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                        .unwrap();
+                    signatures.push(signature);
+                }
+            }
+
+            let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+            let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+            let signers_bitmap =
+                create_signer_bitmap(&none_signers_indices, test_ncn.operators.len());
+
+            ncn_program_client
+                .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
+                .await?;
+        }
+
+        // Check counter after second vote
+        let second_vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let second_count = second_vote_counter.count();
+        println!("Counter after second vote: {}", second_count);
+        assert_eq!(
+            second_count,
+            first_count + 1,
+            "Counter should increment by 1 after second vote"
+        );
+        assert_eq!(
+            second_count,
+            initial_count + 2,
+            "Total counter should be initial + 2"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_duplicate_signature_fails() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(5, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+
+        // Cast first vote successfully
+        {
+            // Get the current vote counter to use as the message
+            let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+            let current_count = vote_counter.count();
+
+            // Create message from the current counter value (padded to 32 bytes)
+            let count_bytes = current_count.to_le_bytes();
+            let mut message = [0u8; 32];
+            message[..8].copy_from_slice(&count_bytes);
+
+            let none_signers_indices = vec![]; // All operators sign
+
+            let mut signatures: Vec<G1Point> = vec![];
+            let mut apk2_pubkeys: Vec<G2Point> = vec![];
+            for operator in test_ncn.operators.iter() {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .unwrap();
+                signatures.push(signature);
+            }
+
+            let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+            let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+            let signers_bitmap =
+                create_signer_bitmap(&none_signers_indices, test_ncn.operators.len());
+
+            ncn_program_client
+                .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
+                .await?;
+
+            println!("First vote cast successfully");
+        }
+
+        // Attempt to submit the same signature again (should fail because counter has advanced)
+        {
+            // Use the OLD counter value (before the first vote)
+            let old_count = 0u64; // This was the counter before the first vote
+            let count_bytes = old_count.to_le_bytes();
+            let mut old_message = [0u8; 32];
+            old_message[..8].copy_from_slice(&count_bytes);
+
+            let none_signers_indices = vec![]; // All operators sign
+
+            let mut signatures: Vec<G1Point> = vec![];
+            let mut apk2_pubkeys: Vec<G2Point> = vec![];
+            for operator in test_ncn.operators.iter() {
+                apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                // Sign the OLD message (same as first vote)
+                let signature = operator
+                    .bn128_privkey
+                    .sign::<Sha256Normalized, &[u8; 32]>(&old_message)
+                    .unwrap();
+                signatures.push(signature);
+            }
+
+            let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+            let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+            let signers_bitmap =
+                create_signer_bitmap(&none_signers_indices, test_ncn.operators.len());
+
+            // This should fail because the signatures are for the old counter value,
+            // but the system will use the current counter value for verification
+            let result = ncn_program_client
+                .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
+                .await;
+
+            assert_ncn_program_error(
+                result,
+                NCNProgramError::SignatureVerificationFailed,
+                Some(1),
+            );
+
+            println!("Duplicate signature correctly rejected");
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_sequential_voting_with_counter_tracking() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(3, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+
+        // Get initial counter
+        let initial_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let mut expected_count = initial_counter.count();
+        println!("Initial counter: {}", expected_count);
+
+        // Cast multiple votes and verify counter advancement
+        for vote_round in 1..=5 {
+            println!("\n--- Vote Round {} ---", vote_round);
+
+            // Get current counter and prepare message
+            let current_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+            let current_count = current_counter.count();
+            assert_eq!(
+                current_count, expected_count,
+                "Counter should match expected value before vote {}",
+                vote_round
+            );
+
+            let count_bytes = current_count.to_le_bytes();
+            let mut message = [0u8; 32];
+            message[..8].copy_from_slice(&count_bytes);
+
+            // Vary the signers for each round
+            let none_signers_indices = if vote_round % 2 == 0 { vec![0] } else { vec![] };
+
+            let mut signatures: Vec<G1Point> = vec![];
+            let mut apk2_pubkeys: Vec<G2Point> = vec![];
+            for (i, operator) in test_ncn.operators.iter().enumerate() {
+                if !none_signers_indices.contains(&i) {
+                    apk2_pubkeys.push(operator.bn128_g2_pubkey);
+                    let signature = operator
+                        .bn128_privkey
+                        .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                        .unwrap();
+                    signatures.push(signature);
+                }
+            }
+
+            let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+            let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+            let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+            let signers_bitmap =
+                create_signer_bitmap(&none_signers_indices, test_ncn.operators.len());
+
+            // Cast the vote
+            ncn_program_client
+                .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
+                .await?;
+
+            // Verify counter was incremented
+            expected_count += 1;
+            let updated_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+            let updated_count = updated_counter.count();
+            assert_eq!(
+                updated_count, expected_count,
+                "Counter should be incremented after vote {}",
+                vote_round
+            );
+
+            println!(
+                "Vote {} successful. Counter: {} -> {}",
+                vote_round, current_count, updated_count
+            );
+        }
+
+        println!("\nTotal votes cast: 5");
+        println!("Final counter value: {}", expected_count);
+        println!("Counter advanced correctly through all votes!");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_cast_vote_wrong_counter_message_fails() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        let test_ncn = fixture.create_initial_test_ncn(3, None).await?;
+
+        ///// NCNProgram Setup /////
+        fixture.warp_slot_incremental(1000).await?;
+        fixture.snapshot_test_ncn(&test_ncn).await?;
+        //////
+
+        let ncn = test_ncn.ncn_root.ncn_pubkey;
+
+        // Get current counter
+        let current_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = current_counter.count();
+        println!("Current counter: {}", current_count);
+
+        // Create signatures for a WRONG counter value (future value)
+        let wrong_count = current_count + 10; // Use a future counter value
+        let wrong_count_bytes = wrong_count.to_le_bytes();
+        let mut wrong_message = [0u8; 32];
+        wrong_message[..8].copy_from_slice(&wrong_count_bytes);
+
+        let none_signers_indices = vec![];
+
+        let mut signatures: Vec<G1Point> = vec![];
+        let mut apk2_pubkeys: Vec<G2Point> = vec![];
+        for operator in test_ncn.operators.iter() {
+            apk2_pubkeys.push(operator.bn128_g2_pubkey);
+            // Sign with the WRONG message
+            let signature = operator
+                .bn128_privkey
+                .sign::<Sha256Normalized, &[u8; 32]>(&wrong_message)
+                .unwrap();
+            signatures.push(signature);
+        }
+
+        let apk2 = apk2_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let apk2 = G2CompressedPoint::try_from(&apk2).unwrap().0;
+
+        let agg_sig = signatures.into_iter().reduce(|acc, x| acc + x).unwrap();
+        let agg_sig = G1CompressedPoint::try_from(agg_sig).unwrap().0;
+
+        let signers_bitmap = create_signer_bitmap(&none_signers_indices, test_ncn.operators.len());
+
+        // This should fail because signatures are for wrong counter value
+        let result = ncn_program_client
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
+            .await;
+
+        assert_ncn_program_error(
+            result,
+            NCNProgramError::SignatureVerificationFailed,
+            Some(1),
+        );
+
+        println!("Vote with wrong counter message correctly failed");
+
+        Ok(())
+    }
 }
