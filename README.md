@@ -7,9 +7,10 @@
   - [System Components Hierarchy](#system-components-hierarchy)
   - [📁 Directory Structure Deep Dive](#-directory-structure-deep-dive)
 - [🔧 Core Components Deep Dive](#-core-components-deep-dive)
-  - [1. Program Instructions (21 Total)](#1-program-instructions-21-total)
-  - [2. Account Types (8 Primary Accounts)](#2-account-types-8-primary-accounts)
-  - [3. BLS Cryptography Implementation](#3-bls-cryptography-implementation)
+  - [1. Program Instructions (22 Total)](#1-program-instructions-22-total)
+  - [2. Account Types (9 Primary Accounts)](#2-account-types-9-primary-accounts)
+  - [3. Vote Counter System](#3-vote-counter-system)
+  - [4. BLS Cryptography Implementation](#4-bls-cryptography-implementation)
 - [🔄 Consensus Workflow](#-consensus-workflow)
   - [Phase 1: Initialization (Per NCN)](#phase-1-initialization-per-ncn)
   - [Phase 2: Epoch Setup (Per Epoch)](#phase-2-epoch-setup-per-epoch)
@@ -86,7 +87,7 @@ This program serves as a template for building decentralized consensus networks 
 ncn-program-template-bls/
 ├── 📋 Program Core
 │   ├── program/                    # Main Solana program entry point
-│   │   ├── src/lib.rs             # 21 instruction handlers (initialize→vote→close)
+│   │   ├── src/lib.rs             # 22 instruction handlers (initialize→vote→close)
 │   │   └── src/*.rs               # Individual instruction implementations
 │   └── core/                      # Shared core functionality
 │       ├── src/lib.rs             # 24 core modules (crypto, accounts, utils)
@@ -128,7 +129,7 @@ ncn-program-template-bls/
 
 ## 🔧 Core Components Deep Dive
 
-### 1. Program Instructions (21 Total)
+### 1. Program Instructions (22 Total)
 
 #### **Global Setup Instructions**
 
@@ -141,6 +142,7 @@ ncn-program-template-bls/
 - `ReallocOperatorRegistry`: Expands operator storage capacity
 - `InitializeEpochSnapshot`: Creates immutable epoch state snapshot
 - `ReallocEpochSnapshot`: Expands snapshot storage
+- `InitializeVoteCounter`: Creates vote counter for replay attack prevention
 - `InitializeOperatorSnapshot`: Captures individual operator state
 
 #### **Epoch Management Instructions**
@@ -152,7 +154,7 @@ ncn-program-template-bls/
 
 #### **Consensus Voting Instructions**
 
-- `CastVote`: Submits BLS aggregated signatures for consensus
+- `CastVote`: Submits BLS aggregated signatures for consensus (uses counter for message)
 
 #### **Administrative Instructions**
 
@@ -166,7 +168,7 @@ ncn-program-template-bls/
 
 - `CloseEpochAccount`: Reclaims rent from finalized accounts
 
-### 2. Account Types (8 Primary Accounts)
+### 2. Account Types (9 Primary Accounts)
 
 #### **Config** - Global program parameters
 
@@ -250,7 +252,55 @@ pub struct WeightTable {
 }
 ```
 
-### 3. BLS Cryptography Implementation
+#### **VoteCounter** - Replay attack prevention
+
+```rust
+pub struct VoteCounter {
+    ncn: Pubkey,                             // NCN reference
+    count: PodU64,                           // Current vote counter
+    bump: u8,                                // PDA bump seed
+    reserved: [u8; 7],                       // Reserved for future use
+}
+```
+
+The vote counter tracks the number of successful votes and provides automatic replay attack protection by using the counter value as the message for BLS signature verification.
+
+### 3. Vote Counter System
+
+#### **Purpose & Security Model**
+
+The vote counter is a critical security component that prevents replay attacks by ensuring each vote uses a unique, sequential message:
+
+```rust
+// Vote counter provides the message for signature verification
+let current_count = vote_counter.count();
+let message = current_count.to_le_bytes(); // Padded to 32 bytes
+```
+
+#### **Key Properties**
+
+1. **Sequential Uniqueness**: Each vote increments the counter, making old signatures invalid
+2. **Deterministic**: No external dependencies - counter value is the message
+3. **Atomic Updates**: Counter only increments after successful signature verification
+4. **Replay Prevention**: Previous signatures cannot be reused due to counter advancement
+
+#### **Workflow Integration**
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Read Counter  │ -> │  Sign Counter   │ -> │ Verify & Update │
+│   (N = current) │    │  (Message = N)  │    │   (N = N + 1)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### **Security Benefits**
+
+- **No Message Collisions**: Sequential counter ensures unique messages
+- **Automatic Protection**: No manual nonce management required
+- **Resistant to Attacks**: Replay, precomputation, and signature reuse attacks are prevented
+- **Simple Verification**: Anyone can verify counter progression
+
+### 4. BLS Cryptography Implementation
 
 #### **Elliptic Curve Operations**
 
@@ -280,13 +330,14 @@ Located in `core/src/schemes/`:
 
 ```
 1. Admin creates Config with consensus parameters
-2. Initialize VaultRegistry for supported tokens
-3. Initialize OperatorRegistry for participant tracking
-4. Register supported stake token mints with weights
-5. Register vaults (permissionless after NCN approval)
-6. Register operators with BLS keypairs
-7. Create EpochSnapshot: mutable state checkpoint
-8. Initialize operator snapshots for each participant
+2. Initialize VoteCounter for replay attack prevention
+3. Initialize VaultRegistry for supported tokens
+4. Initialize OperatorRegistry for participant tracking
+5. Register supported stake token mints with weights
+6. Register vaults (permissionless after NCN approval)
+7. Register operators with BLS keypairs
+8. Create EpochSnapshot: mutable state checkpoint
+9. Initialize operator snapshots for each participant
 ```
 
 ### Phase 2: Epoch Setup (Per Epoch)
@@ -301,12 +352,23 @@ Located in `core/src/schemes/`:
 ### Phase 3: Consensus Voting
 
 ```
-1. Operators generate BLS signatures on consensus data
-2. Signatures are aggregated off-chain
-3. CastVote instruction submits aggregated signature
-4. Program verifies signature against operator set
-6. Consensus reached at 66% threshold
+1. System reads current vote counter value as message
+2. Operators generate BLS signatures on the counter message
+3. Signatures are aggregated off-chain
+4. CastVote instruction submits aggregated signature
+5. Program verifies signature against current counter value
+6. Vote counter is incremented after successful verification
+7. Consensus reached at 66% threshold
 ```
+
+#### **Vote Counter Security Model**
+
+The vote counter provides automatic replay attack protection:
+
+- **Unique Messages**: Each vote uses a sequential counter value as the message
+- **Automatic Advancement**: Counter increments after each successful vote
+- **Replay Prevention**: Old signatures become invalid after counter advancement
+- **No External Dependencies**: Message generation is deterministic and internal
 
 ### Phase 4: Cleanup
 
@@ -382,7 +444,11 @@ Manages operator-specific functionality:
 - `simulation_test.rs`: Complete end-to-end consensus workflow
 - `initialize_config.rs`: Configuration testing
 - `register_operator.rs`: Operator registration flows
-- `cast_vote.rs`: Voting mechanism testing
+- `cast_vote.rs`: Voting mechanism and vote counter testing
+  - `test_cast_vote_counter_advancement`: Verifies counter increments correctly
+  - `test_cast_vote_duplicate_signature_fails`: Tests replay attack prevention
+  - `test_cast_vote_sequential_voting_with_counter_tracking`: Multi-round counter validation
+  - `test_cast_vote_wrong_counter_message_fails`: Invalid counter value rejection
 - `epoch_state.rs`: Epoch lifecycle management
 
 #### **Test Builder Pattern**
@@ -540,14 +606,17 @@ solana program close --buffers
 ### Key Security Features
 
 1. **BLS Signature Verification**: Cryptographic proof of operator consensus
-2. **Minimum Stake-weighted Voting**: Economic security through skin-in-the-game
-3. **Time-locked Operations**: Prevents hasty state changes
-4. **Role-based Access Control**: Admin separation and permissions
-5. **Account Rent Protection**: Economic incentives for proper cleanup
+2. **Vote Counter Replay Protection**: Automatic prevention of signature replay attacks
+3. **Minimum Stake-weighted Voting**: Economic security through skin-in-the-game
+4. **Time-locked Operations**: Prevents hasty state changes
+5. **Role-based Access Control**: Admin separation and permissions
+6. **Account Rent Protection**: Economic incentives for proper cleanup
 
 ### Potential Security Risks
 
 1. **Key Management**: BLS private keys must be securely stored
+2. **Vote Counter Synchronization**: Operators must coordinate to sign the correct counter value
+3. **Counter Overflow**: Theoretical risk after 2^64 votes (astronomically unlikely)
 
 ## 📈 Performance & Scalability
 
@@ -583,6 +652,9 @@ solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_
 sleep 2
 # Create and initialize the NCN program configuration with fee wallet, fee bps, consensus slots, and minimum stake weight
 ./target/debug/ncn-program-bls-cli admin-create-config --ncn-fee-wallet 3ogGQ7nFX6nCa9bkkZ6hwud6VaEQCekCCmNj6ZoWh8MF --ncn-fee-bps 100 --valid-slots-after-consensus 10000 --minimum-stake-weight 100
+sleep 2
+# Initialize the vote counter for replay attack prevention
+./target/debug/ncn-program-bls-cli create-vote-counter
 sleep 2
 # Create the vault registry to track supported stake vaults
 ./target/debug/ncn-program-bls-cli create-vault-registry
