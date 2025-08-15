@@ -179,7 +179,6 @@ pub fn process_instruction(
         NCNProgramInstruction::CastVote {
             aggregated_g2,
             aggregated_signature,
-            message,
             operators_signature_bitmap,
         } => {
             msg!("Instruction: CastVote");
@@ -189,7 +188,6 @@ pub fn process_instruction(
                 aggregated_g2,
                 aggregated_signature,
                 operators_signature_bitmap,
-                message,
             )
         }
 

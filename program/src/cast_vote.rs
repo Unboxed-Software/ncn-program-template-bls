@@ -30,7 +30,8 @@ use solana_program::{
 /// - `aggregated_g2`: Aggregated G2 public key in compressed format (64 bytes)
 /// - `aggregated_signature`: Aggregated G1 signature in compressed format (32 bytes)
 /// - `operators_signature_bitmap`: Bitmap indicating which operators signed the vote
-/// - `message`: The message to sign, typically the current epoch or a specific vote identifier
+///
+/// Note: The message used for signature verification is the current vote counter count
 ///
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account (named `ncn_config` in code)
@@ -44,7 +45,6 @@ pub fn process_cast_vote(
     aggregated_g2: [u8; G2_COMPRESSED_POINT_SIZE],
     aggregated_signature: [u8; G1_COMPRESSED_POINT_SIZE],
     operators_signature_bitmap: Vec<u8>,
-    message: [u8; 32],
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let ncn_config = next_account_info(account_info_iter)?;
@@ -58,6 +58,16 @@ pub fn process_cast_vote(
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, false)?;
     VoteCounter::load(program_id, vote_counter, ncn.key, true)?;
+
+    // Get the current counter value to use as the message for signature verification
+    let vote_counter_data = vote_counter.data.borrow();
+    let vote_counter_account = VoteCounter::try_from_slice_unchecked(&vote_counter_data)?;
+    let current_count = vote_counter_account.count();
+    let message = current_count.to_le_bytes();
+    // Pad to 32 bytes for signature verification
+    let mut message_32 = [0u8; 32];
+    message_32[..8].copy_from_slice(&message);
+    drop(vote_counter_data);
 
     let ncn_epoch_length = {
         let config_data = restaking_config.data.borrow();
@@ -169,7 +179,7 @@ pub fn process_cast_vote(
         aggregated_g2_point
             .verify_aggregated_signature::<Sha256Normalized, &[u8], G1Point>(
                 signature,
-                &message,
+                &message_32,
                 total_aggregated_g1_pubkey,
             )
             .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
@@ -189,14 +199,15 @@ pub fn process_cast_vote(
         msg!("Verifying aggregate signature one pairing");
         aggregated_g2_point
             .verify_aggregated_signature::<Sha256Normalized, &[u8], G1Point>(
-                signature, &message, apk1,
+                signature,
+                &message_32,
+                apk1,
             )
             .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
     }
 
     // Increment the vote counter PDA after successful signature verification
-    // NOTE: This counter could track anything, but by using the counter value as the message
-    // in future implementations, you can enforce protection against duplicate signatures
+    // NOTE: This counter could track anything
     let mut vote_counter_data = vote_counter.try_borrow_mut_data()?;
     let vote_counter_account = VoteCounter::try_from_slice_unchecked_mut(&mut vote_counter_data)?;
 

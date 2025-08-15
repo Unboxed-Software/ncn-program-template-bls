@@ -944,7 +944,6 @@ impl NCNProgramClient {
         agg_sig: [u8; 32],
         apk2: [u8; 64],
         signers_bitmap: Vec<u8>,
-        message: [u8; 32],
     ) -> Result<(), TestError> {
         let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
         let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
@@ -960,7 +959,6 @@ impl NCNProgramClient {
             agg_sig,
             apk2,
             signers_bitmap,
-            message,
         )
         .await
     }
@@ -977,7 +975,6 @@ impl NCNProgramClient {
         agg_sig: [u8; 32],
         apk2: [u8; 64],
         signers_bitmap: Vec<u8>,
-        message: [u8; 32],
     ) -> Result<(), TestError> {
         let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(2_000_000);
 
@@ -990,7 +987,6 @@ impl NCNProgramClient {
             .aggregated_signature(agg_sig)
             .aggregated_g2(apk2)
             .operators_signature_bitmap(signers_bitmap)
-            .message(message)
             .instruction();
 
         let blockhash = self.banks_client.get_latest_blockhash().await?;

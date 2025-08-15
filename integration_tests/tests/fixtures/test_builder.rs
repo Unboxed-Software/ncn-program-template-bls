@@ -563,8 +563,14 @@ impl TestBuilder {
         let mut ncn_program_client = self.ncn_program_client();
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        // Create a test message to sign
-        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+        // Get the current vote counter to use as the message
+        let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = vote_counter.count();
+
+        // Create message from the current counter value (padded to 32 bytes)
+        let count_bytes = current_count.to_le_bytes();
+        let mut message = [0u8; 32];
+        message[..8].copy_from_slice(&count_bytes);
 
         let mut signitures: Vec<G1Point> = vec![];
         let mut apk2_pubkeys: Vec<G2Point> = vec![];
@@ -597,7 +603,7 @@ impl TestBuilder {
         println!("apk2: {:?}", apk2);
 
         ncn_program_client
-            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
             .await
     }
 
@@ -739,9 +745,14 @@ impl TestBuilder {
             return Ok(());
         }
 
-        // Create a vote message for "Sunny" weather status
-        let vote_message =
-            solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
+        // Get the current vote counter to use as the message
+        let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = vote_counter.count();
+
+        // Create message from the current counter value (padded to 32 bytes)
+        let count_bytes = current_count.to_le_bytes();
+        let mut vote_message = [0u8; 32];
+        vote_message[..8].copy_from_slice(&count_bytes);
 
         // Collect signatures and public keys from all active operators
         let mut signatures: Vec<G1Point> = vec![];
@@ -775,7 +786,6 @@ impl TestBuilder {
                 aggregated_signature_compressed,
                 aggregated_apk2_compressed,
                 signers_bitmap,
-                vote_message,
             )
             .await?;
 

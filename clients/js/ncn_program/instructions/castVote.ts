@@ -76,14 +76,12 @@ export type CastVoteInstructionData = {
   aggregatedSignature: ReadonlyUint8Array;
   aggregatedG2: ReadonlyUint8Array;
   operatorsSignatureBitmap: ReadonlyUint8Array;
-  message: ReadonlyUint8Array;
 };
 
 export type CastVoteInstructionDataArgs = {
   aggregatedSignature: ReadonlyUint8Array;
   aggregatedG2: ReadonlyUint8Array;
   operatorsSignatureBitmap: ReadonlyUint8Array;
-  message: ReadonlyUint8Array;
 };
 
 export function getCastVoteInstructionDataEncoder(): Encoder<CastVoteInstructionDataArgs> {
@@ -96,7 +94,6 @@ export function getCastVoteInstructionDataEncoder(): Encoder<CastVoteInstruction
         'operatorsSignatureBitmap',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
-      ['message', fixEncoderSize(getBytesEncoder(), 32)],
     ]),
     (value) => ({ ...value, discriminator: CAST_VOTE_DISCRIMINATOR })
   );
@@ -111,7 +108,6 @@ export function getCastVoteInstructionDataDecoder(): Decoder<CastVoteInstruction
       'operatorsSignatureBitmap',
       addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
     ],
-    ['message', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 
@@ -140,7 +136,6 @@ export type CastVoteInput<
   aggregatedSignature: CastVoteInstructionDataArgs['aggregatedSignature'];
   aggregatedG2: CastVoteInstructionDataArgs['aggregatedG2'];
   operatorsSignatureBitmap: CastVoteInstructionDataArgs['operatorsSignatureBitmap'];
-  message: CastVoteInstructionDataArgs['message'];
 };
 
 export function getCastVoteInstruction<

@@ -275,10 +275,17 @@ mod tests {
             msg!("Epoch snapshot: {}", epoch_snapshot);
 
             {
-                // Create a message for voting on Sunny weather status
-                // This message represents what operators are collectively agreeing on
-                let sunny_vote_message =
-                    solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
+                // Get the current vote counter to use as the message
+                let vote_counter = ncn_program_client
+                    .get_vote_counter(ncn_pubkey)
+                    .await
+                    .unwrap();
+                let current_count = vote_counter.count();
+
+                // Create message from the current counter value (padded to 32 bytes)
+                let count_bytes = current_count.to_le_bytes();
+                let mut sunny_vote_message = [0u8; 32];
+                sunny_vote_message[..8].copy_from_slice(&count_bytes);
 
                 let mut sunny_signatures: Vec<G1Point> = vec![];
                 let mut sunny_apk2_pubkeys: Vec<G2Point> = vec![];
@@ -325,14 +332,21 @@ mod tests {
                         sunny_agg_sig_compressed,
                         sunny_apk2_compressed,
                         sunny_signers_bitmap,
-                        sunny_vote_message,
                     )
                     .await?;
             }
             {
-                // Quorum not met case
-                let cloudy_vote_message =
-                    solana_nostd_sha256::hashv(&[b"weather_vote", b"Cloudy", &epoch.to_le_bytes()]);
+                // Quorum not met case - get the current vote counter for this second vote attempt
+                let vote_counter = ncn_program_client
+                    .get_vote_counter(ncn_pubkey)
+                    .await
+                    .unwrap();
+                let current_count = vote_counter.count();
+
+                // Create message from the current counter value (padded to 32 bytes)
+                let count_bytes = current_count.to_le_bytes();
+                let mut cloudy_vote_message = [0u8; 32];
+                cloudy_vote_message[..8].copy_from_slice(&count_bytes);
 
                 let mut signatures: Vec<G1Point> = vec![];
                 let mut apk2_pubkeys: Vec<G2Point> = vec![];
@@ -372,7 +386,6 @@ mod tests {
                         agg_sig_compressed,
                         apk2_compressed,
                         signers_bitmap,
-                        cloudy_vote_message,
                     )
                     .await;
                 assert_ncn_program_error(result, NCNProgramError::QuorumNotMet, Some(1));

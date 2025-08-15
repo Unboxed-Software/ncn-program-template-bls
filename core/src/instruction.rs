@@ -223,7 +223,6 @@ pub enum NCNProgramInstruction {
         aggregated_signature: [u8; 32],
         aggregated_g2: [u8; 64],
         operators_signature_bitmap: Vec<u8>,
-        message: [u8; 32],
     },
 
     /// Close an epoch account

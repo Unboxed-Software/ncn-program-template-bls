@@ -1016,7 +1016,6 @@ pub async fn operator_cast_vote(
         .aggregated_signature(agg_sig)
         .aggregated_g2(apk2)
         .operators_signature_bitmap(signers_bitmap)
-        .message(message)
         .instruction();
 
     send_and_log_transaction(

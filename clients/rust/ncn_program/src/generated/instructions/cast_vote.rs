@@ -90,7 +90,6 @@ pub struct CastVoteInstructionArgs {
     pub aggregated_signature: [u8; 32],
     pub aggregated_g2: [u8; 64],
     pub operators_signature_bitmap: Vec<u8>,
-    pub message: [u8; 32],
 }
 
 /// Instruction builder for `CastVote`.
@@ -112,7 +111,6 @@ pub struct CastVoteBuilder {
     aggregated_signature: Option<[u8; 32]>,
     aggregated_g2: Option<[u8; 64]>,
     operators_signature_bitmap: Option<Vec<u8>>,
-    message: Option<[u8; 32]>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -163,11 +161,6 @@ impl CastVoteBuilder {
         self.operators_signature_bitmap = Some(operators_signature_bitmap);
         self
     }
-    #[inline(always)]
-    pub fn message(&mut self, message: [u8; 32]) -> &mut Self {
-        self.message = Some(message);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -208,7 +201,6 @@ impl CastVoteBuilder {
                 .operators_signature_bitmap
                 .clone()
                 .expect("operators_signature_bitmap is not set"),
-            message: self.message.clone().expect("message is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -377,7 +369,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
             aggregated_signature: None,
             aggregated_g2: None,
             operators_signature_bitmap: None,
-            message: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -432,11 +423,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn operators_signature_bitmap(&mut self, operators_signature_bitmap: Vec<u8>) -> &mut Self {
         self.instruction.operators_signature_bitmap = Some(operators_signature_bitmap);
-        self
-    }
-    #[inline(always)]
-    pub fn message(&mut self, message: [u8; 32]) -> &mut Self {
-        self.instruction.message = Some(message);
         self
     }
     /// Add an additional account to the instruction.
@@ -496,11 +482,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
                 .operators_signature_bitmap
                 .clone()
                 .expect("operators_signature_bitmap is not set"),
-            message: self
-                .instruction
-                .message
-                .clone()
-                .expect("message is not set"),
         };
         let instruction = CastVoteCpi {
             __program: self.instruction.__program,
@@ -543,7 +524,6 @@ struct CastVoteCpiBuilderInstruction<'a, 'b> {
     aggregated_signature: Option<[u8; 32]>,
     aggregated_g2: Option<[u8; 64]>,
     operators_signature_bitmap: Option<Vec<u8>>,
-    message: Option<[u8; 32]>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

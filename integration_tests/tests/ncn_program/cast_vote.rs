@@ -54,8 +54,14 @@ mod tests {
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        // Create a test message to sign
-        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+        // Get the current vote counter to use as the message
+        let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = vote_counter.count();
+
+        // Create message from the current counter value (padded to 32 bytes)
+        let count_bytes = current_count.to_le_bytes();
+        let mut message = [0u8; 32];
+        message[..8].copy_from_slice(&count_bytes);
 
         let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 2); // Let's say these operators didn't sign
 
@@ -90,7 +96,7 @@ mod tests {
         println!("apk2: {:?}", apk2);
 
         ncn_program_client
-            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
             .await?;
 
         Ok(())
@@ -314,8 +320,14 @@ mod tests {
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        // Create a test message to sign
-        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+        // Get the current vote counter to use as the message
+        let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = vote_counter.count();
+
+        // Create message from the current counter value (padded to 32 bytes)
+        let count_bytes = current_count.to_le_bytes();
+        let mut message = [0u8; 32];
+        message[..8].copy_from_slice(&count_bytes);
 
         let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 85); // Let's say these operators didn't sign
 
@@ -350,7 +362,7 @@ mod tests {
         println!("apk2: {:?}", apk2);
 
         ncn_program_client
-            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
             .await?;
 
         Ok(())
@@ -370,8 +382,14 @@ mod tests {
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        // Create a test message to sign
-        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+        // Get the current vote counter to use as the message
+        let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = vote_counter.count();
+
+        // Create message from the current counter value (padded to 32 bytes)
+        let count_bytes = current_count.to_le_bytes();
+        let mut message = [0u8; 32];
+        message[..8].copy_from_slice(&count_bytes);
 
         let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 2); // Let's say these operators didn't sign
 
@@ -407,7 +425,7 @@ mod tests {
         }
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, agg_sig, apk2, wrong_signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, wrong_signers_bitmap)
             .await;
 
         assert_ncn_program_error(
@@ -433,8 +451,14 @@ mod tests {
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        // Create a test message
-        let message = solana_nostd_sha256::hashv(&[b"test message"]);
+        // Get the current vote counter to use as the message
+        let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = vote_counter.count();
+
+        // Create message from the current counter value (padded to 32 bytes)
+        let count_bytes = current_count.to_le_bytes();
+        let mut message = [0u8; 32];
+        message[..8].copy_from_slice(&count_bytes);
 
         // Use correct operator key but create invalid signature
         let operator_key = test_ncn.operators[0].bn128_privkey;
@@ -448,7 +472,7 @@ mod tests {
         let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
             .await;
 
         assert_ncn_program_error(
@@ -474,7 +498,15 @@ mod tests {
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        let message = solana_nostd_sha256::hashv(&[b"test message"]);
+        // Get the current vote counter to use as the message
+        let vote_counter = ncn_program_client.get_vote_counter(ncn).await.unwrap();
+        let current_count = vote_counter.count();
+
+        // Create message from the current counter value (padded to 32 bytes)
+        let count_bytes = current_count.to_le_bytes();
+        let mut message = [0u8; 32];
+        message[..8].copy_from_slice(&count_bytes);
+
         let operator_key = test_ncn.operators[0].bn128_privkey;
         let signature = operator_key
             .sign::<Sha256Normalized, &[u8; 32]>(&message)
@@ -486,7 +518,7 @@ mod tests {
         let signers_bitmap = vec![0u8; 2];
 
         let result = ncn_program_client
-            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
             .await;
 
         assert_ncn_program_error(result, NCNProgramError::InvalidInputLength, Some(1));
@@ -508,8 +540,8 @@ mod tests {
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
-        // Create a test message to sign
-        let message = solana_nostd_sha256::hashv(&[b"test message for multiple signers"]);
+        // the right message is the current vote counter
+        let wrong_message = solana_nostd_sha256::hashv(&[b"wrong message"]);
 
         let none_signers_indecies = get_random_none_signers_indecies(test_ncn.operators.len(), 3); // Let's say these operators didn't sign
 
@@ -520,7 +552,7 @@ mod tests {
                 apk2_pubkeys.push(operator.bn128_g2_pubkey);
                 let signature = operator
                     .bn128_privkey
-                    .sign::<Sha256Normalized, &[u8; 32]>(&message)
+                    .sign::<Sha256Normalized, &[u8; 32]>(&wrong_message)
                     .unwrap();
                 signitures.push(signature);
             }
@@ -534,10 +566,8 @@ mod tests {
 
         let signers_bitmap = create_signer_bitmap(&none_signers_indecies, test_ncn.operators.len());
 
-        let wrong_message = solana_nostd_sha256::hashv(&[b"wrong message"]);
-
         let result = ncn_program_client
-            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap, wrong_message)
+            .do_cast_vote(ncn, agg_sig, apk2, signers_bitmap)
             .await;
 
         assert_ncn_program_error(

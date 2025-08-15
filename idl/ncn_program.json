@@ -790,15 +790,6 @@
         {
           "name": "operatorsSignatureBitmap",
           "type": "bytes"
-        },
-        {
-          "name": "message",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
         }
       ],
       "discriminant": {

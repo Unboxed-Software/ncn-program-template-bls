@@ -250,10 +250,17 @@ mod fuzz_tests {
         {
             let epoch = fixture.clock().await.epoch;
 
-            // Create a message for voting - all operators vote for the same status to ensure consensus
-            // This differs from simulation_test.rs where some operators vote differently
-            let vote_message =
-                solana_nostd_sha256::hashv(&[b"weather_vote", b"Sunny", &epoch.to_le_bytes()]);
+            // Get the current vote counter to use as the message
+            let vote_counter = ncn_program_client
+                .get_vote_counter(ncn_pubkey)
+                .await
+                .unwrap();
+            let current_count = vote_counter.count();
+
+            // Create message from the current counter value (padded to 32 bytes)
+            let count_bytes = current_count.to_le_bytes();
+            let mut vote_message = [0u8; 32];
+            vote_message[..8].copy_from_slice(&count_bytes);
 
             // All operators sign the same message (no non-signers in this simulation)
             let mut signatures: Vec<G1Point> = vec![];
@@ -287,7 +294,6 @@ mod fuzz_tests {
                     agg_sig_compressed,
                     apk2_compressed,
                     signers_bitmap,
-                    vote_message,
                 )
                 .await?;
 
