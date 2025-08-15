@@ -124,7 +124,7 @@ mod tests {
         let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn).await?;
 
         assert_eq!(
-            epoch_snapshot.total_agg_g1_pubkey(),
+            epoch_snapshot.total_aggregated_g1_pubkey(),
             agg_g1_pubkey_compressed.0
         );
 
@@ -239,12 +239,12 @@ mod tests {
         let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn).await?;
 
         assert_eq!(
-            epoch_snapshot.total_agg_g1_pubkey(),
+            epoch_snapshot.total_aggregated_g1_pubkey(),
             agg_g1_pubkey_compressed.0
         );
 
         assert_ne!(
-            epoch_snapshot.total_agg_g1_pubkey(),
+            epoch_snapshot.total_aggregated_g1_pubkey(),
             all_agg_g1_pubkey_compressed.0
         );
 

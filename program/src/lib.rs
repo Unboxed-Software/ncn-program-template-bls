@@ -171,13 +171,20 @@ pub fn process_instruction(
         //                         VOTE                         //
         // ---------------------------------------------------- //
         NCNProgramInstruction::CastVote {
-            apk2,
-            agg_sig,
+            aggregated_g2,
+            aggregated_signature,
             message,
-            signers_bitmap,
+            operators_signature_bitmap,
         } => {
             msg!("Instruction: CastVote");
-            process_cast_vote(program_id, accounts, apk2, agg_sig, signers_bitmap, message)
+            process_cast_vote(
+                program_id,
+                accounts,
+                aggregated_g2,
+                aggregated_signature,
+                operators_signature_bitmap,
+                message,
+            )
         }
 
         // ---------------------------------------------------- //

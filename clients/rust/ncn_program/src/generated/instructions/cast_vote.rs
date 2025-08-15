@@ -81,9 +81,9 @@ impl Default for CastVoteInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CastVoteInstructionArgs {
-    pub agg_sig: [u8; 32],
-    pub apk2: [u8; 64],
-    pub signers_bitmap: Vec<u8>,
+    pub aggregated_signature: [u8; 32],
+    pub aggregated_g2: [u8; 64],
+    pub operators_signature_bitmap: Vec<u8>,
     pub message: [u8; 32],
 }
 
@@ -101,9 +101,9 @@ pub struct CastVoteBuilder {
     ncn: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
     restaking_config: Option<solana_program::pubkey::Pubkey>,
-    agg_sig: Option<[u8; 32]>,
-    apk2: Option<[u8; 64]>,
-    signers_bitmap: Option<Vec<u8>>,
+    aggregated_signature: Option<[u8; 32]>,
+    aggregated_g2: Option<[u8; 64]>,
+    operators_signature_bitmap: Option<Vec<u8>>,
     message: Option<[u8; 32]>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -136,18 +136,18 @@ impl CastVoteBuilder {
         self
     }
     #[inline(always)]
-    pub fn agg_sig(&mut self, agg_sig: [u8; 32]) -> &mut Self {
-        self.agg_sig = Some(agg_sig);
+    pub fn aggregated_signature(&mut self, aggregated_signature: [u8; 32]) -> &mut Self {
+        self.aggregated_signature = Some(aggregated_signature);
         self
     }
     #[inline(always)]
-    pub fn apk2(&mut self, apk2: [u8; 64]) -> &mut Self {
-        self.apk2 = Some(apk2);
+    pub fn aggregated_g2(&mut self, aggregated_g2: [u8; 64]) -> &mut Self {
+        self.aggregated_g2 = Some(aggregated_g2);
         self
     }
     #[inline(always)]
-    pub fn signers_bitmap(&mut self, signers_bitmap: Vec<u8>) -> &mut Self {
-        self.signers_bitmap = Some(signers_bitmap);
+    pub fn operators_signature_bitmap(&mut self, operators_signature_bitmap: Vec<u8>) -> &mut Self {
+        self.operators_signature_bitmap = Some(operators_signature_bitmap);
         self
     }
     #[inline(always)]
@@ -182,12 +182,18 @@ impl CastVoteBuilder {
             restaking_config: self.restaking_config.expect("restaking_config is not set"),
         };
         let args = CastVoteInstructionArgs {
-            agg_sig: self.agg_sig.clone().expect("agg_sig is not set"),
-            apk2: self.apk2.clone().expect("apk2 is not set"),
-            signers_bitmap: self
-                .signers_bitmap
+            aggregated_signature: self
+                .aggregated_signature
                 .clone()
-                .expect("signers_bitmap is not set"),
+                .expect("aggregated_signature is not set"),
+            aggregated_g2: self
+                .aggregated_g2
+                .clone()
+                .expect("aggregated_g2 is not set"),
+            operators_signature_bitmap: self
+                .operators_signature_bitmap
+                .clone()
+                .expect("operators_signature_bitmap is not set"),
             message: self.message.clone().expect("message is not set"),
         };
 
@@ -342,9 +348,9 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
             ncn: None,
             epoch_snapshot: None,
             restaking_config: None,
-            agg_sig: None,
-            apk2: None,
-            signers_bitmap: None,
+            aggregated_signature: None,
+            aggregated_g2: None,
+            operators_signature_bitmap: None,
             message: None,
             __remaining_accounts: Vec::new(),
         });
@@ -380,18 +386,18 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn agg_sig(&mut self, agg_sig: [u8; 32]) -> &mut Self {
-        self.instruction.agg_sig = Some(agg_sig);
+    pub fn aggregated_signature(&mut self, aggregated_signature: [u8; 32]) -> &mut Self {
+        self.instruction.aggregated_signature = Some(aggregated_signature);
         self
     }
     #[inline(always)]
-    pub fn apk2(&mut self, apk2: [u8; 64]) -> &mut Self {
-        self.instruction.apk2 = Some(apk2);
+    pub fn aggregated_g2(&mut self, aggregated_g2: [u8; 64]) -> &mut Self {
+        self.instruction.aggregated_g2 = Some(aggregated_g2);
         self
     }
     #[inline(always)]
-    pub fn signers_bitmap(&mut self, signers_bitmap: Vec<u8>) -> &mut Self {
-        self.instruction.signers_bitmap = Some(signers_bitmap);
+    pub fn operators_signature_bitmap(&mut self, operators_signature_bitmap: Vec<u8>) -> &mut Self {
+        self.instruction.operators_signature_bitmap = Some(operators_signature_bitmap);
         self
     }
     #[inline(always)]
@@ -441,17 +447,21 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = CastVoteInstructionArgs {
-            agg_sig: self
+            aggregated_signature: self
                 .instruction
-                .agg_sig
+                .aggregated_signature
                 .clone()
-                .expect("agg_sig is not set"),
-            apk2: self.instruction.apk2.clone().expect("apk2 is not set"),
-            signers_bitmap: self
+                .expect("aggregated_signature is not set"),
+            aggregated_g2: self
                 .instruction
-                .signers_bitmap
+                .aggregated_g2
                 .clone()
-                .expect("signers_bitmap is not set"),
+                .expect("aggregated_g2 is not set"),
+            operators_signature_bitmap: self
+                .instruction
+                .operators_signature_bitmap
+                .clone()
+                .expect("operators_signature_bitmap is not set"),
             message: self
                 .instruction
                 .message
@@ -490,9 +500,9 @@ struct CastVoteCpiBuilderInstruction<'a, 'b> {
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     restaking_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    agg_sig: Option<[u8; 32]>,
-    apk2: Option<[u8; 64]>,
-    signers_bitmap: Option<Vec<u8>>,
+    aggregated_signature: Option<[u8; 32]>,
+    aggregated_g2: Option<[u8; 64]>,
+    operators_signature_bitmap: Option<Vec<u8>>,
     message: Option<[u8; 32]>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

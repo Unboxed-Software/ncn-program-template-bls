@@ -50,7 +50,7 @@ pub fn can_operator_vote(operator_snapshot: OperatorSnapshot) -> bool {
 }
 
 /// Computes a scalar alpha by hashing together all prover-controlled inputs and reducing modulo the curve order.
-/// Inputs should be provided as byte slices or arrays (e.g., message, signature, agg_pubkey, apk2).
+/// Inputs should be provided as byte slices or arrays (e.g., message, signature, aggregated_pubkey, apk2).
 /// Returns a 32-byte scalar (big-endian, mod curve order).
 pub fn compute_alpha(
     message: &[u8; 64],

@@ -41,7 +41,7 @@ pub struct EpochSnapshot {
     /// Keeps track of the number of valid operator vault delegations
     operators_can_vote_count: PodU64,
     /// total Operators G1 Pubkey aggregated stake weights
-    total_agg_g1_pubkey: [u8; 32],
+    total_aggregated_g1_pubkey: [u8; 32],
     /// Array of operator snapshots
     operator_snapshots: [OperatorSnapshot; 256],
     /// Minimum stake weight required to vote
@@ -75,7 +75,7 @@ impl EpochSnapshot {
             operator_count: PodU64::from(operator_count),
             operators_registered: PodU64::from(0),
             operators_can_vote_count: PodU64::from(0),
-            total_agg_g1_pubkey: [0; G1_COMPRESSED_POINT_SIZE],
+            total_aggregated_g1_pubkey: [0; G1_COMPRESSED_POINT_SIZE],
             operator_snapshots: [OperatorSnapshot::default(); 256],
             minimum_stake_weight,
         }
@@ -100,7 +100,7 @@ impl EpochSnapshot {
         self.operator_count = PodU64::from(operator_count);
         self.operators_registered = PodU64::from(0);
         self.operators_can_vote_count = PodU64::from(0);
-        self.total_agg_g1_pubkey = [0; G1_COMPRESSED_POINT_SIZE];
+        self.total_aggregated_g1_pubkey = [0; G1_COMPRESSED_POINT_SIZE];
         let default_operator_snapshot = OperatorSnapshot::default();
         self.operator_snapshots = [default_operator_snapshot; 256];
         self.minimum_stake_weight = minimum_stake_weight;
@@ -161,8 +161,8 @@ impl EpochSnapshot {
         self.operators_can_vote_count.into()
     }
 
-    pub const fn total_agg_g1_pubkey(&self) -> [u8; G1_COMPRESSED_POINT_SIZE] {
-        self.total_agg_g1_pubkey
+    pub const fn total_aggregated_g1_pubkey(&self) -> [u8; G1_COMPRESSED_POINT_SIZE] {
+        self.total_aggregated_g1_pubkey
     }
 
     pub fn last_snapshot_slot(&self) -> u64 {
@@ -206,15 +206,15 @@ impl EpochSnapshot {
         pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<(), NCNProgramError> {
         alt_bn128_g1_decompress(pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
-        if self.total_agg_g1_pubkey == [0u8; G1_COMPRESSED_POINT_SIZE] {
-            self.total_agg_g1_pubkey = *pubkey;
+        if self.total_aggregated_g1_pubkey == [0u8; G1_COMPRESSED_POINT_SIZE] {
+            self.total_aggregated_g1_pubkey = *pubkey;
         } else {
-            let total_agg_g1_pubkey_point =
-                G1Point::try_from(&G1CompressedPoint(self.total_agg_g1_pubkey))?;
+            let total_aggregated_g1_pubkey_point =
+                G1Point::try_from(&G1CompressedPoint(self.total_aggregated_g1_pubkey))?;
             let pk_point = G1Point::try_from(&G1CompressedPoint(*pubkey))?;
-            let new_point = total_agg_g1_pubkey_point + pk_point;
+            let new_point = total_aggregated_g1_pubkey_point + pk_point;
             let compressed = G1CompressedPoint::try_from(new_point)?;
-            self.total_agg_g1_pubkey = compressed.0;
+            self.total_aggregated_g1_pubkey = compressed.0;
         }
         Ok(())
     }
@@ -225,12 +225,12 @@ impl EpochSnapshot {
         pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<(), NCNProgramError> {
         alt_bn128_g1_decompress(pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
-        let total_agg_g1_pubkey_point =
-            G1Point::try_from(&G1CompressedPoint(self.total_agg_g1_pubkey))?;
+        let total_aggregated_g1_pubkey_point =
+            G1Point::try_from(&G1CompressedPoint(self.total_aggregated_g1_pubkey))?;
         let pk_point = G1Point::try_from(&G1CompressedPoint(*pubkey))?;
-        let new_point = total_agg_g1_pubkey_point + pk_point.negate();
+        let new_point = total_aggregated_g1_pubkey_point + pk_point.negate();
         let compressed = G1CompressedPoint::try_from(new_point)?;
-        self.total_agg_g1_pubkey = compressed.0;
+        self.total_aggregated_g1_pubkey = compressed.0;
         Ok(())
     }
 
@@ -624,7 +624,7 @@ impl fmt::Display for EpochSnapshot {
        writeln!(f, "  Operators Registered:         {}", self.operators_registered())?;
        writeln!(f, "  Operators can vote:           {}", self.operators_can_vote_count())?;
        writeln!(f, "  Last Snapshot Slot:           {}", self.last_snapshot_slot())?;
-       writeln!(f, "  Total Agg G1 Pubkey:          {:?}", self.total_agg_g1_pubkey())?;
+       writeln!(f, "  Total Agg G1 Pubkey:          {:?}", self.total_aggregated_g1_pubkey())?;
        writeln!(f, "  Minimum Stake Weight:         {:?}", self.minimum_stake_weight())?;
        writeln!(f, "  operators snapshots:")?;
        for operator_snapshot in self.operator_snapshots.iter() {
@@ -697,7 +697,7 @@ mod tests {
             + size_of::<PodU64>() // operator_count
             + size_of::<PodU64>() // operators_registered
             + size_of::<PodU64>() // operators_can_vote_count
-            + size_of::<[u8; G1_COMPRESSED_POINT_SIZE]>() // total_agg_g1_pubkey
+            + size_of::<[u8; G1_COMPRESSED_POINT_SIZE]>() // total_aggregated_g1_pubkey
             + size_of::<[OperatorSnapshot; 256]>() // operator_snapshots
             + size_of::<StakeWeights>(); // minimum_stake_weight
 
@@ -782,7 +782,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_g1_pubkey_to_total_agg_and_subtract() {
+    fn test_add_g1_pubkey_to_total_aggregated_and_subtract() {
         // Create an epoch snapshot
         let mut epoch_snapshot = EpochSnapshot::new(
             &Pubkey::new_unique(),
@@ -794,19 +794,19 @@ mod tests {
         );
         // Initial aggregated is zero
         assert_eq!(
-            epoch_snapshot.total_agg_g1_pubkey(),
+            epoch_snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
         // Add first pubkey
         let pk1 = G1CompressedPoint::from_random().0;
         epoch_snapshot.add_g1_pubkey_to_total_agg(&pk1).unwrap();
-        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), pk1);
+        assert_eq!(epoch_snapshot.total_aggregated_g1_pubkey(), pk1);
 
         // Add second pubkey
         let pk2 = G1CompressedPoint::from_random().0;
         epoch_snapshot.add_g1_pubkey_to_total_agg(&pk2).unwrap();
-        let after_add = epoch_snapshot.total_agg_g1_pubkey();
+        let after_add = epoch_snapshot.total_aggregated_g1_pubkey();
         assert_ne!(after_add, pk1);
         assert_ne!(after_add, pk2);
 
@@ -814,14 +814,14 @@ mod tests {
         epoch_snapshot
             .subtract_g1_pubkey_from_total_agg(&pk2)
             .unwrap();
-        let after_subtract = epoch_snapshot.total_agg_g1_pubkey();
+        let after_subtract = epoch_snapshot.total_aggregated_g1_pubkey();
         assert_eq!(after_subtract, pk1);
 
         // Subtract first pubkey, should give zero point (identity)
         epoch_snapshot
             .subtract_g1_pubkey_from_total_agg(&pk1)
             .unwrap();
-        let after_zero = epoch_snapshot.total_agg_g1_pubkey();
+        let after_zero = epoch_snapshot.total_aggregated_g1_pubkey();
         assert_eq!(after_zero, G1CompressedPoint::default().0);
     }
 
@@ -837,9 +837,9 @@ mod tests {
             StakeWeights::new(1), // minimum_stake_weight
         ));
 
-        // Verify initial state - total_agg_g1_pubkey should be all zeros
+        // Verify initial state - total_aggregated_g1_pubkey should be all zeros
         assert_eq!(
-            epoch_snapshot.total_agg_g1_pubkey(),
+            epoch_snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
@@ -852,13 +852,16 @@ mod tests {
 
         // Verify the aggregated G1 pubkey is no longer all zeros
         assert_ne!(
-            epoch_snapshot.total_agg_g1_pubkey(),
+            epoch_snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
         // The aggregated pubkey should now equal the first operator's pubkey
         // since we started with zero point (identity element for addition)
-        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), operator_g1_pubkey);
+        assert_eq!(
+            epoch_snapshot.total_aggregated_g1_pubkey(),
+            operator_g1_pubkey
+        );
     }
 
     #[test]
@@ -882,19 +885,19 @@ mod tests {
         epoch_snapshot
             .register_operator_g1_pubkey(&operator1_g1_pubkey)
             .unwrap();
-        let after_first = epoch_snapshot.total_agg_g1_pubkey();
+        let after_first = epoch_snapshot.total_aggregated_g1_pubkey();
 
         // Register second operator's G1 pubkey
         epoch_snapshot
             .register_operator_g1_pubkey(&operator2_g1_pubkey)
             .unwrap();
-        let after_second = epoch_snapshot.total_agg_g1_pubkey();
+        let after_second = epoch_snapshot.total_aggregated_g1_pubkey();
 
         // Register third operator's G1 pubkey
         epoch_snapshot
             .register_operator_g1_pubkey(&operator3_g1_pubkey)
             .unwrap();
-        let after_third = epoch_snapshot.total_agg_g1_pubkey();
+        let after_third = epoch_snapshot.total_aggregated_g1_pubkey();
 
         // Verify that each registration changes the aggregated pubkey
         assert_ne!(after_first, [0u8; G1_COMPRESSED_POINT_SIZE]);
@@ -909,7 +912,10 @@ mod tests {
         let expected_aggregate = point1 + point2 + point3;
         let expected_compressed = G1CompressedPoint::try_from(expected_aggregate).unwrap();
 
-        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), expected_compressed.0);
+        assert_eq!(
+            epoch_snapshot.total_aggregated_g1_pubkey(),
+            expected_compressed.0
+        );
     }
 
     #[test]
@@ -1010,8 +1016,8 @@ mod tests {
 
         // Both should result in the same aggregated G1 pubkey
         assert_eq!(
-            snapshot1.total_agg_g1_pubkey(),
-            snapshot2.total_agg_g1_pubkey()
+            snapshot1.total_aggregated_g1_pubkey(),
+            snapshot2.total_aggregated_g1_pubkey()
         );
     }
 
@@ -1029,7 +1035,7 @@ mod tests {
 
         // Initially should be all zeros
         assert_eq!(
-            epoch_snapshot.total_agg_g1_pubkey(),
+            epoch_snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
@@ -1040,7 +1046,7 @@ mod tests {
             .unwrap();
 
         // Verify getter returns the updated value
-        assert_eq!(epoch_snapshot.total_agg_g1_pubkey(), g1_pubkey);
+        assert_eq!(epoch_snapshot.total_aggregated_g1_pubkey(), g1_pubkey);
     }
 
     #[test]

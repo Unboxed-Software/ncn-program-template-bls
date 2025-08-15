@@ -59,7 +59,7 @@ export type EpochSnapshot = {
   operatorCount: bigint;
   operatorsRegistered: bigint;
   operatorsCanVoteCount: bigint;
-  totalAggG1Pubkey: ReadonlyUint8Array;
+  totalAggregatedG1Pubkey: ReadonlyUint8Array;
   operatorSnapshots: Array<OperatorSnapshot>;
   minimumStakeWeight: StakeWeights;
   lastSnapshotSlot: bigint;
@@ -74,7 +74,7 @@ export type EpochSnapshotArgs = {
   operatorCount: number | bigint;
   operatorsRegistered: number | bigint;
   operatorsCanVoteCount: number | bigint;
-  totalAggG1Pubkey: ReadonlyUint8Array;
+  totalAggregatedG1Pubkey: ReadonlyUint8Array;
   operatorSnapshots: Array<OperatorSnapshotArgs>;
   minimumStakeWeight: StakeWeightsArgs;
   lastSnapshotSlot: number | bigint;
@@ -90,7 +90,7 @@ export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
     ['operatorCount', getU64Encoder()],
     ['operatorsRegistered', getU64Encoder()],
     ['operatorsCanVoteCount', getU64Encoder()],
-    ['totalAggG1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
+    ['totalAggregatedG1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
     [
       'operatorSnapshots',
       getArrayEncoder(getOperatorSnapshotEncoder(), { size: 256 }),
@@ -110,7 +110,7 @@ export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
     ['operatorCount', getU64Decoder()],
     ['operatorsRegistered', getU64Decoder()],
     ['operatorsCanVoteCount', getU64Decoder()],
-    ['totalAggG1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],
+    ['totalAggregatedG1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],
     [
       'operatorSnapshots',
       getArrayDecoder(getOperatorSnapshotDecoder(), { size: 256 }),

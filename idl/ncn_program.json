@@ -730,7 +730,7 @@
       ],
       "args": [
         {
-          "name": "aggSig",
+          "name": "aggregatedSignature",
           "type": {
             "array": [
               "u8",
@@ -739,7 +739,7 @@
           }
         },
         {
-          "name": "apk2",
+          "name": "aggregatedG2",
           "type": {
             "array": [
               "u8",
@@ -748,7 +748,7 @@
           }
         },
         {
-          "name": "signersBitmap",
+          "name": "operatorsSignatureBitmap",
           "type": "bytes"
         },
         {
@@ -1161,7 +1161,7 @@
             }
           },
           {
-            "name": "totalAggG1Pubkey",
+            "name": "totalAggregatedG1Pubkey",
             "type": {
               "array": [
                 "u8",
@@ -1803,6 +1803,16 @@
       "code": 8457,
       "name": "NCNOperatorOptInInactive",
       "msg": "NCN Operator Opt In Inactive"
+    },
+    {
+      "code": 8458,
+      "name": "G1PointAdditionError",
+      "msg": "G1 Point Addition Error"
+    },
+    {
+      "code": 8459,
+      "name": "G2PointAdditionError",
+      "msg": "G2 Point Addition Error"
     },
     {
       "code": 8704,

@@ -43,6 +43,12 @@ pub enum NcnProgramError {
     /// 8457 - NCN Operator Opt In Inactive
     #[error("NCN Operator Opt In Inactive")]
     NCNOperatorOptInInactive = 0x2109,
+    /// 8458 - G1 Point Addition Error
+    #[error("G1 Point Addition Error")]
+    G1PointAdditionError = 0x210A,
+    /// 8459 - G2 Point Addition Error
+    #[error("G2 Point Addition Error")]
+    G2PointAdditionError = 0x210B,
     /// 8704 - Incorrect weight table admin
     #[error("Incorrect weight table admin")]
     IncorrectWeightTableAdmin = 0x2200,

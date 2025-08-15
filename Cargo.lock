@@ -3740,6 +3740,7 @@ dependencies = [
  "jito-vault-core",
  "jito-vault-program",
  "ncn-program-core",
+ "num 0.4.3",
  "solana-program",
  "solana-security-txt",
 ]

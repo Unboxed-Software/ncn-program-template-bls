@@ -14,6 +14,7 @@ use solana_bn254::{
 
 use solana_program::msg;
 
+use crate::constants::BN128_ADDITION_SUCESS_RESULT;
 use crate::{
     constants::{G1_GENERATOR, G2_MINUS_ONE, MODULUS},
     error::NCNProgramError,
@@ -292,14 +293,7 @@ impl G1Point {
             Ok(result) => {
                 // The pairing returns 32 bytes: all zeros with 1 in the last byte if successful
                 msg!("Pairing result: {:?}", result);
-                if result.len() == 32
-                    && result
-                        == [
-                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-                        ]
-                {
+                if result.len() == 32 && result == BN128_ADDITION_SUCESS_RESULT {
                     Ok(true)
                 } else {
                     Ok(false)

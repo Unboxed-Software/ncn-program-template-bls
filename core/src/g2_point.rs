@@ -19,7 +19,7 @@ use solana_bn254::{
 use solana_program::msg;
 
 use crate::{
-    constants::{G1_GENERATOR, G2_MINUS_ONE},
+    constants::{BN128_ADDITION_SUCESS_RESULT, G1_GENERATOR, G2_MINUS_ONE},
     error::NCNProgramError,
     g1_point::G1Point,
     privkey::PrivKey,
@@ -47,11 +47,7 @@ impl G2Point {
         // Calculate result
         if let Ok(r) = alt_bn128_pairing(&input) {
             msg!("Pairing result: {:?}", r);
-            if r.eq(&[
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x01,
-            ]) {
+            if r.eq(&BN128_ADDITION_SUCESS_RESULT) {
                 Ok(())
             } else {
                 Err(NCNProgramError::BLSVerificationError)
@@ -61,43 +57,39 @@ impl G2Point {
         }
     }
 
-    pub fn verify_agg_signature<H: HashToCurve, T: AsRef<[u8]>, S: BLSSignature>(
+    pub fn verify_aggregated_signature<H: HashToCurve, T: AsRef<[u8]>, S: BLSSignature>(
         self,
-        agg_signature: G1Point,
+        aggregated_signature: G1Point,
         message: T,
         apk1: G1Point,
     ) -> Result<(), NCNProgramError> {
-        let msg_hash = H::try_hash_to_curve(message)?.0;
-        let alpha = compute_alpha(&msg_hash, &agg_signature.0, &apk1.0, &self.0);
+        let message_hash = H::try_hash_to_curve(message)?.0;
+        let alpha = compute_alpha(&message_hash, &aggregated_signature.0, &apk1.0, &self.0);
 
         let scaled_g1 = G1Point::from(G1_GENERATOR).mul(alpha)?;
-        let scaled_apk1 = apk1.mul(alpha)?;
+        let scaled_aggregated_g1 = apk1.mul(alpha)?;
 
-        let msg_hash_plus_g1 = G1Point::from(msg_hash) + scaled_g1;
-        let agg_signature_plus_apk1 = agg_signature + scaled_apk1;
+        let msg_hash_plus_g1 = G1Point::from(message_hash) + scaled_g1;
+        let aggregated_signature_plus_aggregated_g1 = aggregated_signature + scaled_aggregated_g1;
 
         let mut input = [0u8; 384];
 
         // Pairing equation is:
-        // e(H(m) + G1_Generator * alpha, apk2) = e(agg_signature + apk1 * alpha, G2_MINUS_ONE)
+        // e(H(m) + G1_Generator * alpha, aggregated_g2) = e(aggregated_signature + aggregated_g1 * alpha, G2_MINUS_ONE)
 
         // 1) Hash message to curve
         input[..64].clone_from_slice(&msg_hash_plus_g1.0);
         // 2) Decompress our public key
         input[64..192].clone_from_slice(&self.0);
         // 3) Decompress our signature
-        input[192..256].clone_from_slice(&agg_signature_plus_apk1.0);
+        input[192..256].clone_from_slice(&aggregated_signature_plus_aggregated_g1.0);
         // 4) Pair with -G2::one()
         input[256..].clone_from_slice(&G2_MINUS_ONE);
 
         // Calculate result
         if let Ok(r) = alt_bn128_pairing(&input) {
             msg!("Pairing result: {:?}", r);
-            if r.eq(&[
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x01,
-            ]) {
+            if r.eq(&BN128_ADDITION_SUCESS_RESULT) {
                 Ok(())
             } else {
                 Err(NCNProgramError::BLSVerificationError)
@@ -132,14 +124,14 @@ impl CheckedAdd for G2Point {
                 + ark_bn254::G2Affine::deserialize_compressed(&s1[..])
                     .map_err(|_| NCNProgramError::G2PointCompressionError)?;
 
-            let mut g2_agg_bytes = [0u8; 64];
+            let mut g2_aggregated_bytes = [0u8; 64];
             g2_agg
-                .serialize_compressed(&mut &mut g2_agg_bytes[..])
+                .serialize_compressed(&mut &mut g2_aggregated_bytes[..])
                 .map_err(|_| NCNProgramError::SerializationError)?;
 
-            g2_agg_bytes.reverse();
+            g2_aggregated_bytes.reverse();
 
-            G2Point::try_from(G2CompressedPoint(g2_agg_bytes))
+            G2Point::try_from(G2CompressedPoint(g2_aggregated_bytes))
                 .map_err(|_| NCNProgramError::G2PointDecompressionError)
         })();
 
@@ -166,11 +158,7 @@ impl G2CompressedPoint {
 
         // Calculate result
         if let Ok(r) = alt_bn128_pairing(&input) {
-            if r.eq(&[
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x01,
-            ]) {
+            if r.eq(&BN128_ADDITION_SUCESS_RESULT) {
                 Ok(())
             } else {
                 Err(NCNProgramError::BLSVerificationError)

@@ -932,10 +932,10 @@ impl NCNProgramClient {
             .config(ncn_config)
             .ncn(ncn)
             .epoch_snapshot(epoch_snapshot)
-            .agg_sig(agg_sig)
+            .aggregated_signature(agg_sig)
             .restaking_config(restaking_config)
-            .apk2(apk2)
-            .signers_bitmap(signers_bitmap)
+            .aggregated_g2(apk2)
+            .operators_signature_bitmap(signers_bitmap)
             .message(message)
             .instruction();
 

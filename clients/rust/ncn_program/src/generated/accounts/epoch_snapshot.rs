@@ -26,7 +26,7 @@ pub struct EpochSnapshot {
     pub operator_count: u64,
     pub operators_registered: u64,
     pub operators_can_vote_count: u64,
-    pub total_agg_g1_pubkey: [u8; 32],
+    pub total_aggregated_g1_pubkey: [u8; 32],
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub operator_snapshots: [OperatorSnapshot; 256],
     pub minimum_stake_weight: StakeWeights,

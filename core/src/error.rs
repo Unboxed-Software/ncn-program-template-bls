@@ -25,6 +25,10 @@ pub enum NCNProgramError {
     CastToU128Error,
     #[error("NCN Operator Opt In Inactive")]
     NCNOperatorOptInInactive,
+    #[error("G1 Point Addition Error")]
+    G1PointAdditionError,
+    #[error("G2 Point Addition Error")]
+    G2PointAdditionError,
 
     #[error("Incorrect weight table admin")]
     IncorrectWeightTableAdmin = 0x2200,

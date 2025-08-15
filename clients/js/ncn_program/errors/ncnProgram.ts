@@ -36,6 +36,10 @@ export const NCN_PROGRAM_ERROR__CAST_TO_U64_ERROR = 0x2107; // 8455
 export const NCN_PROGRAM_ERROR__CAST_TO_U128_ERROR = 0x2108; // 8456
 /** NCNOperatorOptInInactive: NCN Operator Opt In Inactive */
 export const NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE = 0x2109; // 8457
+/** G1PointAdditionError: G1 Point Addition Error */
+export const NCN_PROGRAM_ERROR__G1_POINT_ADDITION_ERROR = 0x210a; // 8458
+/** G2PointAdditionError: G2 Point Addition Error */
+export const NCN_PROGRAM_ERROR__G2_POINT_ADDITION_ERROR = 0x210b; // 8459
 /** IncorrectWeightTableAdmin: Incorrect weight table admin */
 export const NCN_PROGRAM_ERROR__INCORRECT_WEIGHT_TABLE_ADMIN = 0x2200; // 8704
 /** DuplicateMintsInTable: Duplicate mints in table */
@@ -278,8 +282,10 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED
   | typeof NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED
   | typeof NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE
+  | typeof NCN_PROGRAM_ERROR__G1_POINT_ADDITION_ERROR
   | typeof NCN_PROGRAM_ERROR__G1_POINT_COMPRESSION_ERROR
   | typeof NCN_PROGRAM_ERROR__G1_POINT_DECOMPRESSION_ERROR
+  | typeof NCN_PROGRAM_ERROR__G2_POINT_ADDITION_ERROR
   | typeof NCN_PROGRAM_ERROR__G2_POINT_COMPRESSION_ERROR
   | typeof NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR
   | typeof NCN_PROGRAM_ERROR__HASH_TO_CURVE_ERROR
@@ -393,8 +399,10 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED]: `Epoch snapshot not finalized`,
     [NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED]: `Fee cap exceeded`,
     [NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE]: `Fee not active`,
+    [NCN_PROGRAM_ERROR__G1_POINT_ADDITION_ERROR]: `G1 Point Addition Error`,
     [NCN_PROGRAM_ERROR__G1_POINT_COMPRESSION_ERROR]: `G1 point compression error`,
     [NCN_PROGRAM_ERROR__G1_POINT_DECOMPRESSION_ERROR]: `G1 point decompression error`,
+    [NCN_PROGRAM_ERROR__G2_POINT_ADDITION_ERROR]: `G2 Point Addition Error`,
     [NCN_PROGRAM_ERROR__G2_POINT_COMPRESSION_ERROR]: `G2 point compression error`,
     [NCN_PROGRAM_ERROR__G2_POINT_DECOMPRESSION_ERROR]: `G2 point decompression error`,
     [NCN_PROGRAM_ERROR__HASH_TO_CURVE_ERROR]: `Hash to curve error`,

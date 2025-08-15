@@ -10,11 +10,15 @@ use ncn_program_core::{
     g2_point::{G2CompressedPoint, G2Point},
     schemes::Sha256Normalized,
 };
+
+use num::CheckedAdd;
+
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
     msg,
+    program_error::ProgramError,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
@@ -22,8 +26,10 @@ use solana_program::{
 /// Allows an operator to cast a vote on weather status.
 ///
 /// ### Parameters:
-/// - `weather_status`: Status code for the vote (0=Sunny, 1=Cloudy, 2=Rainy)
-/// - `epoch`: The target epoch
+/// - `aggregated_g2`: Aggregated G2 public key in compressed format (64 bytes)
+/// - `aggregated_signature`: Aggregated G1 signature in compressed format (32 bytes)
+/// - `operators_signature_bitmap`: Bitmap indicating which operators signed the vote
+/// - `message`: The message to sign, typically the current epoch or a specific vote identifier
 ///
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account (named `ncn_config` in code)
@@ -33,9 +39,9 @@ use solana_program::{
 pub fn process_cast_vote(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    apk2: [u8; G2_COMPRESSED_POINT_SIZE],
-    agg_sig: [u8; G1_COMPRESSED_POINT_SIZE],
-    non_signers_bitmap: Vec<u8>,
+    aggregated_g2: [u8; G2_COMPRESSED_POINT_SIZE],
+    aggregated_signature: [u8; G1_COMPRESSED_POINT_SIZE],
+    operators_signature_bitmap: Vec<u8>,
     message: [u8; 32],
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
@@ -68,26 +74,23 @@ pub fn process_cast_vote(
     msg!("Current slot: {}", slot);
 
     // Check bitmap size
-    let required_bitmap_bytes = (operator_count + 7) / 8;
-    if non_signers_bitmap.len() as u64 != required_bitmap_bytes {
+    let required_bitmap_bytes = (operator_count
+        .checked_add(7)
+        .ok_or(ProgramError::ArithmeticOverflow)?)
+        / 8;
+    if operators_signature_bitmap.len() as u64 != required_bitmap_bytes {
         msg!("Invalid bitmap size");
         return Err(NCNProgramError::InvalidInputLength.into());
     }
 
-    msg!(
-        "Bitmap is: {:?} , {:?}",
-        non_signers_bitmap.len(),
-        operator_count
-    );
-
-    // Convert apk2 to G2Point
-    let apk2_compressed_point = G2CompressedPoint::from(apk2);
-    let apk2_point = G2Point::try_from(apk2_compressed_point)
+    // Convert aggregated_g2 pubkey to G2Point
+    let aggregated_g2_compressed_point = G2CompressedPoint::from(aggregated_g2);
+    let aggregated_g2_point = G2Point::try_from(aggregated_g2_compressed_point)
         .map_err(|_| NCNProgramError::G2PointDecompressionError)?;
 
     // Aggregate the G1 public keys of operators who signed
     let mut aggregated_nonsigners_pubkey: Option<G1Point> = None;
-    let mut non_signers_count = 0;
+    let mut non_signers_count: u64 = 0;
 
     for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumerate() {
         if i >= operator_count as usize {
@@ -96,7 +99,7 @@ pub fn process_cast_vote(
 
         let byte_index = i / 8;
         let bit_index = i % 8;
-        let signed = (non_signers_bitmap[byte_index] >> bit_index) & 1 == 1;
+        let signed = (operators_signature_bitmap[byte_index] >> bit_index) & 1 == 1;
 
         if signed {
             let snapshot_epoch =
@@ -112,8 +115,6 @@ pub fn process_cast_vote(
                 return Err(NCNProgramError::OperatorHasNoMinimumStake.into());
             }
         } else {
-            non_signers_count += 1;
-
             // Convert bytes to G1Point
             let g1_compressed = G1CompressedPoint::from(operator_snapshot.g1_pubkey());
             let g1_point = G1Point::try_from(&g1_compressed)
@@ -124,8 +125,16 @@ pub fn process_cast_vote(
             } else {
                 // Add this G1 pubkey to the aggregate using G1Point addition
                 let current = aggregated_nonsigners_pubkey.unwrap();
-                aggregated_nonsigners_pubkey = Some(current + g1_point);
+                aggregated_nonsigners_pubkey = Some(
+                    current
+                        .checked_add(&g1_point)
+                        .ok_or(NCNProgramError::AltBN128AddError)?,
+                );
             }
+
+            non_signers_count = non_signers_count
+                .checked_add(1)
+                .ok_or(ProgramError::ArithmeticOverflow)?
         }
     }
 
@@ -139,22 +148,25 @@ pub fn process_cast_vote(
         return Err(NCNProgramError::QuorumNotMet.into());
     }
 
-    let total_agg_g1_pubkey_compressed =
-        G1CompressedPoint::from(epoch_snapshot.total_agg_g1_pubkey());
-    let total_agg_g1_pubkey = G1Point::try_from(&total_agg_g1_pubkey_compressed)
+    let total_aggregate_g1_pubkey_compressed =
+        G1CompressedPoint::from(epoch_snapshot.total_aggregated_g1_pubkey());
+    let total_aggregated_g1_pubkey = G1Point::try_from(&total_aggregate_g1_pubkey_compressed)
         .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
 
-    let signature_compressed = G1CompressedPoint(agg_sig);
+    let signature_compressed = G1CompressedPoint(aggregated_signature);
     let signature = G1Point::try_from(&signature_compressed)
         .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
 
+    // If there are no non-signers, we should verify the aggregate signature with the total G1
+    // pubkey because adding to the initial non-signers pubkey would result in error since it is
+    // initialized to all zeros and this is not a valid point of the curve BN128
     if non_signers_count == 0 {
         msg!("All operators signed, verifying aggregate signature with total G1 pubkey");
-        apk2_point
-            .verify_agg_signature::<Sha256Normalized, &[u8], G1Point>(
+        aggregated_g2_point
+            .verify_aggregated_signature::<Sha256Normalized, &[u8], G1Point>(
                 signature,
                 &message,
-                total_agg_g1_pubkey,
+                total_aggregated_g1_pubkey,
             )
             .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
     } else {
@@ -162,17 +174,27 @@ pub fn process_cast_vote(
         let aggregated_nonsigners_pubkey =
             aggregated_nonsigners_pubkey.ok_or(NCNProgramError::NoNonSignersAggregatedPubkey)?;
 
-        let apk1 = total_agg_g1_pubkey + aggregated_nonsigners_pubkey.negate();
+        let apk1 = total_aggregated_g1_pubkey
+            .checked_add(&aggregated_nonsigners_pubkey.negate())
+            .ok_or(NCNProgramError::AltBN128AddError)?;
 
-        msg!("Aggreged non-signers G1 pubkeys {:?}", apk1.0);
-        msg!("Aggreged G2 {:?}", apk2_point.0);
+        msg!("Aggregated non-signers G1 pubkey {:?}", apk1.0);
+        msg!("Aggregated G2 pubkey {:?}", aggregated_g2_point.0);
 
         // One Pairing attempt
         msg!("Verifying aggregate signature one pairing");
-        apk2_point
-            .verify_agg_signature::<Sha256Normalized, &[u8], G1Point>(signature, &message, apk1)
+        aggregated_g2_point
+            .verify_aggregated_signature::<Sha256Normalized, &[u8], G1Point>(
+                signature, &message, apk1,
+            )
             .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
     }
+
+    // TODO: add a PDA for the NCN that will hold a counter that will get incremented here
+    // the message should be the counter count, and we don't have to pass the counter, we should
+    // read it form the PDA
+    // when you do that, add a note to tell the reader that this could be anything, but by making
+    // it the counter count, we can enforce on duplicate signatures
 
     Ok(())
 }

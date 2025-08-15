@@ -210,9 +210,9 @@ pub enum NCNProgramInstruction {
     #[account(2, name = "epoch_snapshot")]
     #[account(3, name = "restaking_config")]
     CastVote {
-        agg_sig: [u8; 32],
-        apk2: [u8; 64],
-        signers_bitmap: Vec<u8>,
+        aggregated_signature: [u8; 32],
+        aggregated_g2: [u8; 64],
+        operators_signature_bitmap: Vec<u8>,
         message: [u8; 32],
     },
 

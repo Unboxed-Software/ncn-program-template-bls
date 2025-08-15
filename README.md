@@ -206,7 +206,7 @@ pub struct EpochSnapshot {
     operator_count: PodU64,                  // Total operators
     operators_registered: PodU64,           // Active operators
     operators_can_vote_count: PodU64,       // Eligible voters
-    total_agg_g1_pubkey: [u8; 32],          // Aggregated public key
+    total_aggregated_g1_pubkey: [u8; 32],          // Aggregated public key
     operator_snapshots: [OperatorSnapshot; 256], // Operator states
     minimum_stake_weight: StakeWeights,     // Participation threshold
 }
@@ -559,20 +559,6 @@ solana program close --buffers
 - **Storage Costs**: Large account sizes for snapshots
 - **Compute Units**: Complex cryptographic operations
 
-## Optimization Opportunities and Development TODOs
-
-1. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
-1. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
-1. instead of having two Instuctions (`ResgiterOperator` and `InitOperatorSnapshot`) they could be only one
-1. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
-1. Remove weight table since it is only one vault, no need to init and set weights every epoch.
-1. since it is only one vault, the vault registry is not needed, consider removing it.
-1. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
-1. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
-1. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
-1. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params
-1. CLI: crank-update-all-vaults are updating
-
 ## The command that you need to run to get started
 
 - Build the program and the cli:
@@ -645,3 +631,18 @@ sleep 2
 sleep 2
 ./target/debug/ncn-program-bls-cli snapshot-vault-operator-delegation --operator <Operator Pubkey>
 ```
+
+## Optimization Opportunities and Development TODOs
+
+[]. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
+[]. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
+[]. instead of having two Instructions (`ResgiterOperator` and `InitOperatorSnapshot`) they could be only one
+[]. check to see if the operator change its G1 pubkey, are we changing that in the operator_snapshot account or not, if not then we should change it.
+[]. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
+[]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
+[]. since it is only one vault, the vault registry is not needed, consider removing it.
+[]. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
+[]. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
+[]. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
+[]. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params
+[]. CLI: crank-update-all-vaults are updating

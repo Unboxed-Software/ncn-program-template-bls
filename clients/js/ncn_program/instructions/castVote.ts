@@ -68,16 +68,16 @@ export type CastVoteInstruction<
 
 export type CastVoteInstructionData = {
   discriminator: number;
-  aggSig: ReadonlyUint8Array;
-  apk2: ReadonlyUint8Array;
-  signersBitmap: ReadonlyUint8Array;
+  aggregatedSignature: ReadonlyUint8Array;
+  aggregatedG2: ReadonlyUint8Array;
+  operatorsSignatureBitmap: ReadonlyUint8Array;
   message: ReadonlyUint8Array;
 };
 
 export type CastVoteInstructionDataArgs = {
-  aggSig: ReadonlyUint8Array;
-  apk2: ReadonlyUint8Array;
-  signersBitmap: ReadonlyUint8Array;
+  aggregatedSignature: ReadonlyUint8Array;
+  aggregatedG2: ReadonlyUint8Array;
+  operatorsSignatureBitmap: ReadonlyUint8Array;
   message: ReadonlyUint8Array;
 };
 
@@ -85,10 +85,10 @@ export function getCastVoteInstructionDataEncoder(): Encoder<CastVoteInstruction
   return transformEncoder(
     getStructEncoder([
       ['discriminator', getU8Encoder()],
-      ['aggSig', fixEncoderSize(getBytesEncoder(), 32)],
-      ['apk2', fixEncoderSize(getBytesEncoder(), 64)],
+      ['aggregatedSignature', fixEncoderSize(getBytesEncoder(), 32)],
+      ['aggregatedG2', fixEncoderSize(getBytesEncoder(), 64)],
       [
-        'signersBitmap',
+        'operatorsSignatureBitmap',
         addEncoderSizePrefix(getBytesEncoder(), getU32Encoder()),
       ],
       ['message', fixEncoderSize(getBytesEncoder(), 32)],
@@ -100,9 +100,12 @@ export function getCastVoteInstructionDataEncoder(): Encoder<CastVoteInstruction
 export function getCastVoteInstructionDataDecoder(): Decoder<CastVoteInstructionData> {
   return getStructDecoder([
     ['discriminator', getU8Decoder()],
-    ['aggSig', fixDecoderSize(getBytesDecoder(), 32)],
-    ['apk2', fixDecoderSize(getBytesDecoder(), 64)],
-    ['signersBitmap', addDecoderSizePrefix(getBytesDecoder(), getU32Decoder())],
+    ['aggregatedSignature', fixDecoderSize(getBytesDecoder(), 32)],
+    ['aggregatedG2', fixDecoderSize(getBytesDecoder(), 64)],
+    [
+      'operatorsSignatureBitmap',
+      addDecoderSizePrefix(getBytesDecoder(), getU32Decoder()),
+    ],
     ['message', fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
@@ -127,9 +130,9 @@ export type CastVoteInput<
   ncn: Address<TAccountNcn>;
   epochSnapshot: Address<TAccountEpochSnapshot>;
   restakingConfig: Address<TAccountRestakingConfig>;
-  aggSig: CastVoteInstructionDataArgs['aggSig'];
-  apk2: CastVoteInstructionDataArgs['apk2'];
-  signersBitmap: CastVoteInstructionDataArgs['signersBitmap'];
+  aggregatedSignature: CastVoteInstructionDataArgs['aggregatedSignature'];
+  aggregatedG2: CastVoteInstructionDataArgs['aggregatedG2'];
+  operatorsSignatureBitmap: CastVoteInstructionDataArgs['operatorsSignatureBitmap'];
   message: CastVoteInstructionDataArgs['message'];
 };
 

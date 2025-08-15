@@ -1013,9 +1013,9 @@ pub async fn operator_cast_vote(
         .ncn(ncn)
         .epoch_snapshot(epoch_snapshot)
         .restaking_config(restaking_config)
-        .agg_sig(agg_sig)
-        .apk2(apk2)
-        .signers_bitmap(signers_bitmap)
+        .aggregated_signature(agg_sig)
+        .aggregated_g2(apk2)
+        .operators_signature_bitmap(signers_bitmap)
         .message(message)
         .instruction();
 
