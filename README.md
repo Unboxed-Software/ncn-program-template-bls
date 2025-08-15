@@ -11,6 +11,12 @@
   - [2. Account Types (9 Primary Accounts)](#2-account-types-9-primary-accounts)
   - [3. Vote Counter System](#3-vote-counter-system)
   - [4. BLS Cryptography Implementation](#4-bls-cryptography-implementation)
+- [🧮 BN128 Mathematics and Cryptographic Foundations](#-bn128-mathematics-and-cryptographic-foundations)
+  - [Core Mathematical Concepts](#core-mathematical-concepts)
+  - [BLS Signature Mathematics](#bls-signature-mathematics)
+  - [Voting Implementation Mathematics](#voting-implementation-mathematics)
+  - [Security Properties](#security-properties)
+  - [Performance Considerations](#performance-considerations)
 - [🔄 Consensus Workflow](#-consensus-workflow)
   - [Phase 1: Initialization (Per NCN)](#phase-1-initialization-per-ncn)
   - [Phase 2: Epoch Setup (Per Epoch)](#phase-2-epoch-setup-per-epoch)
@@ -323,6 +329,445 @@ Located in `core/src/schemes/`:
 - G1 Public keys: For signature aggregation
 - G2 Public keys: For verification operations
 - Signature verification: Uses Solana's alt_bn128 precompiles
+
+## 🧮 BN128 Mathematics and Cryptographic Foundations
+
+### Overview
+
+This section details the mathematical foundations underlying the BLS signature aggregation system implemented in the NCN program. The system uses the BN254 (alt_bn128) elliptic curve to enable efficient signature aggregation and verification through bilinear pairings.
+
+### Core Mathematical Concepts
+
+#### **1. BN254 Elliptic Curve**
+
+The BN254 curve is defined over a finite field with the equation:
+```
+y² = x³ + 3 (mod p)
+```
+Where:
+- `p = 21888242871839275222246405745257275088696311157297823662689037894645226208583` (prime modulus)
+- G1: Points on the base curve over Fp
+- G2: Points on the twisted curve over Fp²
+
+#### **2. Curve Points and Generators**
+
+**G1 Generator Point:**
+```rust:48:55:core/src/constants.rs
+pub const G1_GENERATOR: [u8; 64] = [
+    // x coordinate: 1
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+    // y coordinate: 2
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+];
+```
+
+**Curve Order (MODULUS):**
+```rust:37:44:core/src/constants.rs
+pub static MODULUS: UBig = unsafe {
+    UBig::from_static_words(&[
+        0x3c208c16d87cfd47,
+        0x97816a916871ca8d,
+        0xb85045b68181585d,
+        0x30644e72e131a029,
+    ])
+};
+```
+
+### BLS Signature Mathematics
+
+#### **1. Hash-to-Curve Implementation**
+
+The system implements a deterministic hash-to-curve function using SHA-256 with normalization:
+
+```rust:23:47:core/src/schemes/sha256_normalized.rs
+impl HashToCurve for Sha256Normalized {
+    fn try_hash_to_curve<T: AsRef<[u8]>>(message: T) -> Result<G1Point, NCNProgramError> {
+        (0..255)
+            .find_map(|n: u8| {
+                // Create a hash
+                let hash = solana_nostd_sha256::hashv(&[message.as_ref(), &[n]]);
+
+                // Convert hash to a Ubig for Bigint operations
+                let hash_ubig = UBig::from_be_bytes(&hash);
+
+                // Check if the hash is higher than our normalization modulus of Fq * 5
+                if hash_ubig >= NORMALIZE_MODULUS {
+                    return None;
+                }
+
+                let modulus_ubig = hash_ubig % &MODULUS;
+
+                // Decompress the point
+                match alt_bn128_g1_decompress(&modulus_ubig.to_be_bytes()) {
+                    Ok(p) => Some(G1Point(p)),
+                    Err(_) => None,
+                }
+            })
+            .ok_or(NCNProgramError::HashToCurveError)
+    }
+}
+```
+
+**Mathematical Process:**
+1. **Domain Separation**: `H(message || n)` where `n` is a counter (0-254)
+2. **Normalization**: Ensure hash < `NORMALIZE_MODULUS` to avoid bias
+3. **Modular Reduction**: `hash mod p` to get field element
+4. **Curve Mapping**: Attempt to decompress as G1 point until valid point found
+
+#### **2. BLS Signature Verification**
+
+The system implements two verification modes: single signature and aggregated signature verification.
+
+**Single Signature Verification:**
+
+The verification equation is:
+```
+e(H(m), PK2) = e(σ, G2_GENERATOR)
+```
+Which is implemented as:
+```
+e(H(m), PK2) * e(σ, -G2_GENERATOR) = 1
+```
+
+where:
+- `H(m)` is the hash of the message
+- `PK2` is the G2 public key
+- `σ` is the signature
+- `G2_GENERATOR` is the generator point for the G2 curve
+- `e` is the pairing function
+
+```rust:31:58:core/src/g2_point.rs
+pub fn verify_signature<H: HashToCurve, T: AsRef<[u8]>, S: BLSSignature>(
+    self,
+    signature: S,
+    message: T,
+) -> Result<(), NCNProgramError> {
+    let mut input = [0u8; 384];
+
+    // 1) Hash message to curve
+    input[..64].clone_from_slice(&H::try_hash_to_curve(message)?.0);
+    // 2) Decompress our public key
+    input[64..192].clone_from_slice(&self.0);
+    // 3) Decompress our signature
+    input[192..256].clone_from_slice(&signature.to_bytes()?);
+    // 4) Pair with -G2::one()
+    input[256..].clone_from_slice(&G2_MINUS_ONE);
+
+    // Calculate result
+    if let Ok(r) = alt_bn128_pairing(&input) {
+        msg!("Pairing result: {:?}", r);
+        if r.eq(&BN128_ADDITION_SUCESS_RESULT) {
+            Ok(())
+        } else {
+            Err(NCNProgramError::BLSVerificationError)
+        }
+    } else {
+        Err(NCNProgramError::AltBN128PairingError)
+    }
+}
+```
+
+#### **3. Aggregated Signature Verification with Anti-Rogue Key Protection**
+
+The aggregated signature verification uses a sophisticated scheme to prevent rogue key attacks:
+
+**Core Equation:**
+```
+e(H(m) + α·G1, APK2) = e(σ + α·APK1, G2_GENERATOR)
+```
+
+Implemented as:
+```
+e(H(m) + α·G1, APK2) * e(σ + α·APK1, -G2_GENERATOR) = 1
+```
+
+Where:
+- `α = H(H(m) || σ || APK1 || APK2)` (anti-rogue key factor)
+- `APK1 = Σ(PK1_i)` (aggregated G1 public keys)
+- `APK2` = aggregated G2 public key
+- `σ` = aggregated signature
+- `G2_GENERATOR` = generator point for the G2 curve
+- `e` = pairing function
+
+```rust:60:100:core/src/g2_point.rs
+pub fn verify_aggregated_signature<H: HashToCurve, T: AsRef<[u8]>, S: BLSSignature>(
+    self,
+    aggregated_signature: G1Point,
+    message: T,
+    apk1: G1Point,
+) -> Result<(), NCNProgramError> {
+    let message_hash = H::try_hash_to_curve(message)?.0;
+    let alpha = compute_alpha(&message_hash, &aggregated_signature.0, &apk1.0, &self.0);
+
+    let scaled_g1 = G1Point::from(G1_GENERATOR).mul(alpha)?;
+    let scaled_aggregated_g1 = apk1.mul(alpha)?;
+
+    let msg_hash_plus_g1 = G1Point::from(message_hash) + scaled_g1;
+    let aggregated_signature_plus_aggregated_g1 = aggregated_signature + scaled_aggregated_g1;
+
+    let mut input = [0u8; 384];
+
+    // Pairing equation is:
+    // e(H(m) + G1_Generator * alpha, aggregated_g2) = e(aggregated_signature + aggregated_g1 * alpha, G2_MINUS_ONE)
+
+    // 1) Hash message to curve
+    input[..64].clone_from_slice(&msg_hash_plus_g1.0);
+    // 2) Decompress our public key
+    input[64..192].clone_from_slice(&self.0);
+    // 3) Decompress our signature
+    input[192..256].clone_from_slice(&aggregated_signature_plus_aggregated_g1.0);
+    // 4) Pair with -G2::one()
+    input[256..].clone_from_slice(&G2_MINUS_ONE);
+
+    // Calculate result
+    if let Ok(r) = alt_bn128_pairing(&input) {
+        msg!("Pairing result: {:?}", r);
+        if r.eq(&BN128_ADDITION_SUCESS_RESULT) {
+            Ok(())
+        } else {
+            Err(NCNProgramError::BLSVerificationError)
+        }
+    } else {
+        Err(NCNProgramError::AltBN128PairingError)
+    }
+}
+```
+
+**Anti-Rogue Key Factor Computation:**
+```rust:55:84:core/src/utils.rs
+pub fn compute_alpha(
+    message: &[u8; 64],
+    signature: &[u8; 64],
+    apk1: &[u8; 64],
+    apk2: &[u8; 128],
+) -> [u8; 32] {
+    // Concatenate all inputs
+    let mut input = Vec::with_capacity(message.len() + signature.len() + apk1.len() + apk2.len());
+    input.extend_from_slice(message);
+    input.extend_from_slice(signature);
+    input.extend_from_slice(apk1);
+    input.extend_from_slice(apk2);
+
+    // Hash the concatenated input
+    let hash = solana_nostd_sha256::hashv(&[&input]);
+
+    // Convert hash to UBig and reduce modulo MODULUS
+    let hash_ubig = UBig::from_be_bytes(&hash) % MODULUS.clone();
+    let mut alpha_bytes = [0u8; 32];
+    let hash_bytes = hash_ubig.to_be_bytes();
+    // Copy to 32 bytes, pad with zeros if needed
+    let pad = 32usize.saturating_sub(hash_bytes.len());
+    if pad > 0 {
+        alpha_bytes[..pad].fill(0);
+        alpha_bytes[pad..].copy_from_slice(&hash_bytes);
+    } else {
+        alpha_bytes.copy_from_slice(&hash_bytes[hash_bytes.len() - 32..]);
+    }
+    alpha_bytes
+}
+```
+
+### Voting Implementation Mathematics
+
+#### **1. Signature Aggregation Logic**
+
+In the `cast_vote` instruction, the system handles partial signature aggregation:
+
+```rust:105:154:program/src/cast_vote.rs
+// Aggregate the G1 public keys of operators who signed
+let mut aggregated_nonsigners_pubkey: Option<G1Point> = None;
+let mut non_signers_count: u64 = 0;
+
+for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumerate() {
+    if i >= operator_count as usize {
+        break;
+    }
+
+    let byte_index = i / 8;
+    let bit_index = i % 8;
+    let signed = (operators_signature_bitmap[byte_index] >> bit_index) & 1 == 1;
+
+    if signed {
+        let snapshot_epoch =
+            get_epoch(operator_snapshot.last_snapshot_slot(), ncn_epoch_length)?;
+        let current_epoch = get_epoch(current_slot, ncn_epoch_length)?;
+        let has_minimum_stake =
+            operator_snapshot.has_minimum_stake_weight_now(current_epoch, snapshot_epoch)?;
+        if !has_minimum_stake {
+            msg!(
+                "The operator {} does not have enough stake to vote",
+                operator_snapshot.operator()
+            );
+            return Err(NCNProgramError::OperatorHasNoMinimumStake.into());
+        }
+    } else {
+        // Convert bytes to G1Point
+        let g1_compressed = G1CompressedPoint::from(operator_snapshot.g1_pubkey());
+        let g1_point = G1Point::try_from(&g1_compressed)
+            .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
+
+        if aggregated_nonsigners_pubkey.is_none() {
+            aggregated_nonsigners_pubkey = Some(g1_point);
+        } else {
+            // Add this G1 pubkey to the aggregate using G1Point addition
+            let current = aggregated_nonsigners_pubkey.unwrap();
+            aggregated_nonsigners_pubkey = Some(
+                current
+                    .checked_add(&g1_point)
+                    .ok_or(NCNProgramError::AltBN128AddError)?,
+            );
+        }
+
+        non_signers_count = non_signers_count
+            .checked_add(1)
+            .ok_or(ProgramError::ArithmeticOverflow)?
+    }
+}
+```
+
+#### **2. Public Key Adjustment for Partial Signatures**
+
+When not all operators sign, the system computes the effective aggregate public key:
+
+```rust:165:207:program/src/cast_vote.rs
+let total_aggregate_g1_pubkey_compressed =
+    G1CompressedPoint::from(epoch_snapshot.total_aggregated_g1_pubkey());
+let total_aggregated_g1_pubkey = G1Point::try_from(&total_aggregate_g1_pubkey_compressed)
+    .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
+
+let signature_compressed = G1CompressedPoint(aggregated_signature);
+let signature = G1Point::try_from(&signature_compressed)
+    .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
+
+// If there are no non-signers, we should verify the aggregate signature with the total G1
+// pubkey because adding to the initial non-signers pubkey would result in error since it is
+// initialized to all zeros and this is not a valid point of the curve BN128
+if non_signers_count == 0 {
+    msg!("All operators signed, verifying aggregate signature with total G1 pubkey");
+    aggregated_g2_point
+        .verify_aggregated_signature::<Sha256Normalized, &[u8], G1Point>(
+            signature,
+            &message_32,
+            total_aggregated_g1_pubkey,
+        )
+        .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
+} else {
+    msg!("Total non signers: {}", non_signers_count);
+    let aggregated_nonsigners_pubkey =
+        aggregated_nonsigners_pubkey.ok_or(NCNProgramError::NoNonSignersAggregatedPubkey)?;
+
+    let apk1 = total_aggregated_g1_pubkey
+        .checked_add(&aggregated_nonsigners_pubkey.negate())
+        .ok_or(NCNProgramError::AltBN128AddError)?;
+
+    msg!("Aggregated non-signers G1 pubkey {:?}", apk1.0);
+    msg!("Aggregated G2 pubkey {:?}", aggregated_g2_point.0);
+
+    // One Pairing attempt
+    msg!("Verifying aggregate signature one pairing");
+    aggregated_g2_point
+        .verify_aggregated_signature::<Sha256Normalized, &[u8], G1Point>(
+            signature,
+            &message_32,
+            apk1,
+        )
+        .map_err(|_| NCNProgramError::SignatureVerificationFailed)?;
+}
+```
+
+**Mathematical Logic:**
+- If all operators sign: `APK1 = Σ(PK1_i)` for all i
+- If some don't sign: `APK1 = Σ(PK1_i) - Σ(PK1_j)` where j are non-signers
+- This is computed as: `APK1 = total_aggregated_g1_pubkey + (-aggregated_nonsigners_pubkey)`
+
+#### **3. Point Negation Implementation**
+
+The point negation operation is crucial for signature aggregation:
+
+```rust:240:264:core/src/g1_point.rs
+/// Returns the negation of the point: (x, -y mod p)
+pub fn negate(&self) -> Self {
+    // x: first 32 bytes, y: last 32 bytes
+    let x_bytes = &self.0[0..32];
+    let y_bytes = &self.0[32..64];
+    let y = UBig::from_be_bytes(y_bytes);
+    let neg_y = if y == UBig::ZERO {
+        UBig::ZERO
+    } else {
+        (MODULUS.clone() - y) % MODULUS.clone()
+    };
+    let mut neg_point = [0u8; 64];
+    neg_point[0..32].copy_from_slice(x_bytes);
+    let neg_y_bytes = neg_y.to_be_bytes();
+    // pad to 32 bytes if needed
+    let pad = 32 - neg_y_bytes.len();
+    if pad > 0 {
+        for i in 0..pad {
+            neg_point[32 + i] = 0;
+        }
+        neg_point[32 + pad..64].copy_from_slice(&neg_y_bytes);
+    } else {
+        neg_point[32..64].copy_from_slice(&neg_y_bytes);
+    }
+    G1Point(neg_point)
+}
+```
+
+### Security Properties
+
+#### **1. Replay Attack Prevention**
+
+The system uses a vote counter as the message:
+
+```rust:62:70:program/src/cast_vote.rs
+// Get the current counter value to use as the message for signature verification
+let vote_counter_data = vote_counter.data.borrow();
+let vote_counter_account = VoteCounter::try_from_slice_unchecked(&vote_counter_data)?;
+let current_count = vote_counter_account.count();
+let message = current_count.to_le_bytes();
+// Pad to 32 bytes for signature verification
+let mut message_32 = [0u8; 32];
+message_32[..8].copy_from_slice(&message);
+```
+
+#### **2. Quorum Requirements**
+
+The system enforces a 2/3 majority for consensus:
+
+```rust:155:163:program/src/cast_vote.rs
+// If non_signers_count is more than 1/3 of registered operators, throw an error because quorum didn't meet
+if non_signers_count > operator_count / 3 {
+    msg!(
+        "Quorum not met: non-signers count ({}) exceeds 1/3 of registered operators ({})",
+        non_signers_count,
+        operator_count
+    );
+    return Err(NCNProgramError::QuorumNotMet.into());
+}
+```
+
+#### **3. Stake Weight Validation**
+
+Only operators with sufficient stake can participate:
+
+```rust:118:131:program/src/cast_vote.rs
+if signed {
+    let snapshot_epoch =
+        get_epoch(operator_snapshot.last_snapshot_slot(), ncn_epoch_length)?;
+    let current_epoch = get_epoch(current_slot, ncn_epoch_length)?;
+    let has_minimum_stake =
+        operator_snapshot.has_minimum_stake_weight_now(current_epoch, snapshot_epoch)?;
+    if !has_minimum_stake {
+        msg!(
+            "The operator {} does not have enough stake to vote",
+            operator_snapshot.operator()
+        );
+        return Err(NCNProgramError::OperatorHasNoMinimumStake.into());
+    }
+}
+```
 
 ## 🔄 Consensus Workflow
 
