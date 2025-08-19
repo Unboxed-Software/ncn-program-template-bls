@@ -13,7 +13,7 @@ pub mod g1_point;
 pub mod g2_point;
 pub mod instruction;
 pub mod loaders;
-pub mod operator_registry;
+pub mod ncn_operator_account;
 pub mod privkey;
 pub mod schemes;
 pub mod stake_weight;

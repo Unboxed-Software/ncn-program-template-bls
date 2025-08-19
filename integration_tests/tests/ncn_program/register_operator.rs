@@ -61,16 +61,16 @@ mod tests {
             )
             .await?;
 
-        let operator_entry = ncn_program_client
-            .get_operator_entry(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
 
         assert_eq!(
-            operator_entry.operator_pubkey(),
+            ncn_operator_account.operator_pubkey(),
             &operator_root.operator_pubkey
         );
-        assert_eq!(operator_entry.g1_pubkey(), &g1_compressed.0);
-        assert_eq!(operator_entry.g2_pubkey(), &g2_compressed.0);
+        assert_eq!(ncn_operator_account.g1_pubkey(), &g1_compressed.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &g2_compressed.0);
 
         Ok(())
     }

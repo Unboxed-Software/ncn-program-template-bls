@@ -12,7 +12,7 @@ use borsh::BorshSerialize;
 pub struct RegisterOperator {
     pub config: solana_program::pubkey::Pubkey,
 
-    pub operator_entry: solana_program::pubkey::Pubkey,
+    pub ncn_operator_account: solana_program::pubkey::Pubkey,
 
     pub ncn: solana_program::pubkey::Pubkey,
 
@@ -48,7 +48,7 @@ impl RegisterOperator {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.operator_entry,
+            self.ncn_operator_account,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -121,7 +121,7 @@ pub struct RegisterOperatorInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[]` config
-///   1. `[writable]` operator_entry
+///   1. `[writable]` ncn_operator_account
 ///   2. `[]` ncn
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
@@ -132,7 +132,7 @@ pub struct RegisterOperatorInstructionArgs {
 #[derive(Clone, Debug, Default)]
 pub struct RegisterOperatorBuilder {
     config: Option<solana_program::pubkey::Pubkey>,
-    operator_entry: Option<solana_program::pubkey::Pubkey>,
+    ncn_operator_account: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     operator: Option<solana_program::pubkey::Pubkey>,
     operator_admin: Option<solana_program::pubkey::Pubkey>,
@@ -156,8 +156,11 @@ impl RegisterOperatorBuilder {
         self
     }
     #[inline(always)]
-    pub fn operator_entry(&mut self, operator_entry: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.operator_entry = Some(operator_entry);
+    pub fn ncn_operator_account(
+        &mut self,
+        ncn_operator_account: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.ncn_operator_account = Some(ncn_operator_account);
         self
     }
     #[inline(always)]
@@ -239,7 +242,9 @@ impl RegisterOperatorBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = RegisterOperator {
             config: self.config.expect("config is not set"),
-            operator_entry: self.operator_entry.expect("operator_entry is not set"),
+            ncn_operator_account: self
+                .ncn_operator_account
+                .expect("ncn_operator_account is not set"),
             ncn: self.ncn.expect("ncn is not set"),
             operator: self.operator.expect("operator is not set"),
             operator_admin: self.operator_admin.expect("operator_admin is not set"),
@@ -266,7 +271,7 @@ impl RegisterOperatorBuilder {
 pub struct RegisterOperatorCpiAccounts<'a, 'b> {
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub operator_entry: &'b solana_program::account_info::AccountInfo<'a>,
+    pub ncn_operator_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -290,7 +295,7 @@ pub struct RegisterOperatorCpi<'a, 'b> {
 
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub operator_entry: &'b solana_program::account_info::AccountInfo<'a>,
+    pub ncn_operator_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -318,7 +323,7 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
         Self {
             __program: program,
             config: accounts.config,
-            operator_entry: accounts.operator_entry,
+            ncn_operator_account: accounts.ncn_operator_account,
             ncn: accounts.ncn,
             operator: accounts.operator,
             operator_admin: accounts.operator_admin,
@@ -368,7 +373,7 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.operator_entry.key,
+            *self.ncn_operator_account.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -418,7 +423,7 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
         let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.config.clone());
-        account_infos.push(self.operator_entry.clone());
+        account_infos.push(self.ncn_operator_account.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.operator.clone());
         account_infos.push(self.operator_admin.clone());
@@ -443,7 +448,7 @@ impl<'a, 'b> RegisterOperatorCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[]` config
-///   1. `[writable]` operator_entry
+///   1. `[writable]` ncn_operator_account
 ///   2. `[]` ncn
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
@@ -461,7 +466,7 @@ impl<'a, 'b> RegisterOperatorCpiBuilder<'a, 'b> {
         let instruction = Box::new(RegisterOperatorCpiBuilderInstruction {
             __program: program,
             config: None,
-            operator_entry: None,
+            ncn_operator_account: None,
             ncn: None,
             operator: None,
             operator_admin: None,
@@ -485,11 +490,11 @@ impl<'a, 'b> RegisterOperatorCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn operator_entry(
+    pub fn ncn_operator_account(
         &mut self,
-        operator_entry: &'b solana_program::account_info::AccountInfo<'a>,
+        ncn_operator_account: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.operator_entry = Some(operator_entry);
+        self.instruction.ncn_operator_account = Some(ncn_operator_account);
         self
     }
     #[inline(always)]
@@ -623,10 +628,10 @@ impl<'a, 'b> RegisterOperatorCpiBuilder<'a, 'b> {
 
             config: self.instruction.config.expect("config is not set"),
 
-            operator_entry: self
+            ncn_operator_account: self
                 .instruction
-                .operator_entry
-                .expect("operator_entry is not set"),
+                .ncn_operator_account
+                .expect("ncn_operator_account is not set"),
 
             ncn: self.instruction.ncn.expect("ncn is not set"),
 
@@ -669,7 +674,7 @@ impl<'a, 'b> RegisterOperatorCpiBuilder<'a, 'b> {
 struct RegisterOperatorCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    operator_entry: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ncn_operator_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,

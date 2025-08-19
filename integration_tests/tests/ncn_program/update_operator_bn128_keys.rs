@@ -85,17 +85,17 @@ mod tests {
             )
             .await?;
 
-        let operator_entry = ncn_program_client
-            .get_operator_entry(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
 
         // Verify keys were updated to new values
-        assert_eq!(operator_entry.g1_pubkey(), &new_g1_compressed.0);
-        assert_eq!(operator_entry.g2_pubkey(), &new_g2_compressed.0);
+        assert_eq!(ncn_operator_account.g1_pubkey(), &new_g1_compressed.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &new_g2_compressed.0);
 
         // Verify keys are NOT the old values
-        assert_ne!(operator_entry.g1_pubkey(), &initial_g1_compressed.0);
-        assert_ne!(operator_entry.g2_pubkey(), &initial_g2_compressed.0);
+        assert_ne!(ncn_operator_account.g1_pubkey(), &initial_g1_compressed.0);
+        assert_ne!(ncn_operator_account.g2_pubkey(), &initial_g2_compressed.0);
 
         Ok(())
     }
@@ -479,12 +479,12 @@ mod tests {
             .await?;
 
         // Verify first update
-        let operator_entry = ncn_program_client
-            .get_operator_entry(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
 
-        assert_eq!(operator_entry.g1_pubkey(), &update1_g1_compressed.0);
-        assert_eq!(operator_entry.g2_pubkey(), &update1_g2_compressed.0);
+        assert_eq!(ncn_operator_account.g1_pubkey(), &update1_g1_compressed.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &update1_g2_compressed.0);
 
         // Second update
         let update2_private_key = PrivKey::from_random();
@@ -507,16 +507,16 @@ mod tests {
             .await?;
 
         // Verify second update
-        let operator_entry = ncn_program_client
-            .get_operator_entry(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
 
-        assert_eq!(operator_entry.g1_pubkey(), &update2_g1_compressed.0);
-        assert_eq!(operator_entry.g2_pubkey(), &update2_g2_compressed.0);
+        assert_eq!(ncn_operator_account.g1_pubkey(), &update2_g1_compressed.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &update2_g2_compressed.0);
 
         // Verify keys are NOT from first update anymore
-        assert_ne!(operator_entry.g1_pubkey(), &update1_g1_compressed.0);
-        assert_ne!(operator_entry.g2_pubkey(), &update1_g2_compressed.0);
+        assert_ne!(ncn_operator_account.g1_pubkey(), &update1_g1_compressed.0);
+        assert_ne!(ncn_operator_account.g2_pubkey(), &update1_g2_compressed.0);
 
         Ok(())
     }
@@ -575,7 +575,7 @@ mod tests {
 
         // Get initial timestamp
         let initial_entry = ncn_program_client
-            .get_operator_entry(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
         let initial_timestamp = initial_entry.slot_registered();
 
@@ -596,7 +596,7 @@ mod tests {
 
         // Verify keys are the same but timestamp might be updated
         let updated_entry = ncn_program_client
-            .get_operator_entry(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
 
         assert_eq!(updated_entry.g1_pubkey(), &g1_compressed.0);

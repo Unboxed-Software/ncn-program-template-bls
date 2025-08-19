@@ -223,12 +223,8 @@ pub struct EpochSnapshot {
 #### **OperatorRegistry** - Operator management
 
 ```rust
-pub struct OperatorRegistry {
+pub struct NCNOperatorAccount {
     ncn: Pubkey,                             // NCN reference
-    operator_list: [OperatorEntry; 256],     // Operator data array
-}
-
-pub struct OperatorEntry {
     operator_pubkey: Pubkey,                 // Operator identifier
     g1_pubkey: [u8; 32],                    // BLS G1 public key
     g2_pubkey: [u8; 64],                    // BLS G2 public key

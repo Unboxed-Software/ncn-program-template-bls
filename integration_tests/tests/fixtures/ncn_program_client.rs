@@ -27,7 +27,7 @@ use ncn_program_core::{
     epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
-    operator_registry::OperatorEntry,
+    ncn_operator_account::NCNOperatorAccount,
     vault_registry::VaultRegistry,
     vote_counter::VoteCounter,
     weight_table::WeightTable,
@@ -219,20 +219,20 @@ impl NCNProgramClient {
         Ok(account)
     }
 
-    /// Fetches the OperatorEntry account for a given NCN and operator.
-    pub async fn get_operator_entry(
+    /// Fetches the NCNOperatorAccount account for a given NCN and operator.
+    pub async fn get_ncn_operator_account(
         &mut self,
         ncn: Pubkey,
         operator: Pubkey,
-    ) -> TestResult<OperatorEntry> {
-        let operator_entry =
-            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator).0;
+    ) -> TestResult<NCNOperatorAccount> {
+        let ncn_operator_account =
+            NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator).0;
         let raw_account = self
             .banks_client
-            .get_account(operator_entry)
+            .get_account(ncn_operator_account)
             .await?
             .unwrap();
-        Ok(*OperatorEntry::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
+        Ok(*NCNOperatorAccount::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
     }
 
     /// Fetches the OperatorSnapshot from the EpochSnapshot for a given operator, NCN, and epoch.
@@ -857,8 +857,8 @@ impl NCNProgramClient {
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
-        let operator_entry =
-            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator).0;
+        let ncn_operator_account =
+            NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator).0;
 
         let ix = InitializeOperatorSnapshotBuilder::new()
             .epoch_marker(epoch_marker)
@@ -867,7 +867,7 @@ impl NCNProgramClient {
             .ncn(ncn)
             .operator(operator)
             .ncn_operator_state(ncn_operator_state)
-            .operator_entry(operator_entry)
+            .ncn_operator_account(ncn_operator_account)
             .epoch_snapshot(epoch_snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
@@ -1136,8 +1136,8 @@ impl NCNProgramClient {
         signature: [u8; 64],
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let operator_entry =
-            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
+        let ncn_operator_account =
+            NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
         let ncn_operator_state = NcnOperatorState::find_program_address(
             &jito_restaking_program::id(),
             &ncn,
@@ -1149,7 +1149,7 @@ impl NCNProgramClient {
 
         self.register_operator(
             config,
-            operator_entry,
+            ncn_operator_account,
             ncn_operator_state,
             restaking_config,
             ncn,
@@ -1168,7 +1168,7 @@ impl NCNProgramClient {
     pub async fn register_operator(
         &mut self,
         config: Pubkey,
-        operator_entry: Pubkey,
+        ncn_operator_account: Pubkey,
         ncn_operator_state: Pubkey,
         restaking_config: Pubkey,
         ncn: Pubkey,
@@ -1181,7 +1181,7 @@ impl NCNProgramClient {
     ) -> TestResult<()> {
         let ix = RegisterOperatorBuilder::new()
             .config(config)
-            .operator_entry(operator_entry)
+            .ncn_operator_account(ncn_operator_account)
             .ncn(ncn)
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())
@@ -1217,12 +1217,12 @@ impl NCNProgramClient {
         signature: [u8; 64],
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let operator_entry =
-            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
+        let ncn_operator_account =
+            NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
 
         self.update_operator_bn128_keys(
             config,
-            operator_entry,
+            ncn_operator_account,
             ncn,
             operator_pubkey,
             operator_admin,
@@ -1238,7 +1238,7 @@ impl NCNProgramClient {
     pub async fn update_operator_bn128_keys(
         &mut self,
         config: Pubkey,
-        operator_entry: Pubkey,
+        ncn_operator_account: Pubkey,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
@@ -1248,7 +1248,7 @@ impl NCNProgramClient {
     ) -> TestResult<()> {
         let ix = UpdateOperatorBN128KeysBuilder::new()
             .config(config)
-            .operator_entry(operator_entry)
+            .ncn_operator_account(ncn_operator_account)
             .ncn(ncn)
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())

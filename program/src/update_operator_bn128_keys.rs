@@ -6,7 +6,7 @@ use ncn_program_core::{
     error::NCNProgramError,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
-    operator_registry::OperatorEntry,
+    ncn_operator_account::NCNOperatorAccount,
     schemes::sha256_normalized::Sha256Normalized,
 };
 use solana_program::{
@@ -18,7 +18,7 @@ use solana_program::{
     sysvar::{clock::Clock, Sysvar},
 };
 
-/// Updates an operator's BLS keys in their individual operator entry account with signature verification.
+/// Updates an operator's BLS keys in their individual ncn operator account account with signature verification.
 ///
 /// ### Parameters:
 /// - `g1_pubkey`: New G1 public key in compressed format (32 bytes)
@@ -27,7 +27,7 @@ use solana_program::{
 ///
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account
-/// 2. `[writable]` operator_entry: The operator entry PDA account to update
+/// 2. `[writable]` ncn_operator_account: The ncn operator account PDA account to update
 /// 3. `[]` ncn: The NCN account
 /// 4. `[]` operator: The operator to update
 /// 5. `[signer]` operator_admin: The operator admin that must sign
@@ -38,13 +38,19 @@ pub fn process_update_operator_bn128_keys(
     g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
     signature: [u8; 64],
 ) -> ProgramResult {
-    let [config, operator_entry, ncn, operator, operator_admin] = accounts else {
+    let [config, ncn_operator_account, ncn, operator, operator_admin] = accounts else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     Config::load(program_id, config, ncn.key, false)?;
-    OperatorEntry::load(program_id, operator_entry, ncn.key, operator.key, true)?;
+    NCNOperatorAccount::load(
+        program_id,
+        ncn_operator_account,
+        ncn.key,
+        operator.key,
+        true,
+    )?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     Operator::load(&jito_restaking_program::id(), operator, false)?;
 
@@ -64,18 +70,19 @@ pub fn process_update_operator_bn128_keys(
         }
     }
 
-    // Verify that the operator entry exists and belongs to the right operator
+    // Verify that the ncn operator account exists and belongs to the right operator
     {
-        let operator_entry_data = operator_entry.try_borrow_data()?;
-        let operator_entry_account = OperatorEntry::try_from_slice_unchecked(&operator_entry_data)?;
+        let ncn_operator_account_data = ncn_operator_account.try_borrow_data()?;
+        let ncn_operator_account_account =
+            NCNOperatorAccount::try_from_slice_unchecked(&ncn_operator_account_data)?;
 
-        if operator_entry_account.operator_pubkey() != operator.key {
-            msg!("Error: Operator entry does not belong to the specified operator");
+        if ncn_operator_account_account.operator_pubkey() != operator.key {
+            msg!("Error: NCN Operator Account does not belong to the specified operator");
             return Err(ProgramError::InvalidAccountData);
         }
 
-        if operator_entry_account.ncn() != ncn.key {
-            msg!("Error: Operator entry does not belong to the specified NCN");
+        if ncn_operator_account_account.ncn() != ncn.key {
+            msg!("Error: NCN Operator Account does not belong to the specified NCN");
             return Err(ProgramError::InvalidAccountData);
         }
     }
@@ -115,12 +122,12 @@ pub fn process_update_operator_bn128_keys(
     let clock = Clock::get()?;
     let slot = clock.slot;
 
-    let mut operator_entry_data = operator_entry.try_borrow_mut_data()?;
-    let operator_entry_account =
-        OperatorEntry::try_from_slice_unchecked_mut(&mut operator_entry_data)?;
+    let mut ncn_operator_account_data = ncn_operator_account.try_borrow_mut_data()?;
+    let ncn_operator_account_account =
+        NCNOperatorAccount::try_from_slice_unchecked_mut(&mut ncn_operator_account_data)?;
 
     // Update the operator's keys
-    operator_entry_account.update_keys(&g1_pubkey, &g2_pubkey, slot)?;
+    ncn_operator_account_account.update_keys(&g1_pubkey, &g2_pubkey, slot)?;
 
     msg!(
         "Operator BLS keys updated successfully for operator {}",

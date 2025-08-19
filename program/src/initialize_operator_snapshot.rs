@@ -9,7 +9,7 @@ use ncn_program_core::{
     error::NCNProgramError,
     g1_point::G1CompressedPoint,
     loaders::load_ncn_epoch,
-    operator_registry::OperatorEntry,
+    ncn_operator_account::NCNOperatorAccount,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
@@ -28,7 +28,7 @@ use solana_program::{
 /// 4. `[]` ncn: The NCN account
 /// 5. `[]` operator: The operator account to snapshot
 /// 6. `[]` ncn_operator_state: The connection between NCN and operator
-/// 7. `[]` operator_entry: The operator entry PDA containing BLS keys (optional)
+/// 7. `[]` ncn_operator_account: The ncn operator account PDA containing BLS keys (optional)
 /// 8. `[writable]` epoch_snapshot: Epoch snapshot account containing operator snapshots
 /// 9. `[writable, signer]` account_payer: Account paying for any additional rent
 /// 10. `[]` system_program: Solana System Program
@@ -37,7 +37,7 @@ pub fn process_initialize_operator_snapshot(
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_marker, epoch_state, restaking_config, ncn, operator, ncn_operator_state, operator_entry, epoch_snapshot, account_payer, system_program] =
+    let [epoch_marker, epoch_state, restaking_config, ncn, operator, ncn_operator_state, ncn_operator_account, epoch_snapshot, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -119,28 +119,34 @@ pub fn process_initialize_operator_snapshot(
     };
     msg!("Operator index: {}", operator_index);
 
-    // Try to get the G1 pubkey from the operator entry PDA
+    // Try to get the G1 pubkey from the ncn operator account PDA
     let g1_pubkey: Option<[u8; 32]> = {
-        // First check if the operator entry account exists by verifying it's the correct PDA
-        let (expected_operator_entry_pda, _, _) =
-            OperatorEntry::find_program_address(program_id, ncn.key, operator.key);
+        // First check if the ncn operator account account exists by verifying it's the correct PDA
+        let (expected_ncn_operator_account_pda, _, _) =
+            NCNOperatorAccount::find_program_address(program_id, ncn.key, operator.key);
 
-        if *operator_entry.key == expected_operator_entry_pda {
+        if *ncn_operator_account.key == expected_ncn_operator_account_pda {
             // The account exists and is the correct PDA, try to load it
-            match OperatorEntry::load(program_id, operator_entry, ncn.key, operator.key, false) {
+            match NCNOperatorAccount::load(
+                program_id,
+                ncn_operator_account,
+                ncn.key,
+                operator.key,
+                false,
+            ) {
                 Ok(()) => {
-                    let operator_entry_data = operator_entry.try_borrow_data()?;
-                    let operator_entry_account =
-                        OperatorEntry::try_from_slice_unchecked(&operator_entry_data)?;
-                    Some(*operator_entry_account.g1_pubkey())
+                    let ncn_operator_account_data = ncn_operator_account.try_borrow_data()?;
+                    let ncn_operator_account_account =
+                        NCNOperatorAccount::try_from_slice_unchecked(&ncn_operator_account_data)?;
+                    Some(*ncn_operator_account_account.g1_pubkey())
                 }
                 Err(_) => {
-                    msg!("Operator entry PDA exists but failed to load properly");
+                    msg!("NCN Operator Account PDA exists but failed to load properly");
                     None
                 }
             }
         } else {
-            msg!("Operator entry PDA does not exist for this operator");
+            msg!("NCN Operator Account PDA does not exist for this operator");
             None
         }
     };

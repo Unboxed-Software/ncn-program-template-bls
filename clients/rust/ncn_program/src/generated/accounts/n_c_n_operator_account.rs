@@ -11,7 +11,7 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct OperatorEntry {
+pub struct NCNOperatorAccount {
     pub discriminator: u64,
     #[cfg_attr(
         feature = "serde",
@@ -33,7 +33,7 @@ pub struct OperatorEntry {
     pub reserved: [u8; 199],
 }
 
-impl OperatorEntry {
+impl NCNOperatorAccount {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -41,7 +41,7 @@ impl OperatorEntry {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for OperatorEntry {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for NCNOperatorAccount {
     type Error = std::io::Error;
 
     fn try_from(
@@ -53,26 +53,26 @@ impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for OperatorEnt
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountDeserialize for OperatorEntry {
+impl anchor_lang::AccountDeserialize for NCNOperatorAccount {
     fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
         Ok(Self::deserialize(buf)?)
     }
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountSerialize for OperatorEntry {}
+impl anchor_lang::AccountSerialize for NCNOperatorAccount {}
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::Owner for OperatorEntry {
+impl anchor_lang::Owner for NCNOperatorAccount {
     fn owner() -> Pubkey {
         crate::NCN_PROGRAM_ID
     }
 }
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::IdlBuild for OperatorEntry {}
+impl anchor_lang::IdlBuild for NCNOperatorAccount {}
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::Discriminator for OperatorEntry {
+impl anchor_lang::Discriminator for NCNOperatorAccount {
     const DISCRIMINATOR: &'static [u8] = &[0; 8];
 }

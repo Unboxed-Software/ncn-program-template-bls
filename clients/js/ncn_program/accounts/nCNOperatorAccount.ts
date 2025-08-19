@@ -40,7 +40,7 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/web3.js';
 
-export type OperatorEntry = {
+export type NCNOperatorAccount = {
   discriminator: bigint;
   ncn: Address;
   operatorPubkey: Address;
@@ -52,7 +52,7 @@ export type OperatorEntry = {
   reserved: Array<number>;
 };
 
-export type OperatorEntryArgs = {
+export type NCNOperatorAccountArgs = {
   discriminator: number | bigint;
   ncn: Address;
   operatorPubkey: Address;
@@ -64,7 +64,7 @@ export type OperatorEntryArgs = {
   reserved: Array<number>;
 };
 
-export function getOperatorEntryEncoder(): Encoder<OperatorEntryArgs> {
+export function getNCNOperatorAccountEncoder(): Encoder<NCNOperatorAccountArgs> {
   return getStructEncoder([
     ['discriminator', getU64Encoder()],
     ['ncn', getAddressEncoder()],
@@ -78,7 +78,7 @@ export function getOperatorEntryEncoder(): Encoder<OperatorEntryArgs> {
   ]);
 }
 
-export function getOperatorEntryDecoder(): Decoder<OperatorEntry> {
+export function getNCNOperatorAccountDecoder(): Decoder<NCNOperatorAccount> {
   return getStructDecoder([
     ['discriminator', getU64Decoder()],
     ['ncn', getAddressDecoder()],
@@ -92,53 +92,60 @@ export function getOperatorEntryDecoder(): Decoder<OperatorEntry> {
   ]);
 }
 
-export function getOperatorEntryCodec(): Codec<
-  OperatorEntryArgs,
-  OperatorEntry
+export function getNCNOperatorAccountCodec(): Codec<
+  NCNOperatorAccountArgs,
+  NCNOperatorAccount
 > {
-  return combineCodec(getOperatorEntryEncoder(), getOperatorEntryDecoder());
-}
-
-export function decodeOperatorEntry<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
-): Account<OperatorEntry, TAddress>;
-export function decodeOperatorEntry<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
-): MaybeAccount<OperatorEntry, TAddress>;
-export function decodeOperatorEntry<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
-): Account<OperatorEntry, TAddress> | MaybeAccount<OperatorEntry, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getOperatorEntryDecoder()
+  return combineCodec(
+    getNCNOperatorAccountEncoder(),
+    getNCNOperatorAccountDecoder()
   );
 }
 
-export async function fetchOperatorEntry<TAddress extends string = string>(
+export function decodeNCNOperatorAccount<TAddress extends string = string>(
+  encodedAccount: EncodedAccount<TAddress>
+): Account<NCNOperatorAccount, TAddress>;
+export function decodeNCNOperatorAccount<TAddress extends string = string>(
+  encodedAccount: MaybeEncodedAccount<TAddress>
+): MaybeAccount<NCNOperatorAccount, TAddress>;
+export function decodeNCNOperatorAccount<TAddress extends string = string>(
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+):
+  | Account<NCNOperatorAccount, TAddress>
+  | MaybeAccount<NCNOperatorAccount, TAddress> {
+  return decodeAccount(
+    encodedAccount as MaybeEncodedAccount<TAddress>,
+    getNCNOperatorAccountDecoder()
+  );
+}
+
+export async function fetchNCNOperatorAccount<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig
-): Promise<Account<OperatorEntry, TAddress>> {
-  const maybeAccount = await fetchMaybeOperatorEntry(rpc, address, config);
+): Promise<Account<NCNOperatorAccount, TAddress>> {
+  const maybeAccount = await fetchMaybeNCNOperatorAccount(rpc, address, config);
   assertAccountExists(maybeAccount);
   return maybeAccount;
 }
 
-export async function fetchMaybeOperatorEntry<TAddress extends string = string>(
+export async function fetchMaybeNCNOperatorAccount<
+  TAddress extends string = string,
+>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig
-): Promise<MaybeAccount<OperatorEntry, TAddress>> {
+): Promise<MaybeAccount<NCNOperatorAccount, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeOperatorEntry(maybeAccount);
+  return decodeNCNOperatorAccount(maybeAccount);
 }
 
-export async function fetchAllOperatorEntry(
+export async function fetchAllNCNOperatorAccount(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig
-): Promise<Account<OperatorEntry>[]> {
-  const maybeAccounts = await fetchAllMaybeOperatorEntry(
+): Promise<Account<NCNOperatorAccount>[]> {
+  const maybeAccounts = await fetchAllMaybeNCNOperatorAccount(
     rpc,
     addresses,
     config
@@ -147,11 +154,13 @@ export async function fetchAllOperatorEntry(
   return maybeAccounts;
 }
 
-export async function fetchAllMaybeOperatorEntry(
+export async function fetchAllMaybeNCNOperatorAccount(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig
-): Promise<MaybeAccount<OperatorEntry>[]> {
+): Promise<MaybeAccount<NCNOperatorAccount>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeOperatorEntry(maybeAccount));
+  return maybeAccounts.map((maybeAccount) =>
+    decodeNCNOperatorAccount(maybeAccount)
+  );
 }

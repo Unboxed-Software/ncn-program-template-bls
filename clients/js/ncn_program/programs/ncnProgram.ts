@@ -43,7 +43,7 @@ export enum NcnProgramAccount {
   EpochMarker,
   EpochSnapshot,
   EpochState,
-  OperatorEntry,
+  NCNOperatorAccount,
   VaultRegistry,
   VoteCounter,
   WeightTable,

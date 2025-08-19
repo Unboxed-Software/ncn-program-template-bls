@@ -147,7 +147,7 @@
           "isSigner": false
         },
         {
-          "name": "operatorEntry",
+          "name": "ncnOperatorAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -230,7 +230,7 @@
           "isSigner": false
         },
         {
-          "name": "operatorEntry",
+          "name": "ncnOperatorAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -578,7 +578,7 @@
           "isSigner": false
         },
         {
-          "name": "operatorEntry",
+          "name": "ncnOperatorAccount",
           "isMut": false,
           "isSigner": false
         },
@@ -1230,7 +1230,7 @@
       }
     },
     {
-      "name": "OperatorEntry",
+      "name": "NCNOperatorAccount",
       "type": {
         "kind": "struct",
         "fields": [

@@ -47,7 +47,7 @@ use ncn_program_core::{
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
-    operator_registry::OperatorEntry,
+    ncn_operator_account::NCNOperatorAccount,
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
@@ -466,8 +466,8 @@ pub async fn register_operator(
 
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
-    let (operator_entry, _, _) =
-        OperatorEntry::find_program_address(&handler.ncn_program_id, &ncn, &operator);
+    let (ncn_operator_account, _, _) =
+        NCNOperatorAccount::find_program_address(&handler.ncn_program_id, &ncn, &operator);
 
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
 
@@ -479,7 +479,7 @@ pub async fn register_operator(
 
     let register_operator_ix = RegisterOperatorBuilder::new()
         .config(config)
-        .operator_entry(operator_entry)
+        .ncn_operator_account(ncn_operator_account)
         .ncn(ncn)
         .operator(operator)
         .operator_admin(keypair.pubkey())
@@ -762,8 +762,8 @@ pub async fn create_operator_snapshot(
 
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
     let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-    let (operator_entry, _, _) =
-        OperatorEntry::find_program_address(&handler.ncn_program_id, &ncn, &operator);
+    let (ncn_operator_account, _, _) =
+        NCNOperatorAccount::find_program_address(&handler.ncn_program_id, &ncn, &operator);
 
     // Check if operator snapshot already exists by trying to get it
     let operator_snapshot_result = get_operator_snapshot(handler, &operator, epoch).await;
@@ -779,7 +779,7 @@ pub async fn create_operator_snapshot(
             .ncn(ncn)
             .operator(operator)
             .ncn_operator_state(ncn_operator_state)
-            .operator_entry(operator_entry)
+            .ncn_operator_account(ncn_operator_account)
             .epoch_snapshot(epoch_snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())

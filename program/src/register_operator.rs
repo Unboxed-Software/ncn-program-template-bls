@@ -12,7 +12,7 @@ use ncn_program_core::{
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
     loaders::load_ncn_epoch,
-    operator_registry::OperatorEntry,
+    ncn_operator_account::NCNOperatorAccount,
     schemes::sha256_normalized::Sha256Normalized,
 };
 use solana_program::{
@@ -33,7 +33,7 @@ use solana_program::{
 ///
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account
-/// 2. `[writable]` operator_entry: The operator entry PDA account to create
+/// 2. `[writable]` ncn_operator_account: The ncn operator account PDA account to create
 /// 3. `[]` ncn: The NCN account
 /// 4. `[]` operator: The operator to register
 /// 5. `[signer]` operator_admin: The operator admin that must sign
@@ -48,7 +48,7 @@ pub fn process_register_operator(
     g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
     signature: [u8; 64],
 ) -> ProgramResult {
-    let [config, operator_entry, ncn, operator, operator_admin, ncn_operator_state, restaking_config, account_payer, system_program] =
+    let [config, ncn_operator_account, ncn, operator, operator_admin, ncn_operator_state, restaking_config, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -56,7 +56,7 @@ pub fn process_register_operator(
     };
 
     Config::load(program_id, config, ncn.key, false)?;
-    load_system_account(operator_entry, true)?;
+    load_system_account(ncn_operator_account, true)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     Operator::load(&jito_restaking_program::id(), operator, false)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
@@ -149,26 +149,26 @@ pub fn process_register_operator(
         msg!("BLS signature verification successful");
     }
 
-    // Verify the operator entry PDA is correct
-    let (operator_entry_pda, operator_entry_bump, mut operator_entry_seeds) =
-        OperatorEntry::find_program_address(program_id, ncn.key, operator.key);
-    operator_entry_seeds.push(vec![operator_entry_bump]);
+    // Verify the ncn operator account PDA is correct
+    let (ncn_operator_account_pda, ncn_operator_account_bump, mut ncn_operator_account_seeds) =
+        NCNOperatorAccount::find_program_address(program_id, ncn.key, operator.key);
+    ncn_operator_account_seeds.push(vec![ncn_operator_account_bump]);
 
-    if operator_entry_pda != *operator_entry.key {
-        msg!("Error: Invalid operator entry PDA");
+    if ncn_operator_account_pda != *ncn_operator_account.key {
+        msg!("Error: Invalid ncn operator account PDA");
         return Err(ProgramError::InvalidSeeds);
     }
 
-    // Create the operator entry account
+    // Create the ncn operator account account
     AccountPayer::pay_and_create_account(
         program_id,
         ncn.key,
         account_payer,
-        operator_entry,
+        ncn_operator_account,
         system_program,
         program_id,
-        OperatorEntry::SIZE,
-        &operator_entry_seeds,
+        NCNOperatorAccount::SIZE,
+        &ncn_operator_account_seeds,
     )?;
 
     let clock = Clock::get()?;
@@ -180,20 +180,20 @@ pub fn process_register_operator(
         operator_account.index()
     };
 
-    // Initialize the operator entry account
-    let mut operator_entry_data = operator_entry.try_borrow_mut_data()?;
-    operator_entry_data[0] = OperatorEntry::DISCRIMINATOR;
-    let operator_entry_account =
-        OperatorEntry::try_from_slice_unchecked_mut(&mut operator_entry_data)?;
+    // Initialize the ncn operator account account
+    let mut ncn_operator_account_data = ncn_operator_account.try_borrow_mut_data()?;
+    ncn_operator_account_data[0] = NCNOperatorAccount::DISCRIMINATOR;
+    let ncn_operator_account_account =
+        NCNOperatorAccount::try_from_slice_unchecked_mut(&mut ncn_operator_account_data)?;
 
-    operator_entry_account.initialize(
+    ncn_operator_account_account.initialize(
         ncn.key,
         operator.key,
         &g1_pubkey,
         &g2_pubkey,
         operator_index,
         slot,
-        operator_entry_bump,
+        ncn_operator_account_bump,
     );
 
     msg!(

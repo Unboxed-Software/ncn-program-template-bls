@@ -10,7 +10,7 @@ export * from './config';
 export * from './epochMarker';
 export * from './epochSnapshot';
 export * from './epochState';
-export * from './operatorEntry';
+export * from './nCNOperatorAccount';
 export * from './vaultRegistry';
 export * from './voteCounter';
 export * from './weightTable';

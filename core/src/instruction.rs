@@ -59,7 +59,7 @@ pub enum NCNProgramInstruction {
 
     /// Registers an operator by creating an individual operator PDA
     #[account(0, name = "config")]
-    #[account(1, writable, name = "operator_entry")]
+    #[account(1, writable, name = "ncn_operator_account")]
     #[account(2, name = "ncn")]
     #[account(3, name = "operator")]
     #[account(4, signer, name = "operator_admin")]
@@ -78,7 +78,7 @@ pub enum NCNProgramInstruction {
 
     /// Updates an operator's BLS keys in their individual operator PDA
     #[account(0, name = "config")]
-    #[account(1, writable, name = "operator_entry")]
+    #[account(1, writable, name = "ncn_operator_account")]
     #[account(2, name = "ncn")]
     #[account(3, name = "operator")]
     #[account(4, signer, name = "operator_admin")]
@@ -172,7 +172,7 @@ pub enum NCNProgramInstruction {
     #[account(3, name = "ncn")]
     #[account(4, name = "operator")]
     #[account(5, name = "ncn_operator_state")]
-    #[account(6, name = "operator_entry")]
+    #[account(6, name = "ncn_operator_account")]
     #[account(7, writable, name = "epoch_snapshot")]
     #[account(8, writable, name = "account_payer")]
     #[account(9, name = "system_program")]

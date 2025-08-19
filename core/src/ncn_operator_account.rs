@@ -17,8 +17,8 @@ use crate::{
 /// Individual operator account that stores BLS keys for a specific operator in a specific NCN
 #[derive(Debug, Clone, Copy, Zeroable, Pod, AccountDeserialize, ShankAccount)]
 #[repr(C)]
-pub struct OperatorEntry {
-    /// The NCN this operator entry belongs to
+pub struct NCNOperatorAccount {
+    /// The NCN this ncn operator account belongs to
     pub ncn: Pubkey,
     /// The operator pubkey
     pub operator_pubkey: Pubkey,
@@ -36,12 +36,12 @@ pub struct OperatorEntry {
     pub reserved: [u8; 199], // Reserved for future use, must be zeroed
 }
 
-impl Discriminator for OperatorEntry {
+impl Discriminator for NCNOperatorAccount {
     const DISCRIMINATOR: u8 = Discriminators::OperatorRegistry as u8;
 }
 
-impl OperatorEntry {
-    const OPERATOR_ENTRY_SEED: &'static [u8] = b"operator_entry";
+impl NCNOperatorAccount {
+    const NCN_OPERATOR_ACCOUNT_SEED: &'static [u8] = b"ncn_operator_account";
     pub const SIZE: usize = 8 + size_of::<Self>();
 
     pub const EMPTY_OPERATOR_INDEX: u64 = u64::MAX;
@@ -90,7 +90,7 @@ impl OperatorEntry {
 
     pub fn seeds(ncn: &Pubkey, operator: &Pubkey) -> Vec<Vec<u8>> {
         vec![
-            Self::OPERATOR_ENTRY_SEED.to_vec(),
+            Self::NCN_OPERATOR_ACCOUNT_SEED.to_vec(),
             ncn.to_bytes().to_vec(),
             operator.to_bytes().to_vec(),
         ]
@@ -171,7 +171,7 @@ impl OperatorEntry {
             .ok_or(ProgramError::from(NCNProgramError::BLSVerificationError))
     }
 
-    /// Update the BLS keys for this operator entry
+    /// Update the BLS keys for this ncn operator account
     pub fn update_keys(
         &mut self,
         new_g1_pubkey: &[u8; 32],
@@ -179,7 +179,7 @@ impl OperatorEntry {
         current_slot: u64,
     ) -> Result<(), ProgramError> {
         // Create a temporary entry with new keys to verify them
-        let temp_entry = OperatorEntry::new(
+        let temp_entry = NCNOperatorAccount::new(
             &self.ncn,
             &self.operator_pubkey,
             new_g1_pubkey,
@@ -201,7 +201,7 @@ impl OperatorEntry {
     }
 }
 
-impl Default for OperatorEntry {
+impl Default for NCNOperatorAccount {
     fn default() -> Self {
         Self::new(
             &Pubkey::default(),
@@ -215,9 +215,9 @@ impl Default for OperatorEntry {
     }
 }
 
-impl fmt::Display for OperatorEntry {
+impl fmt::Display for NCNOperatorAccount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "\n\n----------- Operator Entry -------------")?;
+        writeln!(f, "\n\n----------- NCN Operator Account -------------")?;
         writeln!(f, "  NCN:                          {}", self.ncn)?;
         writeln!(
             f,
@@ -261,12 +261,12 @@ mod tests {
             + 1 // bump
             + 199; // reserved
 
-        assert_eq!(size_of::<OperatorEntry>(), expected_total);
+        assert_eq!(size_of::<NCNOperatorAccount>(), expected_total);
     }
 
     #[test]
     #[cfg(not(target_os = "solana"))]
-    fn test_create_operator_entry() {
+    fn test_create_ncn_operator_account() {
         let ncn = Pubkey::new_unique();
         let operator = Pubkey::new_unique();
 
@@ -275,7 +275,7 @@ mod tests {
         let g1_compressed = G1CompressedPoint::try_from(private_key).unwrap();
         let g2_compressed = G2CompressedPoint::try_from(&private_key).unwrap();
 
-        let operator_entry = OperatorEntry::new(
+        let ncn_operator_account = NCNOperatorAccount::new(
             &ncn,
             &operator,
             &g1_compressed.0,
@@ -285,13 +285,13 @@ mod tests {
             255,
         );
 
-        assert_eq!(operator_entry.ncn(), &ncn);
-        assert_eq!(operator_entry.operator_pubkey(), &operator);
-        assert_eq!(operator_entry.g1_pubkey(), &g1_compressed.0);
-        assert_eq!(operator_entry.g2_pubkey(), &g2_compressed.0);
-        assert_eq!(operator_entry.operator_index(), 0);
-        assert_eq!(operator_entry.slot_registered(), 100);
-        assert_eq!(operator_entry.bump, 255);
+        assert_eq!(ncn_operator_account.ncn(), &ncn);
+        assert_eq!(ncn_operator_account.operator_pubkey(), &operator);
+        assert_eq!(ncn_operator_account.g1_pubkey(), &g1_compressed.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &g2_compressed.0);
+        assert_eq!(ncn_operator_account.operator_index(), 0);
+        assert_eq!(ncn_operator_account.slot_registered(), 100);
+        assert_eq!(ncn_operator_account.bump, 255);
     }
 
     #[test]
@@ -305,7 +305,7 @@ mod tests {
         let g1_compressed = G1CompressedPoint::try_from(private_key).unwrap();
         let g2_compressed = G2CompressedPoint::try_from(&private_key).unwrap();
 
-        let valid_entry = OperatorEntry::new(
+        let valid_entry = NCNOperatorAccount::new(
             &ncn,
             &operator,
             &g1_compressed.0,
@@ -321,7 +321,7 @@ mod tests {
         let private_key2 = PrivKey::from_random();
         let g2_compressed_wrong = G2CompressedPoint::try_from(&private_key2).unwrap();
 
-        let invalid_entry = OperatorEntry::new(
+        let invalid_entry = NCNOperatorAccount::new(
             &ncn,
             &operator,
             &g1_compressed.0,
@@ -345,7 +345,7 @@ mod tests {
         let g1_compressed1 = G1CompressedPoint::try_from(private_key1).unwrap();
         let g2_compressed1 = G2CompressedPoint::try_from(&private_key1).unwrap();
 
-        let mut operator_entry = OperatorEntry::new(
+        let mut ncn_operator_account = NCNOperatorAccount::new(
             &ncn,
             &operator,
             &g1_compressed1.0,
@@ -361,19 +361,19 @@ mod tests {
         let g2_compressed2 = G2CompressedPoint::try_from(&private_key2).unwrap();
 
         // Update should succeed
-        assert!(operator_entry
+        assert!(ncn_operator_account
             .update_keys(&g1_compressed2.0, &g2_compressed2.0, 200)
             .is_ok());
 
-        assert_eq!(operator_entry.g1_pubkey(), &g1_compressed2.0);
-        assert_eq!(operator_entry.g2_pubkey(), &g2_compressed2.0);
-        assert_eq!(operator_entry.slot_registered(), 200);
+        assert_eq!(ncn_operator_account.g1_pubkey(), &g1_compressed2.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &g2_compressed2.0);
+        assert_eq!(ncn_operator_account.slot_registered(), 200);
 
         // Test update with mismatched keypair should fail
         let private_key3 = PrivKey::from_random();
         let g2_compressed_wrong = G2CompressedPoint::try_from(&private_key3).unwrap();
 
-        assert!(operator_entry
+        assert!(ncn_operator_account
             .update_keys(&g1_compressed2.0, &g2_compressed_wrong.0, 300)
             .is_err());
     }
