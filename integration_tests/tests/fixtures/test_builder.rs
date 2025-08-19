@@ -723,8 +723,6 @@ impl TestBuilder {
     pub async fn cast_votes_for_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         let mut ncn_program_client = self.ncn_program_client();
 
-        let clock = self.clock().await;
-        let epoch = clock.epoch;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
         // Collect all active operators for voting

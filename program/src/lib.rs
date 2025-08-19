@@ -8,13 +8,13 @@ mod cast_vote;
 mod close_epoch_account;
 mod initialize_epoch_snapshot;
 mod initialize_epoch_state;
-mod initialize_operator_registry;
+
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
 mod initialize_vote_counter;
 mod initialize_weight_table;
 mod realloc_epoch_snapshot;
-mod realloc_operator_registry;
+
 mod register_operator;
 mod register_vault;
 mod set_epoch_weights;
@@ -39,13 +39,11 @@ use crate::{
     admin_set_st_mint::process_admin_set_st_mint, admin_set_weight::process_admin_set_weight,
     cast_vote::process_cast_vote, close_epoch_account::process_close_epoch_account,
     initialize_epoch_snapshot::process_initialize_epoch_snapshot,
-    initialize_operator_registry::process_initialize_operator_registry,
     initialize_operator_snapshot::process_initialize_operator_snapshot,
     initialize_vault_registry::process_initialize_vault_registry,
     initialize_vote_counter::process_initialize_vote_counter,
     initialize_weight_table::process_initialize_weight_table,
     realloc_epoch_snapshot::process_realloc_epoch_snapshot,
-    realloc_operator_registry::process_realloc_operator_registry,
     register_operator::process_register_operator, register_vault::process_register_vault,
     set_epoch_weights::process_set_epoch_weights,
     snapshot_vault_operator_delegation::process_snapshot_vault_operator_delegation,
@@ -110,10 +108,7 @@ pub fn process_instruction(
             msg!("Instruction: RegisterVault");
             process_register_vault(program_id, accounts)
         }
-        NCNProgramInstruction::InitializeOperatorRegistry => {
-            msg!("Instruction: InitializeOperatorRegistry");
-            process_initialize_operator_registry(program_id, accounts)
-        }
+
         NCNProgramInstruction::RegisterOperator {
             g1_pubkey,
             g2_pubkey,
@@ -132,10 +127,7 @@ pub fn process_instruction(
                 program_id, accounts, g1_pubkey, g2_pubkey, signature,
             )
         }
-        NCNProgramInstruction::ReallocOperatorRegistry => {
-            msg!("Instruction: ReallocOperatorRegistry");
-            process_realloc_operator_registry(program_id, accounts)
-        }
+
         NCNProgramInstruction::InitializeVoteCounter => {
             msg!("Instruction: InitializeVoteCounter");
             process_initialize_vote_counter(program_id, accounts)

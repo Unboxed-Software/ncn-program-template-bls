@@ -70,7 +70,7 @@ pub struct InitializeVoteCounterInstructionData {
 
 impl InitializeVoteCounterInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 7 }
+        Self { discriminator: 5 }
     }
 }
 

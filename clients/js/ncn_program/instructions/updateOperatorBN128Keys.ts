@@ -35,7 +35,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR = 5;
+export const UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR = 4;
 
 export function getUpdateOperatorBN128KeysDiscriminatorBytes() {
   return getU8Encoder().encode(UPDATE_OPERATOR_B_N128_KEYS_DISCRIMINATOR);
@@ -44,7 +44,7 @@ export function getUpdateOperatorBN128KeysDiscriminatorBytes() {
 export type UpdateOperatorBN128KeysInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountConfig extends string | IAccountMeta<string> = string,
-  TAccountOperatorRegistry extends string | IAccountMeta<string> = string,
+  TAccountOperatorEntry extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountOperator extends string | IAccountMeta<string> = string,
   TAccountOperatorAdmin extends string | IAccountMeta<string> = string,
@@ -56,9 +56,9 @@ export type UpdateOperatorBN128KeysInstruction<
       TAccountConfig extends string
         ? ReadonlyAccount<TAccountConfig>
         : TAccountConfig,
-      TAccountOperatorRegistry extends string
-        ? WritableAccount<TAccountOperatorRegistry>
-        : TAccountOperatorRegistry,
+      TAccountOperatorEntry extends string
+        ? WritableAccount<TAccountOperatorEntry>
+        : TAccountOperatorEntry,
       TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
       TAccountOperator extends string
         ? ReadonlyAccount<TAccountOperator>
@@ -120,13 +120,13 @@ export function getUpdateOperatorBN128KeysInstructionDataCodec(): Codec<
 
 export type UpdateOperatorBN128KeysInput<
   TAccountConfig extends string = string,
-  TAccountOperatorRegistry extends string = string,
+  TAccountOperatorEntry extends string = string,
   TAccountNcn extends string = string,
   TAccountOperator extends string = string,
   TAccountOperatorAdmin extends string = string,
 > = {
   config: Address<TAccountConfig>;
-  operatorRegistry: Address<TAccountOperatorRegistry>;
+  operatorEntry: Address<TAccountOperatorEntry>;
   ncn: Address<TAccountNcn>;
   operator: Address<TAccountOperator>;
   operatorAdmin: TransactionSigner<TAccountOperatorAdmin>;
@@ -137,7 +137,7 @@ export type UpdateOperatorBN128KeysInput<
 
 export function getUpdateOperatorBN128KeysInstruction<
   TAccountConfig extends string,
-  TAccountOperatorRegistry extends string,
+  TAccountOperatorEntry extends string,
   TAccountNcn extends string,
   TAccountOperator extends string,
   TAccountOperatorAdmin extends string,
@@ -145,7 +145,7 @@ export function getUpdateOperatorBN128KeysInstruction<
 >(
   input: UpdateOperatorBN128KeysInput<
     TAccountConfig,
-    TAccountOperatorRegistry,
+    TAccountOperatorEntry,
     TAccountNcn,
     TAccountOperator,
     TAccountOperatorAdmin
@@ -154,7 +154,7 @@ export function getUpdateOperatorBN128KeysInstruction<
 ): UpdateOperatorBN128KeysInstruction<
   TProgramAddress,
   TAccountConfig,
-  TAccountOperatorRegistry,
+  TAccountOperatorEntry,
   TAccountNcn,
   TAccountOperator,
   TAccountOperatorAdmin
@@ -165,10 +165,7 @@ export function getUpdateOperatorBN128KeysInstruction<
   // Original accounts.
   const originalAccounts = {
     config: { value: input.config ?? null, isWritable: false },
-    operatorRegistry: {
-      value: input.operatorRegistry ?? null,
-      isWritable: true,
-    },
+    operatorEntry: { value: input.operatorEntry ?? null, isWritable: true },
     ncn: { value: input.ncn ?? null, isWritable: false },
     operator: { value: input.operator ?? null, isWritable: false },
     operatorAdmin: { value: input.operatorAdmin ?? null, isWritable: false },
@@ -185,7 +182,7 @@ export function getUpdateOperatorBN128KeysInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.config),
-      getAccountMeta(accounts.operatorRegistry),
+      getAccountMeta(accounts.operatorEntry),
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.operator),
       getAccountMeta(accounts.operatorAdmin),
@@ -197,7 +194,7 @@ export function getUpdateOperatorBN128KeysInstruction<
   } as UpdateOperatorBN128KeysInstruction<
     TProgramAddress,
     TAccountConfig,
-    TAccountOperatorRegistry,
+    TAccountOperatorEntry,
     TAccountNcn,
     TAccountOperator,
     TAccountOperatorAdmin
@@ -213,7 +210,7 @@ export type ParsedUpdateOperatorBN128KeysInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     config: TAccountMetas[0];
-    operatorRegistry: TAccountMetas[1];
+    operatorEntry: TAccountMetas[1];
     ncn: TAccountMetas[2];
     operator: TAccountMetas[3];
     operatorAdmin: TAccountMetas[4];
@@ -243,7 +240,7 @@ export function parseUpdateOperatorBN128KeysInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       config: getNextAccount(),
-      operatorRegistry: getNextAccount(),
+      operatorEntry: getNextAccount(),
       ncn: getNextAccount(),
       operator: getNextAccount(),
       operatorAdmin: getNextAccount(),

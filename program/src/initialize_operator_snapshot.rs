@@ -9,7 +9,7 @@ use ncn_program_core::{
     error::NCNProgramError,
     g1_point::G1CompressedPoint,
     loaders::load_ncn_epoch,
-    operator_registry::OperatorRegistry,
+    operator_registry::OperatorEntry,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
@@ -28,7 +28,7 @@ use solana_program::{
 /// 4. `[]` ncn: The NCN account
 /// 5. `[]` operator: The operator account to snapshot
 /// 6. `[]` ncn_operator_state: The connection between NCN and operator
-/// 7. `[]` operator_registry: The operator registry containing G1 pubkeys
+/// 7. `[]` operator_entry: The operator entry PDA containing BLS keys (optional)
 /// 8. `[writable]` epoch_snapshot: Epoch snapshot account containing operator snapshots
 /// 9. `[writable, signer]` account_payer: Account paying for any additional rent
 /// 10. `[]` system_program: Solana System Program
@@ -37,7 +37,7 @@ pub fn process_initialize_operator_snapshot(
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_marker, epoch_state, restaking_config, ncn, operator, ncn_operator_state, operator_registry, epoch_snapshot, account_payer, system_program] =
+    let [epoch_marker, epoch_state, restaking_config, ncn, operator, ncn_operator_state, operator_entry, epoch_snapshot, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -55,7 +55,6 @@ pub fn process_initialize_operator_snapshot(
         false,
     )?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, true)?;
-    OperatorRegistry::load(program_id, operator_registry, ncn.key, false)?;
     load_system_program(system_program)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
     EpochMarker::check_dne(program_id, epoch_marker, ncn.key, epoch)?;
@@ -120,16 +119,28 @@ pub fn process_initialize_operator_snapshot(
     };
     msg!("Operator index: {}", operator_index);
 
-    // Get the G1 pubkey from the operator registry
+    // Try to get the G1 pubkey from the operator entry PDA
     let g1_pubkey: Option<[u8; 32]> = {
-        let operator_registry_data = operator_registry.try_borrow_data()?;
-        let operator_registry_account =
-            OperatorRegistry::try_from_slice_unchecked(&operator_registry_data)?;
-        let operator_entry = operator_registry_account.try_get_operator_entry(operator.key);
+        // First check if the operator entry account exists by verifying it's the correct PDA
+        let (expected_operator_entry_pda, _, _) =
+            OperatorEntry::find_program_address(program_id, ncn.key, operator.key);
 
-        if let Some(operator_entry) = operator_entry {
-            Some(*operator_entry.g1_pubkey())
+        if *operator_entry.key == expected_operator_entry_pda {
+            // The account exists and is the correct PDA, try to load it
+            match OperatorEntry::load(program_id, operator_entry, ncn.key, operator.key, false) {
+                Ok(()) => {
+                    let operator_entry_data = operator_entry.try_borrow_data()?;
+                    let operator_entry_account =
+                        OperatorEntry::try_from_slice_unchecked(&operator_entry_data)?;
+                    Some(*operator_entry_account.g1_pubkey())
+                }
+                Err(_) => {
+                    msg!("Operator entry PDA exists but failed to load properly");
+                    None
+                }
+            }
         } else {
+            msg!("Operator entry PDA does not exist for this operator");
             None
         }
     };

@@ -23,10 +23,6 @@ mod tests {
             .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
 
-        ncn_program_client
-            .do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
-            .await?;
-
         // Setup operator
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
@@ -65,17 +61,9 @@ mod tests {
             )
             .await?;
 
-        // Verify operator was registered
-        let operator_registry = ncn_program_client
-            .get_operator_registry(ncn_root.ncn_pubkey)
+        let operator_entry = ncn_program_client
+            .get_operator_entry(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
-
-        assert_eq!(operator_registry.operator_count(), 1);
-        assert!(operator_registry.has_operator(&operator_root.operator_pubkey));
-
-        let operator_entry = operator_registry
-            .get_operator_entry(&operator_root.operator_pubkey)
-            .unwrap();
 
         assert_eq!(
             operator_entry.operator_pubkey(),
@@ -83,58 +71,6 @@ mod tests {
         );
         assert_eq!(operator_entry.g1_pubkey(), &g1_compressed.0);
         assert_eq!(operator_entry.g2_pubkey(), &g2_compressed.0);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_register_operator_duplicate() -> TestResult<()> {
-        let mut fixture = TestBuilder::new().await;
-        let mut ncn_program_client = fixture.ncn_program_client();
-
-        let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
-
-        let operator_root = &test_ncn.operators[0];
-
-        // Generate BLS keypair
-        let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
-        let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
-
-        let signature = operator_root
-            .bn128_privkey
-            .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
-            .unwrap();
-
-        // Register operator first time
-        ncn_program_client
-            .do_register_operator(
-                test_ncn.ncn_root.ncn_pubkey,
-                operator_root.operator_pubkey,
-                &operator_root.operator_admin,
-                g1_compressed.0,
-                g2_compressed.0,
-                signature.0,
-            )
-            .await?;
-
-        // Register same operator again should succeed (no-op)
-        ncn_program_client
-            .do_register_operator(
-                test_ncn.ncn_root.ncn_pubkey,
-                operator_root.operator_pubkey,
-                &operator_root.operator_admin,
-                g1_compressed.0,
-                g2_compressed.0,
-                signature.0,
-            )
-            .await?;
-
-        // Should still only have one operator
-        let operator_registry = ncn_program_client
-            .get_operator_registry(test_ncn.ncn_root.ncn_pubkey)
-            .await?;
-
-        assert_eq!(operator_registry.operator_count(), 1);
 
         Ok(())
     }
@@ -151,10 +87,6 @@ mod tests {
 
         ncn_program_client
             .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
-            .await?;
-
-        ncn_program_client
-            .do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
             .await?;
 
         // Setup operator
@@ -246,9 +178,6 @@ mod tests {
         ncn_program_client
             .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
             .await?;
-        ncn_program_client
-            .do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
-            .await?;
 
         // Setup operator and handshake
         let operator_root = restaking_program_client
@@ -309,9 +238,6 @@ mod tests {
         let ncn_root = fixture.setup_ncn().await?;
         ncn_program_client
             .do_initialize_config(ncn_root.ncn_pubkey, &ncn_root.ncn_admin, None)
-            .await?;
-        ncn_program_client
-            .do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
             .await?;
 
         // Setup operator and handshake

@@ -11,11 +11,10 @@ use ncn_program_client::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
         AdminSetStMintBuilder, AdminSetWeightBuilder, CastVoteBuilder, CloseEpochAccountBuilder,
         InitializeConfigBuilder, InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
-        InitializeOperatorRegistryBuilder, InitializeOperatorSnapshotBuilder,
-        InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, InitializeWeightTableBuilder,
-        ReallocEpochSnapshotBuilder, ReallocOperatorRegistryBuilder, RegisterOperatorBuilder,
-        RegisterVaultBuilder, SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
-        UpdateOperatorBN128KeysBuilder,
+        InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
+        InitializeVoteCounterBuilder, InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder,
+        RegisterOperatorBuilder, RegisterVaultBuilder, SetEpochWeightsBuilder,
+        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -28,14 +27,14 @@ use ncn_program_core::{
     epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
-    operator_registry::OperatorRegistry,
+    operator_registry::OperatorEntry,
     vault_registry::VaultRegistry,
     vote_counter::VoteCounter,
     weight_table::WeightTable,
 };
 use solana_program::{
-    instruction::InstructionError, native_token::sol_to_lamports, program_error::ProgramError,
-    pubkey::Pubkey, system_instruction::transfer,
+    instruction::InstructionError, native_token::sol_to_lamports, pubkey::Pubkey,
+    system_instruction::transfer,
 };
 use solana_program_test::{BanksClient, ProgramTestBanksClientExt};
 use solana_sdk::{
@@ -106,9 +105,6 @@ impl NCNProgramClient {
         self.do_initialize_vote_counter(ncn_root.ncn_pubkey).await?;
 
         self.do_full_initialize_vault_registry(ncn_root.ncn_pubkey)
-            .await?;
-
-        self.do_full_initialize_operator_registry(ncn_root.ncn_pubkey)
             .await?;
 
         Ok(())
@@ -221,6 +217,22 @@ impl NCNProgramClient {
         );
 
         Ok(account)
+    }
+
+    /// Fetches the OperatorEntry account for a given NCN and operator.
+    pub async fn get_operator_entry(
+        &mut self,
+        ncn: Pubkey,
+        operator: Pubkey,
+    ) -> TestResult<OperatorEntry> {
+        let operator_entry =
+            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator).0;
+        let raw_account = self
+            .banks_client
+            .get_account(operator_entry)
+            .await?
+            .unwrap();
+        Ok(*OperatorEntry::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
     }
 
     /// Fetches the OperatorSnapshot from the EpochSnapshot for a given operator, NCN, and epoch.
@@ -841,10 +853,12 @@ impl NCNProgramClient {
         let ncn_operator_state =
             NcnOperatorState::find_program_address(&jito_restaking_program::id(), &ncn, &operator)
                 .0;
-        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
         let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
+
+        let operator_entry =
+            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator).0;
 
         let ix = InitializeOperatorSnapshotBuilder::new()
             .epoch_marker(epoch_marker)
@@ -853,7 +867,7 @@ impl NCNProgramClient {
             .ncn(ncn)
             .operator(operator)
             .ncn_operator_state(ncn_operator_state)
-            .operator_registry(operator_registry)
+            .operator_entry(operator_entry)
             .epoch_snapshot(epoch_snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
@@ -1112,109 +1126,6 @@ impl NCNProgramClient {
         .await
     }
 
-    pub async fn get_operator_registry(
-        &mut self,
-        ncn_pubkey: Pubkey,
-    ) -> TestResult<OperatorRegistry> {
-        let operator_registry_pda =
-            OperatorRegistry::find_program_address(&ncn_program::id(), &ncn_pubkey).0;
-
-        let account = self
-            .banks_client
-            .get_account(operator_registry_pda)
-            .await?
-            .ok_or(TestError::ProgramError(ProgramError::InvalidAccountData))?;
-
-        Ok(*OperatorRegistry::try_from_slice_unchecked(account.data.as_slice()).unwrap())
-    }
-
-    pub async fn do_full_initialize_operator_registry(&mut self, ncn: Pubkey) -> TestResult<()> {
-        self.do_initialize_operator_registry(ncn).await?;
-        let num_reallocs =
-            (OperatorRegistry::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-        if num_reallocs > 0 {
-            self.do_realloc_operator_registry(ncn, num_reallocs).await?;
-        }
-        Ok(())
-    }
-
-    pub async fn do_initialize_operator_registry(&mut self, ncn: Pubkey) -> TestResult<()> {
-        let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-
-        self.initialize_operator_registry(&config, &operator_registry, &ncn)
-            .await
-    }
-
-    /// Sends a transaction to initialize the operator registry account.
-    pub async fn initialize_operator_registry(
-        &mut self,
-        ncn_config: &Pubkey,
-        operator_registry: &Pubkey,
-        ncn: &Pubkey,
-    ) -> TestResult<()> {
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
-
-        let ix = InitializeOperatorRegistryBuilder::new()
-            .config(*ncn_config)
-            .operator_registry(*operator_registry)
-            .ncn(*ncn)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
-    /// Reallocates the operator registry account multiple times.
-    pub async fn do_realloc_operator_registry(
-        &mut self,
-        ncn: Pubkey,
-        num_reallocations: u64,
-    ) -> TestResult<()> {
-        let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-        self.realloc_operator_registry(&ncn, &ncn_config, &operator_registry, num_reallocations)
-            .await
-    }
-
-    /// Sends transactions to reallocate the operator registry account.
-    pub async fn realloc_operator_registry(
-        &mut self,
-        ncn: &Pubkey,
-        config: &Pubkey,
-        operator_registry: &Pubkey,
-        num_reallocations: u64,
-    ) -> TestResult<()> {
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
-
-        let ix = ReallocOperatorRegistryBuilder::new()
-            .config(*config)
-            .operator_registry(*operator_registry)
-            .ncn(*ncn)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        let ixs = vec![ix; num_reallocations as usize];
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &ixs,
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
     pub async fn do_register_operator(
         &mut self,
         ncn: Pubkey,
@@ -1225,7 +1136,8 @@ impl NCNProgramClient {
         signature: [u8; 64],
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
+        let operator_entry =
+            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
         let ncn_operator_state = NcnOperatorState::find_program_address(
             &jito_restaking_program::id(),
             &ncn,
@@ -1233,15 +1145,17 @@ impl NCNProgramClient {
         )
         .0;
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
+        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
         self.register_operator(
             config,
-            operator_registry,
+            operator_entry,
             ncn_operator_state,
             restaking_config,
             ncn,
             operator_pubkey,
             operator_admin,
+            account_payer,
             g1_pubkey,
             g2_pubkey,
             signature,
@@ -1254,24 +1168,27 @@ impl NCNProgramClient {
     pub async fn register_operator(
         &mut self,
         config: Pubkey,
-        operator_registry: Pubkey,
+        operator_entry: Pubkey,
         ncn_operator_state: Pubkey,
         restaking_config: Pubkey,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
+        account_payer: Pubkey,
         g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
         g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
         signature: [u8; 64],
     ) -> TestResult<()> {
         let ix = RegisterOperatorBuilder::new()
             .config(config)
-            .operator_registry(operator_registry)
+            .operator_entry(operator_entry)
             .ncn(ncn)
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())
             .ncn_operator_state(ncn_operator_state)
             .restaking_config(restaking_config)
+            .account_payer(account_payer)
+            .system_program(system_program::id())
             .g1_pubkey(g1_pubkey)
             .g2_pubkey(g2_pubkey)
             .signature(signature)
@@ -1300,11 +1217,12 @@ impl NCNProgramClient {
         signature: [u8; 64],
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let operator_registry = OperatorRegistry::find_program_address(&ncn_program::id(), &ncn).0;
+        let operator_entry =
+            OperatorEntry::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
 
         self.update_operator_bn128_keys(
             config,
-            operator_registry,
+            operator_entry,
             ncn,
             operator_pubkey,
             operator_admin,
@@ -1320,7 +1238,7 @@ impl NCNProgramClient {
     pub async fn update_operator_bn128_keys(
         &mut self,
         config: Pubkey,
-        operator_registry: Pubkey,
+        operator_entry: Pubkey,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
@@ -1330,7 +1248,7 @@ impl NCNProgramClient {
     ) -> TestResult<()> {
         let ix = UpdateOperatorBN128KeysBuilder::new()
             .config(config)
-            .operator_registry(operator_registry)
+            .operator_entry(operator_entry)
             .ncn(ncn)
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())

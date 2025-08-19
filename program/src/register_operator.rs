@@ -1,14 +1,18 @@
-use jito_bytemuck::AccountDeserialize;
-use jito_jsm_core::slot_toggle::SlotToggleState;
+use jito_bytemuck::{AccountDeserialize, Discriminator};
+use jito_jsm_core::{
+    loader::{load_system_account, load_system_program},
+    slot_toggle::SlotToggleState,
+};
 use jito_restaking_core::{ncn::Ncn, ncn_operator_state::NcnOperatorState, operator::Operator};
 use ncn_program_core::{
+    account_payer::AccountPayer,
     config::Config,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE},
     error::NCNProgramError,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
     loaders::load_ncn_epoch,
-    operator_registry::OperatorRegistry,
+    operator_registry::OperatorEntry,
     schemes::sha256_normalized::Sha256Normalized,
 };
 use solana_program::{
@@ -20,7 +24,7 @@ use solana_program::{
     sysvar::{clock::Clock, Sysvar},
 };
 
-/// Registers an operator in the operator registry with BLS key verification.
+/// Registers an operator by creating a new PDA account with BLS key verification.
 ///
 /// ### Parameters:
 /// - `g1_pubkey`: G1 public key in compressed format (32 bytes)
@@ -29,12 +33,14 @@ use solana_program::{
 ///
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account
-/// 2. `[writable]` operator_registry: The operator registry to update
+/// 2. `[writable]` operator_entry: The operator entry PDA account to create
 /// 3. `[]` ncn: The NCN account
 /// 4. `[]` operator: The operator to register
 /// 5. `[signer]` operator_admin: The operator admin that must sign
 /// 6. `[]` ncn_operator_state: The connection between NCN and operator
 /// 7. `[]` restaking_config: Restaking configuration account
+/// 8. `[writable, signer]` account_payer: Account paying for the initialization
+/// 9. `[]` system_program: Solana System Program
 pub fn process_register_operator(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -42,7 +48,7 @@ pub fn process_register_operator(
     g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
     signature: [u8; 64],
 ) -> ProgramResult {
-    let [config, operator_registry, ncn, operator, operator_admin, ncn_operator_state, restaking_config] =
+    let [config, operator_entry, ncn, operator, operator_admin, ncn_operator_state, restaking_config, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -50,9 +56,11 @@ pub fn process_register_operator(
     };
 
     Config::load(program_id, config, ncn.key, false)?;
-    OperatorRegistry::load(program_id, operator_registry, ncn.key, true)?;
+    load_system_account(operator_entry, true)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     Operator::load(&jito_restaking_program::id(), operator, false)?;
+    AccountPayer::load(program_id, account_payer, ncn.key, true)?;
+    load_system_program(system_program)?;
     NcnOperatorState::load(
         &jito_restaking_program::id(),
         ncn_operator_state,
@@ -103,7 +111,7 @@ pub fn process_register_operator(
     };
 
     if !is_active {
-        msg!("Error: Operator <> NCN connection is not acctive");
+        msg!("Error: Operator <> NCN connection is not active");
         return Err(ProgramError::from(
             NCNProgramError::OperatorNcnConnectionNotActive,
         ));
@@ -141,12 +149,30 @@ pub fn process_register_operator(
         msg!("BLS signature verification successful");
     }
 
+    // Verify the operator entry PDA is correct
+    let (operator_entry_pda, operator_entry_bump, mut operator_entry_seeds) =
+        OperatorEntry::find_program_address(program_id, ncn.key, operator.key);
+    operator_entry_seeds.push(vec![operator_entry_bump]);
+
+    if operator_entry_pda != *operator_entry.key {
+        msg!("Error: Invalid operator entry PDA");
+        return Err(ProgramError::InvalidSeeds);
+    }
+
+    // Create the operator entry account
+    AccountPayer::pay_and_create_account(
+        program_id,
+        ncn.key,
+        account_payer,
+        operator_entry,
+        system_program,
+        program_id,
+        OperatorEntry::SIZE,
+        &operator_entry_seeds,
+    )?;
+
     let clock = Clock::get()?;
     let slot = clock.slot;
-
-    let mut operator_registry_data = operator_registry.try_borrow_mut_data()?;
-    let operator_registry_account =
-        OperatorRegistry::try_from_slice_unchecked_mut(&mut operator_registry_data)?;
 
     let operator_index = {
         let operator_data = operator.data.borrow();
@@ -154,13 +180,21 @@ pub fn process_register_operator(
         operator_account.index()
     };
 
-    operator_registry_account.register_operator(
+    // Initialize the operator entry account
+    let mut operator_entry_data = operator_entry.try_borrow_mut_data()?;
+    operator_entry_data[0] = OperatorEntry::DISCRIMINATOR;
+    let operator_entry_account =
+        OperatorEntry::try_from_slice_unchecked_mut(&mut operator_entry_data)?;
+
+    operator_entry_account.initialize(
+        ncn.key,
         operator.key,
         &g1_pubkey,
         &g2_pubkey,
         operator_index,
         slot,
-    )?;
+        operator_entry_bump,
+    );
 
     msg!(
         "Operator registered successfully with index {}",

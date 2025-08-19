@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_OPERATOR_SNAPSHOT_DISCRIMINATOR = 13;
+export const INITIALIZE_OPERATOR_SNAPSHOT_DISCRIMINATOR = 11;
 
 export function getInitializeOperatorSnapshotDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_OPERATOR_SNAPSHOT_DISCRIMINATOR);
@@ -43,7 +43,7 @@ export type InitializeOperatorSnapshotInstruction<
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountOperator extends string | IAccountMeta<string> = string,
   TAccountNcnOperatorState extends string | IAccountMeta<string> = string,
-  TAccountOperatorRegistry extends string | IAccountMeta<string> = string,
+  TAccountOperatorEntry extends string | IAccountMeta<string> = string,
   TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
   TAccountAccountPayer extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
@@ -70,9 +70,9 @@ export type InitializeOperatorSnapshotInstruction<
       TAccountNcnOperatorState extends string
         ? ReadonlyAccount<TAccountNcnOperatorState>
         : TAccountNcnOperatorState,
-      TAccountOperatorRegistry extends string
-        ? ReadonlyAccount<TAccountOperatorRegistry>
-        : TAccountOperatorRegistry,
+      TAccountOperatorEntry extends string
+        ? ReadonlyAccount<TAccountOperatorEntry>
+        : TAccountOperatorEntry,
       TAccountEpochSnapshot extends string
         ? WritableAccount<TAccountEpochSnapshot>
         : TAccountEpochSnapshot,
@@ -132,7 +132,7 @@ export type InitializeOperatorSnapshotInput<
   TAccountNcn extends string = string,
   TAccountOperator extends string = string,
   TAccountNcnOperatorState extends string = string,
-  TAccountOperatorRegistry extends string = string,
+  TAccountOperatorEntry extends string = string,
   TAccountEpochSnapshot extends string = string,
   TAccountAccountPayer extends string = string,
   TAccountSystemProgram extends string = string,
@@ -143,7 +143,7 @@ export type InitializeOperatorSnapshotInput<
   ncn: Address<TAccountNcn>;
   operator: Address<TAccountOperator>;
   ncnOperatorState: Address<TAccountNcnOperatorState>;
-  operatorRegistry: Address<TAccountOperatorRegistry>;
+  operatorEntry: Address<TAccountOperatorEntry>;
   epochSnapshot: Address<TAccountEpochSnapshot>;
   accountPayer: Address<TAccountAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -157,7 +157,7 @@ export function getInitializeOperatorSnapshotInstruction<
   TAccountNcn extends string,
   TAccountOperator extends string,
   TAccountNcnOperatorState extends string,
-  TAccountOperatorRegistry extends string,
+  TAccountOperatorEntry extends string,
   TAccountEpochSnapshot extends string,
   TAccountAccountPayer extends string,
   TAccountSystemProgram extends string,
@@ -170,7 +170,7 @@ export function getInitializeOperatorSnapshotInstruction<
     TAccountNcn,
     TAccountOperator,
     TAccountNcnOperatorState,
-    TAccountOperatorRegistry,
+    TAccountOperatorEntry,
     TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
@@ -184,7 +184,7 @@ export function getInitializeOperatorSnapshotInstruction<
   TAccountNcn,
   TAccountOperator,
   TAccountNcnOperatorState,
-  TAccountOperatorRegistry,
+  TAccountOperatorEntry,
   TAccountEpochSnapshot,
   TAccountAccountPayer,
   TAccountSystemProgram
@@ -206,10 +206,7 @@ export function getInitializeOperatorSnapshotInstruction<
       value: input.ncnOperatorState ?? null,
       isWritable: false,
     },
-    operatorRegistry: {
-      value: input.operatorRegistry ?? null,
-      isWritable: false,
-    },
+    operatorEntry: { value: input.operatorEntry ?? null, isWritable: false },
     epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: true },
     accountPayer: { value: input.accountPayer ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
@@ -237,7 +234,7 @@ export function getInitializeOperatorSnapshotInstruction<
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.operator),
       getAccountMeta(accounts.ncnOperatorState),
-      getAccountMeta(accounts.operatorRegistry),
+      getAccountMeta(accounts.operatorEntry),
       getAccountMeta(accounts.epochSnapshot),
       getAccountMeta(accounts.accountPayer),
       getAccountMeta(accounts.systemProgram),
@@ -254,7 +251,7 @@ export function getInitializeOperatorSnapshotInstruction<
     TAccountNcn,
     TAccountOperator,
     TAccountNcnOperatorState,
-    TAccountOperatorRegistry,
+    TAccountOperatorEntry,
     TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
@@ -275,7 +272,7 @@ export type ParsedInitializeOperatorSnapshotInstruction<
     ncn: TAccountMetas[3];
     operator: TAccountMetas[4];
     ncnOperatorState: TAccountMetas[5];
-    operatorRegistry: TAccountMetas[6];
+    operatorEntry: TAccountMetas[6];
     epochSnapshot: TAccountMetas[7];
     accountPayer: TAccountMetas[8];
     systemProgram: TAccountMetas[9];
@@ -310,7 +307,7 @@ export function parseInitializeOperatorSnapshotInstruction<
       ncn: getNextAccount(),
       operator: getNextAccount(),
       ncnOperatorState: getNextAccount(),
-      operatorRegistry: getNextAccount(),
+      operatorEntry: getNextAccount(),
       epochSnapshot: getNextAccount(),
       accountPayer: getNextAccount(),
       systemProgram: getNextAccount(),

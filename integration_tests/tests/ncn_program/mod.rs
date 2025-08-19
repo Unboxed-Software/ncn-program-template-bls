@@ -7,7 +7,6 @@ mod epoch_state;
 mod fuzz_simulation_tests;
 mod initialize_config;
 mod initialize_epoch_snapshot;
-mod initialize_operator_registry;
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
 mod initialize_vote_counter;

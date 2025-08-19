@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const SET_EPOCH_WEIGHTS_DISCRIMINATOR = 10;
+export const SET_EPOCH_WEIGHTS_DISCRIMINATOR = 8;
 
 export function getSetEpochWeightsDiscriminatorBytes() {
   return getU8Encoder().encode(SET_EPOCH_WEIGHTS_DISCRIMINATOR);

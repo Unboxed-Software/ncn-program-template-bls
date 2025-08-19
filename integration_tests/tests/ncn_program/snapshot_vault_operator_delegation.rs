@@ -108,10 +108,6 @@ mod tests {
                 .await?;
         }
 
-        let operator_registry = ncn_program_client.get_operator_registry(ncn).await?;
-
-        assert_eq!(operator_registry.operator_count(), OPERATORS as u64);
-
         // Verify that the epoch snapshot aggregates the G1 pubkeys correctly
         let mut g1_pubkeys = Vec::new();
         for operator_root in test_ncn.operators.iter() {
@@ -219,10 +215,6 @@ mod tests {
                 )
                 .await?;
         }
-
-        let operator_registry = ncn_program_client.get_operator_registry(ncn).await?;
-
-        assert_eq!(operator_registry.operator_count(), OPERATORS as u64 - 1);
 
         // Verify that the epoch snapshot aggregates the G1 pubkeys correctly
         let agg_g1_pubkey = g1_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
@@ -570,9 +562,6 @@ mod tests {
             .do_full_initialize_vault_registry(test_ncn.ncn_root.ncn_pubkey)
             .await?;
 
-        ncn_program_client
-            .do_full_initialize_operator_registry(test_ncn.ncn_root.ncn_pubkey)
-            .await?;
         fixture
             .add_operators_to_test_ncn(&mut test_ncn, 1, None)
             .await?;

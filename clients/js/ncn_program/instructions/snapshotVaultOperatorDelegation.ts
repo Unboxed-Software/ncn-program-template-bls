@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const SNAPSHOT_VAULT_OPERATOR_DELEGATION_DISCRIMINATOR = 14;
+export const SNAPSHOT_VAULT_OPERATOR_DELEGATION_DISCRIMINATOR = 12;
 
 export function getSnapshotVaultOperatorDelegationDiscriminatorBytes() {
   return getU8Encoder().encode(

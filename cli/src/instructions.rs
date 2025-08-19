@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{
     getters::{
-        get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault, get_all_vaults,
+        get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault,
         get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot, get_operator_snapshot,
         get_or_create_vault_registry, get_vault, get_vault_config, get_vault_registry,
         get_vault_update_state_tracker, get_weight_table,
@@ -34,10 +34,9 @@ use ncn_program_client::{
         AdminSetWeightBuilder, CastVoteBuilder, CloseEpochAccountBuilder,
         InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
         InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
-        InitializeOperatorRegistryBuilder, InitializeOperatorSnapshotBuilder,
-        InitializeVaultRegistryBuilder, InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder,
-        ReallocOperatorRegistryBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
-        SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
+        InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
+        InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder, RegisterOperatorBuilder,
+        RegisterVaultBuilder, SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -48,7 +47,7 @@ use ncn_program_core::{
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
-    operator_registry::OperatorRegistry,
+    operator_registry::OperatorEntry,
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
@@ -422,72 +421,6 @@ pub async fn create_vault_registry(handler: &CliHandler) -> Result<()> {
     Ok(())
 }
 
-pub async fn create_operator_registry(handler: &CliHandler) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (operator_registry, _, _) =
-        OperatorRegistry::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let operator_registry_account = get_account(handler, &operator_registry).await?;
-
-    // Skip if operator registry already exists
-    if operator_registry_account.is_none() {
-        let initialize_operator_registry_ix = InitializeOperatorRegistryBuilder::new()
-            .config(config)
-            .operator_registry(operator_registry)
-            .ncn(ncn)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        send_and_log_transaction(
-            handler,
-            &[initialize_operator_registry_ix],
-            &[],
-            "Created Operator Registry",
-            &[format!("NCN: {:?}", ncn)],
-        )
-        .await?;
-    }
-
-    // Number of reallocations needed based on OperatorRegistry::SIZE
-    let num_reallocs =
-        ((OperatorRegistry::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1).max(1);
-
-    let mut realloc_ixs = Vec::with_capacity(num_reallocs as usize + 1);
-    realloc_ixs.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
-
-    let realloc_operator_registry_ix = ReallocOperatorRegistryBuilder::new()
-        .config(config)
-        .operator_registry(operator_registry)
-        .ncn(ncn)
-        .account_payer(account_payer)
-        .system_program(system_program::id())
-        .instruction();
-
-    for _ in 0..num_reallocs {
-        realloc_ixs.push(realloc_operator_registry_ix.clone());
-    }
-
-    send_and_log_transaction(
-        handler,
-        &realloc_ixs,
-        &[],
-        "Reallocated Operator Registry",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Number of reallocations: {:?}", num_reallocs),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
 pub async fn register_vault(handler: &CliHandler, vault: &Pubkey) -> Result<()> {
     let ncn = *handler.ncn()?;
     let vault = *vault;
@@ -533,8 +466,10 @@ pub async fn register_operator(
 
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
-    let (operator_registry, _, _) =
-        OperatorRegistry::find_program_address(&handler.ncn_program_id, &ncn);
+    let (operator_entry, _, _) =
+        OperatorEntry::find_program_address(&handler.ncn_program_id, &ncn, &operator);
+
+    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (ncn_operator_state, _, _) =
         NcnOperatorState::find_program_address(&handler.restaking_program_id, &ncn, &operator);
@@ -544,12 +479,14 @@ pub async fn register_operator(
 
     let register_operator_ix = RegisterOperatorBuilder::new()
         .config(config)
-        .operator_registry(operator_registry)
+        .operator_entry(operator_entry)
         .ncn(ncn)
         .operator(operator)
         .operator_admin(keypair.pubkey())
         .ncn_operator_state(ncn_operator_state)
         .restaking_config(restaking_config)
+        .account_payer(account_payer)
+        .system_program(system_program::id())
         .g1_pubkey(g1_pubkey)
         .g2_pubkey(g2_pubkey)
         .signature(signature)
@@ -825,8 +762,8 @@ pub async fn create_operator_snapshot(
 
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
     let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-    let (operator_registry, _, _) =
-        OperatorRegistry::find_program_address(&handler.ncn_program_id, &ncn);
+    let (operator_entry, _, _) =
+        OperatorEntry::find_program_address(&handler.ncn_program_id, &ncn, &operator);
 
     // Check if operator snapshot already exists by trying to get it
     let operator_snapshot_result = get_operator_snapshot(handler, &operator, epoch).await;
@@ -842,10 +779,10 @@ pub async fn create_operator_snapshot(
             .ncn(ncn)
             .operator(operator)
             .ncn_operator_state(ncn_operator_state)
+            .operator_entry(operator_entry)
             .epoch_snapshot(epoch_snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
-            .operator_registry(operator_registry)
             .epoch(epoch)
             .instruction();
 

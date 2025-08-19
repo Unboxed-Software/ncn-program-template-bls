@@ -11,7 +11,6 @@ export * from './epochAccountStatus';
 export * from './fee';
 export * from './feeConfig';
 export * from './fees';
-export * from './operatorEntry';
 export * from './operatorSnapshot';
 export * from './progress';
 export * from './stakeWeights';

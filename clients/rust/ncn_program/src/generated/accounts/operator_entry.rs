@@ -5,26 +5,35 @@
 //! <https://github.com/kinobi-so/kinobi>
 //!
 
-use crate::generated::types::OperatorEntry;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct OperatorRegistry {
+pub struct OperatorEntry {
     pub discriminator: u64,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub ncn: Pubkey,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub operator_pubkey: Pubkey,
+    pub g1_pubkey: [u8; 32],
+    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
+    pub g2_pubkey: [u8; 64],
+    pub operator_index: u64,
+    pub slot_registered: u64,
     pub bump: u8,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
-    pub operator_list: [OperatorEntry; 256],
+    pub reserved: [u8; 199],
 }
 
-impl OperatorRegistry {
+impl OperatorEntry {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -32,7 +41,7 @@ impl OperatorRegistry {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for OperatorRegistry {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for OperatorEntry {
     type Error = std::io::Error;
 
     fn try_from(
@@ -44,26 +53,26 @@ impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for OperatorReg
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountDeserialize for OperatorRegistry {
+impl anchor_lang::AccountDeserialize for OperatorEntry {
     fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
         Ok(Self::deserialize(buf)?)
     }
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountSerialize for OperatorRegistry {}
+impl anchor_lang::AccountSerialize for OperatorEntry {}
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::Owner for OperatorRegistry {
+impl anchor_lang::Owner for OperatorEntry {
     fn owner() -> Pubkey {
         crate::NCN_PROGRAM_ID
     }
 }
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::IdlBuild for OperatorRegistry {}
+impl anchor_lang::IdlBuild for OperatorEntry {}
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::Discriminator for OperatorRegistry {
+impl anchor_lang::Discriminator for OperatorEntry {
     const DISCRIMINATOR: &'static [u8] = &[0; 8];
 }

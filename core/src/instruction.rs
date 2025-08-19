@@ -57,22 +57,16 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "ncn_vault_ticket")]
     RegisterVault,
 
-    /// Initializes the operator registry account to track operators
+    /// Registers an operator by creating an individual operator PDA
     #[account(0, name = "config")]
-    #[account(1, writable, name = "operator_registry")]
-    #[account(2, name = "ncn")]
-    #[account(3, writable, name = "account_payer")]
-    #[account(4, name = "system_program")]
-    InitializeOperatorRegistry,
-
-    /// Registers an operator to the operator registry
-    #[account(0, name = "config")]
-    #[account(1, writable, name = "operator_registry")]
+    #[account(1, writable, name = "operator_entry")]
     #[account(2, name = "ncn")]
     #[account(3, name = "operator")]
     #[account(4, signer, name = "operator_admin")]
     #[account(5, name = "ncn_operator_state")]
     #[account(6, name = "restaking_config")]
+    #[account(7, writable, name = "account_payer")]
+    #[account(8, name = "system_program")]
     RegisterOperator {
         /// G1 public key (compressed, 32 bytes)
         g1_pubkey: [u8; 32],
@@ -82,9 +76,9 @@ pub enum NCNProgramInstruction {
         signature: [u8; 64],
     },
 
-    /// Updates an operator's BLS keys in the operator registry
+    /// Updates an operator's BLS keys in their individual operator PDA
     #[account(0, name = "config")]
-    #[account(1, writable, name = "operator_registry")]
+    #[account(1, writable, name = "operator_entry")]
     #[account(2, name = "ncn")]
     #[account(3, name = "operator")]
     #[account(4, signer, name = "operator_admin")]
@@ -96,14 +90,6 @@ pub enum NCNProgramInstruction {
         /// BLS signature of the new G1 pubkey signed by the new G2 private key (uncompressed G1 point, 64 bytes)
         signature: [u8; 64],
     },
-
-    /// Resizes the operator registry account
-    #[account(0, name = "config")]
-    #[account(1, writable, name = "operator_registry")]
-    #[account(2, name = "ncn")]
-    #[account(3, writable, name = "account_payer")]
-    #[account(4, name = "system_program")]
-    ReallocOperatorRegistry,
 
     /// Initializes the vote counter PDA for tracking successful votes
     /// This should be called after InitializeConfig to set up vote tracking
@@ -186,7 +172,7 @@ pub enum NCNProgramInstruction {
     #[account(3, name = "ncn")]
     #[account(4, name = "operator")]
     #[account(5, name = "ncn_operator_state")]
-    #[account(6, name = "operator_registry")]
+    #[account(6, name = "operator_entry")]
     #[account(7, writable, name = "epoch_snapshot")]
     #[account(8, writable, name = "account_payer")]
     #[account(9, name = "system_program")]

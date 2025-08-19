@@ -27,7 +27,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_VOTE_COUNTER_DISCRIMINATOR = 7;
+export const INITIALIZE_VOTE_COUNTER_DISCRIMINATOR = 5;
 
 export function getInitializeVoteCounterDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_VOTE_COUNTER_DISCRIMINATOR);

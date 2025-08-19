@@ -74,8 +74,6 @@ pub enum NCNProgramError {
     VaultIndexAlreadyInUse,
     #[error("Mint Entry not found")]
     MintEntryNotFound,
-    #[error("Operator Entry not found")]
-    OperatorEntryNotFound,
     #[error("Fee cap exceeded")]
     FeeCapExceeded,
     #[error("Total fees cannot be 0")]

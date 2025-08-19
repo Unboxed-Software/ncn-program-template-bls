@@ -23,7 +23,6 @@ use ncn_program_core::{
     epoch_marker::EpochMarker,
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
-    operator_registry::OperatorRegistry,
     vault_registry::VaultRegistry,
     weight_table::WeightTable,
 };
@@ -640,12 +639,6 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
         "Rent cost for EpochSnapshot {:?}",
         client
             .get_minimum_balance_for_rent_exemption(EpochSnapshot::SIZE)
-            .await?
-    );
-    msg!(
-        "Rent cost for Operator_registry {:?}",
-        client
-            .get_minimum_balance_for_rent_exemption(OperatorRegistry::SIZE)
             .await?
     );
     msg!(

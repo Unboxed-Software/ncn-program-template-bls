@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const INITIALIZE_WEIGHT_TABLE_DISCRIMINATOR = 9;
+export const INITIALIZE_WEIGHT_TABLE_DISCRIMINATOR = 7;
 
 export function getInitializeWeightTableDiscriminatorBytes() {
   return getU8Encoder().encode(INITIALIZE_WEIGHT_TABLE_DISCRIMINATOR);

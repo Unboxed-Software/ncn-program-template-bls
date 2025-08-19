@@ -172,10 +172,6 @@ mod tests {
             ncn_program_client
                 .do_full_initialize_vault_registry(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
-            // 4.c Initialize the operator_registry - creates accounts to track operators
-            ncn_program_client
-                .do_full_initialize_operator_registry(ncn_pubkey)
-                .await?;
 
             // 4.d. Register all the Supported Token (ST) mints in the NCN program
             // This assigns weights to each mint for voting power calculations

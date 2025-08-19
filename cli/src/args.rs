@@ -201,8 +201,6 @@ pub enum ProgramCommand {
     /// Instructions
     CreateVaultRegistry,
 
-    CreateOperatorRegistry,
-
     RegisterVault {},
 
     RegisterOperator {
