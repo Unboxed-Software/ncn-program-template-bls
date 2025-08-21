@@ -610,10 +610,8 @@ impl NCNProgramClient {
         &mut self,
         operator: Pubkey,
         ncn: Pubkey,
-        epoch: u64,
     ) -> TestResult<()> {
-        self.initialize_operator_snapshot(operator, ncn, epoch)
-            .await
+        self.initialize_operator_snapshot(operator, ncn).await
     }
 
     /// Sends a transaction to initialize the operator snapshot account.
@@ -621,11 +619,7 @@ impl NCNProgramClient {
         &mut self,
         operator: Pubkey,
         ncn: Pubkey,
-        epoch: u64,
     ) -> TestResult<()> {
-        let (epoch_marker, _, _) =
-            EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
         let ncn_operator_state =
             NcnOperatorState::find_program_address(&jito_restaking_program::id(), &ncn, &operator)
@@ -638,8 +632,6 @@ impl NCNProgramClient {
             NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator).0;
 
         let ix = InitializeOperatorSnapshotBuilder::new()
-            .epoch_marker(epoch_marker)
-            .epoch_state(epoch_state)
             .restaking_config(restaking_config)
             .ncn(ncn)
             .operator(operator)
@@ -648,7 +640,6 @@ impl NCNProgramClient {
             .snapshot(snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
-            .epoch(epoch)
             .instruction();
 
         let blockhash = self.banks_client.get_latest_blockhash().await?;

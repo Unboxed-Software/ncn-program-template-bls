@@ -133,19 +133,15 @@ pub enum NCNProgramInstruction {
     ReallocSnapshot {},
 
     /// Initializes the Operator Snapshot within the snapshot
-    #[account(0, name = "epoch_marker")]
-    #[account(1, writable, name = "epoch_state")]
-    #[account(2, name = "restaking_config")]
-    #[account(3, name = "ncn")]
-    #[account(4, name = "operator")]
-    #[account(5, name = "ncn_operator_state")]
-    #[account(6, name = "ncn_operator_account")]
-    #[account(7, writable, name = "snapshot")]
-    #[account(8, writable, name = "account_payer")]
-    #[account(9, name = "system_program")]
-    InitializeOperatorSnapshot{
-        epoch: u64,
-    },
+    #[account(0, name = "restaking_config")]
+    #[account(1, name = "ncn")]
+    #[account(2, name = "operator")]
+    #[account(3, name = "ncn_operator_state")]
+    #[account(4, name = "ncn_operator_account")]
+    #[account(5, writable, name = "snapshot")]
+    #[account(6, writable, name = "account_payer")]
+    #[account(7, name = "system_program")]
+    InitializeOperatorSnapshot{},
     
     /// Snapshots the vault operator delegation
     #[account(0, writable, name = "epoch_state")]

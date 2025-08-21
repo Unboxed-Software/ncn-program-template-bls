@@ -35,7 +35,7 @@ mod tests {
         let operator = test_ncn.operators[0].operator_pubkey;
 
         ncn_program_client
-            .do_initialize_operator_snapshot(operator, ncn, epoch)
+            .do_initialize_operator_snapshot(operator, ncn)
             .await?;
 
         ncn_program_client
@@ -71,7 +71,7 @@ mod tests {
 
         for operator_root in test_ncn.operators.iter() {
             ncn_program_client
-                .do_initialize_operator_snapshot(operator_root.operator_pubkey, ncn, epoch)
+                .do_initialize_operator_snapshot(operator_root.operator_pubkey, ncn)
                 .await?;
 
             ncn_program_client
@@ -166,7 +166,7 @@ mod tests {
 
         for operator_root in test_ncn.operators.iter() {
             ncn_program_client
-                .do_initialize_operator_snapshot(operator_root.operator_pubkey, ncn, epoch)
+                .do_initialize_operator_snapshot(operator_root.operator_pubkey, ncn)
                 .await?;
 
             ncn_program_client
@@ -237,7 +237,7 @@ mod tests {
 
             // Initialize operator snapshot for this epoch
             ncn_program_client
-                .do_initialize_operator_snapshot(operator, ncn, current_epoch)
+                .do_initialize_operator_snapshot(operator, ncn)
                 .await?;
 
             // Get operator snapshot before delegation snapshot

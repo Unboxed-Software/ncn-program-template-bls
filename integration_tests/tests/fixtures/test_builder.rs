@@ -486,16 +486,13 @@ impl TestBuilder {
     ) -> TestResult<()> {
         let mut ncn_program_client = self.ncn_program_client();
 
-        let clock = self.clock().await;
-        let epoch = clock.epoch;
-
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
         for operator_root in test_ncn.operators.iter() {
             let operator = operator_root.operator_pubkey;
 
             ncn_program_client
-                .initialize_operator_snapshot(operator, ncn, epoch)
+                .initialize_operator_snapshot(operator, ncn)
                 .await?;
         }
 

@@ -239,7 +239,7 @@ mod tests {
                 let operator = operator_root.operator_pubkey;
 
                 ncn_program_client
-                    .initialize_operator_snapshot(operator, ncn_pubkey, epoch)
+                    .initialize_operator_snapshot(operator, ncn_pubkey)
                     .await?;
             }
 

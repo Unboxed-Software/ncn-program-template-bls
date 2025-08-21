@@ -22,29 +22,25 @@ use solana_program::{
 /// - `epoch`: The target epoch
 ///
 /// ### Accounts:
-/// 1. `[]` epoch_marker: Marker account to prevent duplicate initialization
-/// 2. `[writable]` epoch_state: The epoch state account for the target epoch
-/// 3. `[]` restaking_config: Restaking configuration account
-/// 4. `[]` ncn: The NCN account
-/// 5. `[]` operator: The operator account to snapshot
-/// 6. `[]` ncn_operator_state: The connection between NCN and operator
-/// 7. `[]` ncn_operator_account: The ncn operator account PDA containing BLS keys (optional)
-/// 8. `[writable]` snapshot: Snapshot account containing operator snapshots
-/// 9. `[writable, signer]` account_payer: Account paying for any additional rent
-/// 10. `[]` system_program: Solana System Program
+/// 1. `[]` restaking_config: Restaking configuration account
+/// 2. `[]` ncn: The NCN account
+/// 3. `[]` operator: The operator account to snapshot
+/// 4. `[]` ncn_operator_state: The connection between NCN and operator
+/// 5. `[]` ncn_operator_account: The ncn operator account PDA containing BLS keys (optional)
+/// 6. `[writable]` snapshot: Snapshot account containing operator snapshots
+/// 7. `[writable, signer]` account_payer: Account paying for any additional rent
+/// 8. `[]` system_program: Solana System Program
 pub fn process_initialize_operator_snapshot(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    epoch: u64,
 ) -> ProgramResult {
-    let [epoch_marker, epoch_state, restaking_config, ncn, operator, ncn_operator_state, ncn_operator_account, snapshot, account_payer, system_program] =
+    let [restaking_config, ncn, operator, ncn_operator_state, ncn_operator_account, snapshot, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    EpochState::load_and_check_is_closing(program_id, epoch_state, ncn.key, epoch, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     Operator::load(&jito_restaking_program::id(), operator, false)?;
     NcnOperatorState::load(
@@ -57,7 +53,6 @@ pub fn process_initialize_operator_snapshot(
     Snapshot::load(program_id, snapshot, ncn.key, true)?;
     load_system_program(system_program)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
-    EpochMarker::check_dne(program_id, epoch_marker, ncn.key, epoch)?;
 
     // Check if operator index is valid
     let ncn_operator_index = {

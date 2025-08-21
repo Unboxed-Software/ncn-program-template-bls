@@ -26,7 +26,7 @@ mod tests {
 
         // Initialize operator snapshot
         ncn_program_client
-            .do_initialize_operator_snapshot(operator, ncn, epoch)
+            .do_initialize_operator_snapshot(operator, ncn)
             .await?;
 
         // Check initial size is MAX_REALLOC_BYTES
@@ -71,7 +71,7 @@ mod tests {
 
         // Initialize operator snapshot
         let result = ncn_program_client
-            .do_initialize_operator_snapshot(operator, ncn, epoch)
+            .do_initialize_operator_snapshot(operator, ncn)
             .await;
 
         assert_ncn_program_error(result, NCNProgramError::OperatorIsNotInSnapshot, None);

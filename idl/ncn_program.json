@@ -433,16 +433,6 @@
       "name": "InitializeOperatorSnapshot",
       "accounts": [
         {
-          "name": "epochMarker",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "restakingConfig",
           "isMut": false,
           "isSigner": false
@@ -483,12 +473,7 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
+      "args": [],
       "discriminant": {
         "type": "u8",
         "value": 9

@@ -141,9 +141,9 @@ pub fn process_instruction(
             msg!("Instruction: ReallocSnapshot");
             process_realloc_snapshot(program_id, accounts)
         }
-        NCNProgramInstruction::InitializeOperatorSnapshot { epoch } => {
+        NCNProgramInstruction::InitializeOperatorSnapshot {} => {
             msg!("Instruction: InitializeOperatorSnapshot");
-            process_initialize_operator_snapshot(program_id, accounts, epoch)
+            process_initialize_operator_snapshot(program_id, accounts)
         }
         NCNProgramInstruction::SnapshotVaultOperatorDelegation { epoch } => {
             msg!("Instruction: SnapshotVaultOperatorDelegation");

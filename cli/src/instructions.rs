@@ -551,21 +551,12 @@ pub async fn create_operator_snapshot(
     epoch: u64,
 ) -> Result<()> {
     let ncn = *handler.ncn()?;
-
     let operator = *operator;
-
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
     let (ncn_operator_state, _, _) =
         NcnOperatorState::find_program_address(&handler.restaking_program_id, &ncn, &operator);
-
     let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
-
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
     let (ncn_operator_account, _, _) =
         NCNOperatorAccount::find_program_address(&handler.ncn_program_id, &ncn, &operator);
 
@@ -575,8 +566,6 @@ pub async fn create_operator_snapshot(
     if operator_snapshot_result.is_err() {
         // Initialize operator snapshot
         let initialize_operator_snapshot_ix = InitializeOperatorSnapshotBuilder::new()
-            .epoch_marker(epoch_marker)
-            .epoch_state(epoch_state)
             .restaking_config(
                 RestakingConfig::find_program_address(&handler.restaking_program_id).0,
             )
@@ -587,7 +576,6 @@ pub async fn create_operator_snapshot(
             .snapshot(snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
-            .epoch(epoch)
             .instruction();
 
         send_and_log_transaction(
