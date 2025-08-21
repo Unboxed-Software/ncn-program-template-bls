@@ -144,9 +144,6 @@ pub struct EpochState {
     /// The time this snapshot was created
     slot_created: PodU64,
 
-    /// The number of vaults
-    vault_count: PodU64,
-
     /// All of the epoch accounts status
     account_status: EpochAccountStatus,
 
@@ -171,7 +168,6 @@ impl EpochState {
             epoch: PodU64::from(epoch),
             bump,
             slot_created: PodU64::from(slot_created),
-            vault_count: PodU64::from(0),
             account_status: EpochAccountStatus::default(),
             operator_snapshot_progress: [Progress::default(); MAX_OPERATORS],
             is_closing: PodBool::from(false),
@@ -280,10 +276,6 @@ impl EpochState {
         self.is_closing.into()
     }
 
-    pub fn vault_count(&self) -> u64 {
-        self.vault_count.into()
-    }
-
     pub const fn account_status(&self) -> &EpochAccountStatus {
         &self.account_status
     }
@@ -303,16 +295,6 @@ impl EpochState {
     ) -> Result<(), NCNProgramError> {
         self.operator_snapshot_progress[ncn_operator_index].mark_complete();
 
-        Ok(())
-    }
-
-    // Ballot box functionality removed
-
-    pub fn update_cast_vote(
-        &mut self,
-        _operators_voted: u64,
-        _current_slot: u64,
-    ) -> Result<(), NCNProgramError> {
         Ok(())
     }
 
@@ -395,7 +377,6 @@ impl fmt::Display for EpochState {
        writeln!(f, "  Epoch:                        {}", self.epoch())?;
        writeln!(f, "  Bump:                         {}", self.bump)?;
        writeln!(f, "  Slot Created:                 {}", self.slot_created())?;
-       writeln!(f, "  Vault Count:                  {}", self.vault_count())?;
 
        writeln!(f, "\nAccount Status:")?;
        writeln!(f, "  Epoch State:                  {:?}", self.account_status.epoch_state().unwrap())?;

@@ -888,12 +888,6 @@
             }
           },
           {
-            "name": "vaultCount",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
             "name": "accountStatus",
             "type": {
               "defined": "EpochAccountStatus"

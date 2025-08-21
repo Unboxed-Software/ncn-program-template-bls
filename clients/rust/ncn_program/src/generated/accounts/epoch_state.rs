@@ -23,7 +23,6 @@ pub struct EpochState {
     pub epoch: u64,
     pub bump: u8,
     pub slot_created: u64,
-    pub vault_count: u64,
     pub account_status: EpochAccountStatus,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub operator_snapshot_progress: [Progress; 256],

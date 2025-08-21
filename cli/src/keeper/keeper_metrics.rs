@@ -325,7 +325,6 @@ pub async fn emit_ncn_metrics_operators(handler: &CliHandler) -> Result<()> {
                 Into::<u16>::into(operator_account.operator_fee_bps) as i64,
                 i64
             ),
-            ("vault-count", operator_account.vault_count(), i64),
             ("ncn-count", operator_account.ncn_count(), i64),
             ("has-voted", operator_has_voted as i64, i64)
         );
@@ -349,7 +348,6 @@ pub async fn emit_ncn_metrics_vault_registry(handler: &CliHandler) -> Result<()>
         ("current-epoch", current_epoch, i64),
         ("current-slot", current_slot, i64),
         ("st-mints", vault_registry.st_mint_count(), i64),
-        ("vaults", vault_registry.vault_count(), i64)
     );
 
     // Individual vault metrics
@@ -627,7 +625,6 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         ),
         ("current-state", current_state as u8, i64),
         ("operator-count", 0, i64), // operator_count method not available on EpochState
-        ("vault-count", state.vault_count(), i64),
         ("slot-created", state.slot_created(), i64),
         // Progress tracking for each phase
         (
