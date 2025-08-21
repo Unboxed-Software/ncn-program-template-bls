@@ -20,8 +20,6 @@ use log::{info, warn};
 use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config as NCNProgramConfig,
-    epoch_marker::EpochMarker,
-    epoch_state::EpochState,
     snapshot::{OperatorSnapshot, Snapshot},
     vault_registry::VaultRegistry,
     vote_counter::VoteCounter,
@@ -161,22 +159,7 @@ pub async fn get_or_create_vault_registry(handler: &CliHandler) -> Result<VaultR
     }
 }
 
-pub async fn get_epoch_state(handler: &CliHandler, epoch: u64) -> Result<EpochState> {
-    let (address, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
-
-    let account = get_account(handler, &address).await?;
-
-    if account.is_none() {
-        return Err(anyhow::anyhow!("Account not found"));
-    }
-    let account = account.unwrap();
-
-    let account = EpochState::try_from_slice_unchecked(account.data.as_slice())?;
-    Ok(*account)
-}
-
-pub async fn get_snapshot(handler: &CliHandler, epoch: u64) -> Result<Snapshot> {
+pub async fn get_snapshot(handler: &CliHandler, _epoch: u64) -> Result<Snapshot> {
     let (address, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, handler.ncn()?);
 
     let account = get_account(handler, &address).await?;
@@ -216,30 +199,6 @@ pub async fn get_account_payer(handler: &CliHandler) -> Result<Account> {
     let account = account.unwrap();
 
     Ok(account)
-}
-
-pub async fn get_epoch_marker(handler: &CliHandler, epoch: u64) -> Result<EpochMarker> {
-    let (address, _, _) =
-        EpochMarker::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
-
-    let account = get_account(handler, &address).await?;
-
-    if account.is_none() {
-        return Err(anyhow::anyhow!("Account not found"));
-    }
-    let account = account.unwrap();
-
-    let account = EpochMarker::try_from_slice_unchecked(account.data.as_slice())?;
-    Ok(*account)
-}
-
-pub async fn get_is_epoch_completed(handler: &CliHandler, epoch: u64) -> Result<bool> {
-    let (address, _, _) =
-        EpochMarker::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
-
-    let account = get_account(handler, &address).await?;
-
-    Ok(account.is_some())
 }
 
 // ---------------------- RESTAKING ----------------------
@@ -590,26 +549,19 @@ pub async fn get_all_vaults_in_ncn(handler: &CliHandler) -> Result<Vec<Pubkey>> 
 pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
     let client = handler.rpc_client();
 
-    let operator_count = {
+    let _operator_count = {
         let all_operators = get_all_operators_in_ncn(handler).await?;
         all_operators.len() as u64
     };
 
     let mut rent_cost = 0;
 
-    rent_cost += client
-        .get_minimum_balance_for_rent_exemption(EpochState::SIZE)
-        .await?;
+    // EpochState removed - no rent cost for it
     rent_cost += client
         .get_minimum_balance_for_rent_exemption(Snapshot::SIZE)
         .await?;
 
-    msg!(
-        "Rent cost for EpochState {:?}",
-        client
-            .get_minimum_balance_for_rent_exemption(EpochState::SIZE)
-            .await?
-    );
+    msg!("Rent cost for EpochState: 0 (removed)");
     msg!(
         "Rent cost for Snapshot {:?}",
         client

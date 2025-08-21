@@ -10,10 +10,6 @@ pub enum Discriminators {
     Snapshot = 0x11,
     OperatorSnapshot = 0x12,
 
-    // Voting - removed
-
     // State Tracking
-    EpochState = 0x50,
-    EpochMarker = 0x51,
     VoteCounter = 0x52,
 }

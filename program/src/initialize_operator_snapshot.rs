@@ -3,8 +3,6 @@ use jito_jsm_core::loader::load_system_program;
 use jito_restaking_core::{ncn::Ncn, ncn_operator_state::NcnOperatorState, operator::Operator};
 use ncn_program_core::{
     account_payer::AccountPayer,
-    epoch_marker::EpochMarker,
-    epoch_state::EpochState,
     error::NCNProgramError,
     g1_point::G1CompressedPoint,
     loaders::load_ncn_epoch,

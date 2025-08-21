@@ -7,12 +7,10 @@
  */
 
 export * from './configAdminRole';
-export * from './epochAccountStatus';
 export * from './fee';
 export * from './feeConfig';
 export * from './fees';
 export * from './operatorSnapshot';
-export * from './progress';
 export * from './stakeWeights';
 export * from './stMintEntry';
 export * from './vaultEntry';

@@ -6,16 +6,12 @@
 //!
 
 pub(crate) mod r#config;
-pub(crate) mod r#epoch_marker;
-pub(crate) mod r#epoch_state;
 pub(crate) mod r#n_c_n_operator_account;
 pub(crate) mod r#snapshot;
 pub(crate) mod r#vault_registry;
 pub(crate) mod r#vote_counter;
 
 pub use self::r#config::*;
-pub use self::r#epoch_marker::*;
-pub use self::r#epoch_state::*;
 pub use self::r#n_c_n_operator_account::*;
 pub use self::r#snapshot::*;
 pub use self::r#vault_registry::*;

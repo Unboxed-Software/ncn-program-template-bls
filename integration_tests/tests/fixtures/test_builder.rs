@@ -2,7 +2,6 @@ use std::fmt::{Debug, Formatter};
 
 use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
 use ncn_program_core::{
-    epoch_state::EpochState,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
     schemes::Sha256Normalized,
@@ -447,22 +446,6 @@ impl TestBuilder {
         Ok(test_ncn)
     }
 
-    /// Initializes the EpochState account for the current epoch for the given TestNcn.
-    pub async fn add_epoch_state_for_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
-        let mut ncn_program_client = self.ncn_program_client();
-
-        // Not sure if this is needed
-        self.warp_slot_incremental(1000).await?;
-
-        let clock = self.clock().await;
-        let epoch = clock.epoch;
-        ncn_program_client
-            .do_intialize_epoch_state(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        Ok(())
-    }
-
     /// Initializes the Snapshot account for the current epoch for the given TestNcn.
     // 7. Create Snapshot
     pub async fn add_snapshot_to_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
@@ -638,7 +621,6 @@ impl TestBuilder {
     /// Initializes epoch state, snapshot, operator snapshots, and VOD snapshots.
     // Intermission 2 - all snapshots are taken
     pub async fn snapshot_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
-        self.add_epoch_state_for_test_ncn(test_ncn).await?;
         self.add_snapshot_to_test_ncn(test_ncn).await?;
 
         self.add_operator_snapshots_to_test_ncn(test_ncn).await?;
@@ -653,7 +635,6 @@ impl TestBuilder {
         &mut self,
         test_ncn: &TestNcn,
     ) -> TestResult<()> {
-        self.add_epoch_state_for_test_ncn(test_ncn).await?;
         self.add_vault_operator_delegation_snapshots_to_test_ncn(test_ncn)
             .await?;
 
@@ -737,55 +718,6 @@ impl TestBuilder {
     // Intermission 3 - come to consensus
     pub async fn vote_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         self.cast_votes_for_test_ncn(test_ncn).await?;
-
-        Ok(())
-    }
-
-    /// Closes all epoch-specific accounts (BallotBox, OperatorSnapshots, Snapshot,  EpochState)
-    /// for a given epoch after the required cooldown period has passed.
-    /// Asserts that the accounts are actually closed (deleted).
-    pub async fn close_epoch_accounts_for_test_ncn(
-        &mut self,
-        test_ncn: &TestNcn,
-    ) -> TestResult<()> {
-        let mut ncn_program_client = self.ncn_program_client();
-
-        let epoch_to_close = self.clock().await.epoch;
-        let ncn: Pubkey = test_ncn.ncn_root.ncn_pubkey;
-
-        let config_account = ncn_program_client.get_ncn_config(ncn).await?;
-
-        // Wait until we can close the accounts
-        {
-            let epochs_after_consensus_before_close =
-                config_account.epochs_after_consensus_before_close();
-
-            self.warp_epoch_incremental(epochs_after_consensus_before_close + 1)
-                .await?;
-        }
-
-        // Close Accounts in reverse order of creation
-
-        // Epoch State
-        {
-            let (epoch_state, _, _) =
-                EpochState::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, epoch_state)
-                .await?;
-
-            let result = self.get_account(&epoch_state).await?;
-            assert!(result.is_none());
-        }
-
-        {
-            let epoch_marker = ncn_program_client
-                .get_epoch_marker(ncn, epoch_to_close)
-                .await?;
-
-            assert!(epoch_marker.slot_closed() > 0);
-        }
 
         Ok(())
     }

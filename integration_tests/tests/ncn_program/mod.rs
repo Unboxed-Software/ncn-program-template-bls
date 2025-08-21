@@ -1,7 +1,5 @@
 mod admin_set_parameters;
 mod cast_vote;
-mod close_epoch_accounts;
-mod epoch_state;
 mod fuzz_simulation_tests;
 mod initialize_config;
 mod initialize_operator_snapshot;

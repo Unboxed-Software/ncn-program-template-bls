@@ -8,7 +8,6 @@ use jito_vault_core::{
 };
 use ncn_program_core::{
     config::Config as NcnConfig,
-    epoch_state::EpochState,
     error::NCNProgramError,
     loaders::load_ncn_epoch,
     snapshot::{OperatorSnapshot, Snapshot},
@@ -25,29 +24,26 @@ use solana_program::{
 /// - `epoch`: The target epoch
 ///
 /// ### Accounts:
-/// 1. `[writable]` epoch_state: The epoch state account for the target epoch
-/// 2. `[]` ncn_config: NCN configuration account
-/// 3. `[]` restaking_config: Restaking configuration account
-/// 4. `[]` ncn: The NCN account
-/// 5. `[]` operator: The operator account
-/// 6. `[]` vault: The vault account
-/// 7. `[]` vault_ncn_ticket: The vault NCN ticket
-/// 8. `[]` ncn_vault_ticket: The NCN vault ticket
-/// 9. `[]` vault_operator_delegation: The delegation between vault and operator
-/// 10. `[writable]` snapshot: Snapshot account containing operator snapshots
+/// 1. `[]` ncn_config: NCN configuration account
+/// 2. `[]` restaking_config: Restaking configuration account
+/// 3. `[]` ncn: The NCN account
+/// 4. `[]` operator: The operator account
+/// 5. `[]` vault: The vault account
+/// 6. `[]` vault_ncn_ticket: The vault NCN ticket
+/// 7. `[]` ncn_vault_ticket: The NCN vault ticket
+/// 8. `[]` vault_operator_delegation: The delegation between vault and operator
+/// 9. `[writable]` snapshot: Snapshot account containing operator snapshots
 pub fn process_snapshot_vault_operator_delegation(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    epoch: u64,
 ) -> ProgramResult {
-    let [epoch_state, ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, snapshot] =
+    let [ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, snapshot] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    EpochState::load(program_id, epoch_state, ncn.key, epoch, true)?;
     NcnConfig::load(program_id, ncn_config, ncn.key, false)?;
     Config::load(&jito_restaking_program::id(), restaking_config, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
@@ -99,12 +95,6 @@ pub fn process_snapshot_vault_operator_delegation(
         msg!("Error: Vault is not up to date");
         return Err(NCNProgramError::VaultNeedsUpdate.into());
     }
-
-    let (vault_index, st_mint) = {
-        let vault_data = vault.data.borrow();
-        let vault_account = Vault::try_from_slice_unchecked(&vault_data)?;
-        (vault_account.vault_index(), vault_account.supported_mint)
-    };
 
     let mut snapshot_data = snapshot.try_borrow_mut_data()?;
     let snapshot_account = Snapshot::try_from_slice_unchecked_mut(&mut snapshot_data)?;
@@ -180,7 +170,7 @@ pub fn process_snapshot_vault_operator_delegation(
     // Increment vault operator delegation and check if finalized
     let this_epoch_stake_weight = StakeWeights::snapshot(total_stake_weight)?;
     let next_epoch_stake_weight = StakeWeights::snapshot(next_epoch_stake_weight)?;
-    let (ncn_operator_index, is_snapshoted) = {
+    let (_ncn_operator_index, is_snapshoted) = {
         let is_snapshoted = cloned_operator_snapshot.is_snapshoted();
         cloned_operator_snapshot.snapshot_vault_operator_delegation(
             current_slot,
@@ -203,15 +193,6 @@ pub fn process_snapshot_vault_operator_delegation(
         cloned_operator_snapshot.ncn_operator_index() as usize,
         &cloned_operator_snapshot,
     );
-
-    // Update Epoch State
-    {
-        msg!("Updating epoch state for vault operator delegation");
-        let mut epoch_state_data = epoch_state.try_borrow_mut_data()?;
-        let epoch_state_account = EpochState::try_from_slice_unchecked_mut(&mut epoch_state_data)?;
-        epoch_state_account
-            .update_snapshot_vault_operator_delegation(ncn_operator_index as usize)?;
-    }
 
     Ok(())
 }

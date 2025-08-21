@@ -9,11 +9,10 @@ use jito_vault_core::{
 use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
-        CastVoteBuilder, CloseEpochAccountBuilder, InitializeConfigBuilder,
-        InitializeEpochStateBuilder, InitializeOperatorSnapshotBuilder, InitializeSnapshotBuilder,
-        InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, ReallocSnapshotBuilder,
-        RegisterOperatorBuilder, RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
-        UpdateOperatorBN128KeysBuilder,
+        CastVoteBuilder, InitializeConfigBuilder, InitializeOperatorSnapshotBuilder,
+        InitializeSnapshotBuilder, InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder,
+        ReallocSnapshotBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
+        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -21,8 +20,6 @@ use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config as NcnConfig,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE, MAX_REALLOC_BYTES},
-    epoch_marker::EpochMarker,
-    epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
     ncn_operator_account::NCNOperatorAccount,
@@ -144,13 +141,6 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Fetches the EpochMarker account for a given NCN and epoch.
-    pub async fn get_epoch_marker(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<EpochMarker> {
-        let epoch_marker = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let raw_account = self.banks_client.get_account(epoch_marker).await?.unwrap();
-        Ok(*EpochMarker::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
-    }
-
     /// Fetches the NCN Config account for a given NCN pubkey.
     pub async fn get_ncn_config(&mut self, ncn_pubkey: Pubkey) -> TestResult<NcnConfig> {
         let config_pda = NcnConfig::find_program_address(&ncn_program::id(), &ncn_pubkey).0;
@@ -179,13 +169,6 @@ impl NCNProgramClient {
             .await?
             .unwrap();
         Ok(*VaultRegistry::try_from_slice_unchecked(vault_registry.data.as_slice()).unwrap())
-    }
-
-    /// Fetches the EpochState account for a given NCN and epoch.
-    pub async fn get_epoch_state(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<EpochState> {
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let raw_account = self.banks_client.get_account(epoch_state).await?.unwrap();
-        Ok(*EpochState::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
     }
 
     /// Fetches the Snapshot account for a given NCN and epoch.
@@ -351,41 +334,6 @@ impl NCNProgramClient {
             &[ix],
             Some(&ncn_root.ncn_admin.pubkey()),
             &[&ncn_root.ncn_admin],
-            blockhash,
-        ))
-        .await
-    }
-
-    /// Initializes the epoch state account for a given NCN and epoch.
-    pub async fn do_intialize_epoch_state(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        self.initialize_epoch_state(ncn, epoch).await
-    }
-
-    /// Sends a transaction to initialize the epoch state account.
-    pub async fn initialize_epoch_state(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        let (epoch_marker, _, _) =
-            EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let ix = InitializeEpochStateBuilder::new()
-            .epoch_marker(epoch_marker)
-            .epoch_state(epoch_state)
-            .config(config)
-            .ncn(ncn)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .epoch(epoch)
-            .instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
             blockhash,
         ))
         .await
@@ -672,7 +620,6 @@ impl NCNProgramClient {
         ncn: Pubkey,
         epoch: u64,
     ) -> TestResult<()> {
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
 
         let config_pda = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
@@ -693,7 +640,6 @@ impl NCNProgramClient {
         .0;
 
         let ix = SnapshotVaultOperatorDelegationBuilder::new()
-            .epoch_state(epoch_state)
             .config(config_pda)
             .restaking_config(restaking_config)
             .ncn(ncn)
@@ -703,7 +649,6 @@ impl NCNProgramClient {
             .ncn_vault_ticket(ncn_vault_ticket)
             .vault_operator_delegation(vault_operator_delegation)
             .snapshot(snapshot)
-            .epoch(epoch)
             .instruction();
 
         let blockhash = self.banks_client.get_latest_blockhash().await?;
@@ -776,71 +721,6 @@ impl NCNProgramClient {
             blockhash,
         ))
         .await
-    }
-
-    /// Closes an epoch-specific account (e.g., BallotBox, Snapshot) after the epoch is finished.
-    pub async fn do_close_epoch_account(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-        account_to_close: Pubkey,
-    ) -> TestResult<()> {
-        let (epoch_marker, _, _) =
-            EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let (config, _, _) = NcnConfig::find_program_address(&ncn_program::id(), &ncn);
-
-        self.close_epoch_account(
-            epoch_marker,
-            epoch_state,
-            ncn,
-            config,
-            account_to_close,
-            account_payer,
-            epoch,
-        )
-        .await
-    }
-
-    /// Sends a transaction to close an epoch-specific account.
-    #[allow(clippy::too_many_arguments)]
-    pub async fn close_epoch_account(
-        &mut self,
-        epoch_marker: Pubkey,
-        epoch_state: Pubkey,
-        ncn: Pubkey,
-        config: Pubkey,
-        account_to_close: Pubkey,
-        account_payer: Pubkey,
-
-        epoch: u64,
-    ) -> TestResult<()> {
-        let mut ix = CloseEpochAccountBuilder::new();
-
-        ix.account_payer(account_payer)
-            .epoch_marker(epoch_marker)
-            .config(config)
-            .account_to_close(account_to_close)
-            .epoch_state(epoch_state)
-            .ncn(ncn)
-            .system_program(system_program::id())
-            .epoch(epoch);
-
-        let ix = ix.instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        );
-
-        self.process_transaction(&tx).await
     }
 
     /// Sets various parameters in the NCN config (admin operation).

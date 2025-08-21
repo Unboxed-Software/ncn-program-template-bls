@@ -6,24 +6,20 @@
 //!
 
 pub(crate) mod r#config_admin_role;
-pub(crate) mod r#epoch_account_status;
 pub(crate) mod r#fee;
 pub(crate) mod r#fee_config;
 pub(crate) mod r#fees;
 pub(crate) mod r#operator_snapshot;
-pub(crate) mod r#progress;
 pub(crate) mod r#st_mint_entry;
 pub(crate) mod r#stake_weights;
 pub(crate) mod r#vault_entry;
 pub(crate) mod r#vault_operator_stake_weight;
 
 pub use self::r#config_admin_role::*;
-pub use self::r#epoch_account_status::*;
 pub use self::r#fee::*;
 pub use self::r#fee_config::*;
 pub use self::r#fees::*;
 pub use self::r#operator_snapshot::*;
-pub use self::r#progress::*;
 pub use self::r#st_mint_entry::*;
 pub use self::r#stake_weights::*;
 pub use self::r#vault_entry::*;

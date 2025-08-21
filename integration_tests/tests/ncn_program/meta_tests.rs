@@ -25,7 +25,6 @@ mod tests {
             .await?;
         fixture.add_delegation_in_test_ncn(&test_ncn, 100).await?;
         fixture.add_vault_registry_to_test_ncn(&test_ncn).await?;
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
         fixture.register_operators_to_test_ncn(&test_ncn).await?;
         fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
         fixture
@@ -35,7 +34,6 @@ mod tests {
             .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
             .await?;
         fixture.cast_votes_for_test_ncn(&test_ncn).await?;
-        fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
         Ok(())
     }
@@ -67,8 +65,6 @@ mod tests {
         fixture.snapshot_test_ncn(&test_ncn).await?;
 
         fixture.vote_test_ncn(&test_ncn).await?;
-
-        fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
         Ok(())
     }

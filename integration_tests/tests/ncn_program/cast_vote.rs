@@ -217,8 +217,6 @@ mod tests {
 
         fixture.warp_epoch_incremental(2).await?;
 
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
-
         let clock = fixture.clock().await;
         let slot = clock.slot;
         let epoch = clock.epoch;

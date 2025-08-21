@@ -4,8 +4,6 @@ pub mod account_payer;
 pub mod config;
 pub mod constants;
 pub mod discriminators;
-pub mod epoch_marker;
-pub mod epoch_state;
 pub mod error;
 pub mod fees;
 pub mod g1_point;

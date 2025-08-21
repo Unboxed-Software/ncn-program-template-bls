@@ -123,7 +123,6 @@ mod tests {
             fixture.warp_epoch_incremental(1).await?;
         }
 
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
         fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
         fixture
             .add_operator_snapshots_to_test_ncn(&test_ncn)

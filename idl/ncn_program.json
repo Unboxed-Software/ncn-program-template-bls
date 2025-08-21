@@ -320,51 +320,6 @@
       }
     },
     {
-      "name": "InitializeEpochState",
-      "accounts": [
-        {
-          "name": "epochMarker",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 6
-      }
-    },
-    {
       "name": "InitializeSnapshot",
       "accounts": [
         {
@@ -391,7 +346,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 6
       }
     },
     {
@@ -426,7 +381,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 7
       }
     },
     {
@@ -476,17 +431,12 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 8
       }
     },
     {
       "name": "SnapshotVaultOperatorDelegation",
       "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
         {
           "name": "config",
           "isMut": false,
@@ -533,15 +483,10 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
+      "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 9
       }
     },
     {
@@ -599,57 +544,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
-      }
-    },
-    {
-      "name": "CloseEpochAccount",
-      "accounts": [
-        {
-          "name": "epochMarker",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "accountToClose",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 12
+        "value": 10
       }
     },
     {
@@ -705,7 +600,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 11
       }
     },
     {
@@ -742,7 +637,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 14
+        "value": 12
       }
     },
     {
@@ -777,7 +672,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 15
+        "value": 13
       }
     }
   ],
@@ -833,81 +728,6 @@
             "name": "minimumStake",
             "type": {
               "defined": "StakeWeights"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "EpochMarker",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "slotClosed",
-            "type": {
-              "defined": "PodU64"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "EpochState",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "accountStatus",
-            "type": {
-              "defined": "EpochAccountStatus"
-            }
-          },
-          {
-            "name": "operatorSnapshotProgress",
-            "type": {
-              "array": [
-                {
-                  "defined": "Progress"
-                },
-                256
-              ]
-            }
-          },
-          {
-            "name": "isClosing",
-            "type": {
-              "defined": "PodBool"
             }
           }
         ]
@@ -1115,38 +935,6 @@
     }
   ],
   "types": [
-    {
-      "name": "EpochAccountStatus",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "epochState",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Progress",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "tally",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "total",
-            "type": {
-              "defined": "PodU64"
-            }
-          }
-        ]
-      }
-    },
     {
       "name": "FeeConfig",
       "type": {

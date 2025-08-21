@@ -31,8 +31,7 @@ use log::info;
 use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
-        CastVoteBuilder, CloseEpochAccountBuilder,
-        InitializeConfigBuilder as InitializeNCNProgramConfigBuilder, InitializeEpochStateBuilder,
+        CastVoteBuilder, InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
         InitializeOperatorSnapshotBuilder, InitializeSnapshotBuilder,
         InitializeVaultRegistryBuilder, ReallocSnapshotBuilder, RegisterOperatorBuilder,
         RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
@@ -43,8 +42,6 @@ use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config as NCNProgramConfig,
     constants::MAX_REALLOC_BYTES,
-    epoch_marker::EpochMarker,
-    epoch_state::EpochState,
     ncn_operator_account::NCNOperatorAccount,
     snapshot::{OperatorSnapshot, Snapshot},
     vault_registry::VaultRegistry,
@@ -53,10 +50,11 @@ use ncn_program_core::{
 use solana_client::rpc_config::RpcSendTransactionConfig;
 
 use hex;
-use serde::Deserialize;
+
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
     instruction::Instruction,
+    msg,
     native_token::sol_to_lamports,
     pubkey::Pubkey,
     signature::{Keypair, Signature},
@@ -446,45 +444,6 @@ pub async fn register_operator(
     Ok(())
 }
 
-pub async fn create_epoch_state(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-
-    let epoch_state_account = get_account(handler, &epoch_state).await?;
-
-    // Skip if ballot box already exists
-    if epoch_state_account.is_none() {
-        // Initialize ballot box
-        let initialize_epoch_state_ix = InitializeEpochStateBuilder::new()
-            .epoch_marker(epoch_marker)
-            .config(config)
-            .epoch_state(epoch_state)
-            .ncn(ncn)
-            .epoch(epoch)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        send_and_log_transaction(
-            handler,
-            &[initialize_epoch_state_ix],
-            &[],
-            "Initialized Epoch State",
-            &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
-        )
-        .await?;
-    }
-
-    Ok(())
-}
-
 pub async fn create_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
     let ncn = *handler.ncn()?;
 
@@ -554,7 +513,7 @@ pub async fn create_operator_snapshot(
 ) -> Result<()> {
     let ncn = *handler.ncn()?;
     let operator = *operator;
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
+    let (_config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
     let (ncn_operator_state, _, _) =
         NcnOperatorState::find_program_address(&handler.restaking_program_id, &ncn, &operator);
     let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
@@ -610,9 +569,6 @@ pub async fn snapshot_vault_operator_delegation(
 
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
     let (restaking_config, _, _) =
         RestakingConfig::find_program_address(&handler.restaking_program_id);
 
@@ -628,7 +584,6 @@ pub async fn snapshot_vault_operator_delegation(
     let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let snapshot_vault_operator_delegation_ix = SnapshotVaultOperatorDelegationBuilder::new()
-        .epoch_state(epoch_state)
         .restaking_config(restaking_config)
         .config(config)
         .ncn(ncn)
@@ -638,7 +593,6 @@ pub async fn snapshot_vault_operator_delegation(
         .ncn_vault_ticket(ncn_vault_ticket)
         .vault_operator_delegation(vault_operator_delegation)
         .snapshot(snapshot)
-        .epoch(epoch)
         .instruction();
 
     send_and_log_transaction(
@@ -650,59 +604,6 @@ pub async fn snapshot_vault_operator_delegation(
             format!("NCN: {:?}", ncn),
             format!("Vault: {:?}", vault),
             format!("Operator: {:?}", operator),
-            format!("Epoch: {:?}", epoch),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn close_epoch_account(
-    handler: &CliHandler,
-    ncn: Pubkey,
-    epoch: u64,
-    account_to_close: Pubkey,
-) -> Result<()> {
-    let (epoch_marker, _, _) =
-        EpochMarker::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let account_already_closed = get_account(handler, &account_to_close)
-        .await?
-        .map_or(true, |account| {
-            account.data.is_empty() || account.lamports == 0
-        });
-    if account_already_closed {
-        info!("Account already closed: {:?}", account_to_close);
-        return Ok(());
-    }
-
-    let mut ix = CloseEpochAccountBuilder::new();
-
-    ix.account_payer(account_payer)
-        .epoch_marker(epoch_marker)
-        .config(config)
-        .account_to_close(account_to_close)
-        .epoch_state(epoch_state)
-        .ncn(ncn)
-        .system_program(system_program::id())
-        .epoch(epoch);
-
-    send_and_log_transaction(
-        handler,
-        &[ix.instruction()],
-        &[],
-        "Close Epoch Account",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Account to Close: {:?}", account_to_close),
             format!("Epoch: {:?}", epoch),
         ],
     )
@@ -812,6 +713,12 @@ pub async fn full_vault_update(handler: &CliHandler, vault: &Pubkey) -> Result<(
 
     let vault_update_state_tracker_account =
         get_account(handler, &vault_update_state_tracker).await?;
+
+    msg!(
+        "Full Vault Update for Vault: {:?} at NCN Epoch: {:?}",
+        vault,
+        ncn_epoch
+    );
 
     if vault_update_state_tracker_account.is_none() {
         let initialize_vault_update_state_tracker_ix =
@@ -974,8 +881,6 @@ pub async fn get_or_create_operator_snapshot(
     }
 }
 
-// Ballot box functionality has been removed from the program
-
 // --------------------- CRANKERS ------------------------------
 
 pub async fn crank_register_vaults(handler: &CliHandler) -> Result<()> {
@@ -1018,12 +923,24 @@ pub async fn crank_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
         .map(|entry| *entry.vault())
         .collect();
 
-    let snapshot = get_or_create_snapshot(handler, epoch).await?;
-    // finalized() method not available - assuming not finalized for now
-    if true {
-        // !snapshot.finalized() {
-        for operator in operators.iter() {
-            // Create Vault Operator Delegation
+    let _snapshot = get_or_create_snapshot(handler, epoch).await?;
+
+    // Initialize operator snapshot progress tracking in epoch state
+    let _ncn = *handler.ncn()?;
+
+    let vault = &all_vaults[0];
+    let result = full_vault_update(handler, vault).await;
+    if let Err(err) = result {
+        log::error!(
+            "Failed to update the vault: {:?} with error: {:?}",
+            vault,
+            err
+        );
+    }
+
+    for operator in operators.iter() {
+        // Create Vault Operator Delegation
+        {
             let result = get_or_create_operator_snapshot(handler, operator, epoch).await;
 
             if result.is_err() {
@@ -1035,175 +952,20 @@ pub async fn crank_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
             );
                 continue;
             };
+        }
 
-            let operator_snapshot = result?;
-
-            let vaults_to_run: Vec<Pubkey> = all_vaults
-                .iter()
-                // .filter(|vault| !operator_snapshot.contains_vault(vault)) // contains_vault does not exist
-                .cloned()
-                .collect();
-
-            for vault in vaults_to_run.iter() {
-                let result = full_vault_update(handler, vault).await;
-
-                if let Err(err) = result {
-                    log::error!(
-                        "Failed to update the vault: {:?} with error: {:?}",
-                        vault,
-                        err
-                    );
-                }
-
-                let result =
-                    snapshot_vault_operator_delegation(handler, vault, operator, epoch).await;
-
-                if let Err(err) = result {
-                    log::error!(
+        let result = snapshot_vault_operator_delegation(handler, vault, operator, epoch).await;
+        if let Err(err) = result {
+            log::error!(
                     "Failed to snapshot vault operator delegation for vault: {:?} and operator: {:?} in epoch: {:?} with error: {:?}",
                     vault,
                     operator,
                     epoch,
                     err
                 );
-                }
-            }
         }
     }
 
-    // Ballot box functionality has been removed
-
-    Ok(())
-}
-
-#[derive(Deserialize, Debug)]
-struct WeatherInfo {
-    main: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct WeatherResponse {
-    weather: Vec<WeatherInfo>,
-}
-
-async fn get_weather_status(api_key: &str, city_name: &str) -> Result<u8> {
-    let url = format!(
-        "http://api.openweathermap.org/data/2.5/weather?q={}&appid={}&units=metric",
-        city_name, api_key
-    );
-
-    let response = reqwest::get(&url).await?.json::<WeatherResponse>().await?;
-
-    if let Some(weather_condition) = response.weather.get(0) {
-        match weather_condition.main.as_str() {
-            "Clear" => Ok(0),                                      // Sunny
-            "Rain" | "Snow" | "Drizzle" | "Thunderstorm" => Ok(2), // Raining/Snowing
-            _ => Ok(1),                                            // Anything else
-        }
-    } else {
-        Ok(1) // Default to "Anything else" if no weather info is available
-    }
-}
-
-/// Casts a vote for an operator based on the current weather in Solana Beach
-///
-/// # Arguments
-/// * `handler` - CLI handler for RPC communication
-/// * `epoch` - Current epoch number
-/// * `operator` - Public key of the operator voting
-///
-/// # Returns
-/// * `Result<u8>` - Weather value that was voted (0:Sunny, 1:Other, 2:Rain/Snow)
-pub async fn operator_crank_vote(
-    handler: &CliHandler,
-    epoch: u64,
-    operator: &Pubkey,
-) -> Result<u8> {
-    // Weather voting has been replaced with BLS signature aggregation
-    // This function is disabled until BLS signature implementation is complete
-    log::info!("Weather voting functionality has been replaced with BLS signatures");
-    Ok(0)
-}
-
-/// Logs detailed information about an operator's vote and ballot box state
-///
-/// This function retrieves the ballot box for the current epoch and logs:
-/// - Whether the operator voted
-/// - Details of the operator's vote if they voted
-/// - Current consensus status
-/// - Winning ballot if consensus is reached
-///
-/// # Arguments
-/// * `handler` - CLI handler for RPC communication
-/// * `epoch` - Current epoch number
-/// * `operator` - Public key of the operator to check
-///
-/// # Returns
-/// * `Result<()>` - Success or failure
-pub async fn operator_crank_post_vote(
-    handler: &CliHandler,
-    epoch: u64,
-    operator: &Pubkey,
-) -> Result<()> {
-    // Post vote functionality has been replaced with BLS signature aggregation
-    log::info!(
-        "Post vote status check for operator {} in epoch {}",
-        operator,
-        epoch
-    );
-    Ok(())
-}
-
-#[allow(clippy::large_stack_frames)]
-pub async fn crank_test_vote(handler: &CliHandler, epoch: u64) -> Result<()> {
-    // Test voting has been replaced with BLS signature aggregation
-    // This function is disabled until BLS signature implementation is complete
-    log::info!("Test voting functionality has been replaced with BLS signatures");
-    Ok(())
-}
-
-pub async fn crank_close_epoch_accounts(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    // Ballot box functionality has been removed
-
-    // Note: Operator snapshots are now part of the snapshot and cannot be closed individually
-
-    // Close Snapshot
-    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let result = close_epoch_account(handler, ncn, epoch, snapshot).await;
-
-    if let Err(err) = result {
-        log::error!(
-            "Failed to close snapshot: {:?} in epoch: {:?} with error: {:?}",
-            snapshot,
-            epoch,
-            err
-        );
-    }
-
-    // Close Epoch State
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let result = close_epoch_account(handler, ncn, epoch, epoch_state).await;
-
-    if let Err(err) = result {
-        log::error!(
-            "Failed to close epoch state: {:?} in epoch: {:?} with error: {:?}",
-            epoch_state,
-            epoch,
-            err
-        );
-    }
-
-    Ok(())
-}
-
-pub async fn crank_post_vote_cooldown(handler: &CliHandler, epoch: u64) -> Result<()> {
-    // Consensus result functionality has been removed
-    log::info!("Post vote cooldown for epoch {}", epoch);
     Ok(())
 }
 

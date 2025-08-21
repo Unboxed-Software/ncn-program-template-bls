@@ -136,7 +136,6 @@ pub enum ProgramCommand {
     /// Crank Functions
     CrankRegisterVaults {},
     CrankSnapshot {},
-    CrankCloseEpochAccounts {},
 
     /// Admin
     AdminCreateConfig {
@@ -218,8 +217,6 @@ pub enum ProgramCommand {
         keys_file: String,
     },
 
-    CreateEpochState,
-
     CreateSnapshot,
 
     CreateOperatorSnapshot {
@@ -295,7 +292,7 @@ pub enum ProgramCommand {
     GetAllVaultsInNcn,
     GetNCNProgramConfig,
     GetVaultRegistry,
-    GetEpochState,
+
     GetSnapshot,
     GetOperatorSnapshot {
         #[arg(long, env = "OPERATOR", help = "Operator Account Address")]

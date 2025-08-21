@@ -3,8 +3,7 @@ mod admin_register_st_mint;
 mod admin_set_new_admin;
 mod admin_set_parameters;
 mod cast_vote;
-mod close_epoch_account;
-mod initialize_epoch_state;
+
 mod initialize_snapshot;
 
 mod initialize_operator_snapshot;
@@ -19,7 +18,7 @@ mod update_operator_bn128_keys;
 
 use admin_set_new_admin::process_admin_set_new_admin;
 use borsh::BorshDeserialize;
-use initialize_epoch_state::process_initialize_epoch_state;
+
 use ncn_program_core::instruction::NCNProgramInstruction;
 use solana_program::{
     account_info::AccountInfo, declare_id, entrypoint::ProgramResult, msg,
@@ -32,7 +31,6 @@ use crate::{
     admin_initialize_config::process_admin_initialize_config,
     admin_register_st_mint::process_admin_register_st_mint,
     admin_set_parameters::process_admin_set_parameters, cast_vote::process_cast_vote,
-    close_epoch_account::process_close_epoch_account,
     initialize_operator_snapshot::process_initialize_operator_snapshot,
     initialize_snapshot::process_initialize_snapshot,
     initialize_vault_registry::process_initialize_vault_registry,
@@ -129,10 +127,6 @@ pub fn process_instruction(
         // ---------------------------------------------------- //
         //                       SNAPSHOT                       //
         // ---------------------------------------------------- //
-        NCNProgramInstruction::InitializeEpochState { epoch } => {
-            msg!("Instruction: InitializeEpochState");
-            process_initialize_epoch_state(program_id, accounts, epoch)
-        }
         NCNProgramInstruction::InitializeSnapshot {} => {
             msg!("Instruction: InitializeSnapshot");
             process_initialize_snapshot(program_id, accounts)
@@ -145,9 +139,9 @@ pub fn process_instruction(
             msg!("Instruction: InitializeOperatorSnapshot");
             process_initialize_operator_snapshot(program_id, accounts)
         }
-        NCNProgramInstruction::SnapshotVaultOperatorDelegation { epoch } => {
+        NCNProgramInstruction::SnapshotVaultOperatorDelegation {} => {
             msg!("Instruction: SnapshotVaultOperatorDelegation");
-            process_snapshot_vault_operator_delegation(program_id, accounts, epoch)
+            process_snapshot_vault_operator_delegation(program_id, accounts)
         }
 
         // ---------------------------------------------------- //
@@ -166,14 +160,6 @@ pub fn process_instruction(
                 aggregated_signature,
                 operators_signature_bitmap,
             )
-        }
-
-        // ---------------------------------------------------- //
-        //                         CLEAN UP                     //
-        // ---------------------------------------------------- //
-        NCNProgramInstruction::CloseEpochAccount { epoch } => {
-            msg!("Instruction: CloseEpochAccount");
-            process_close_epoch_account(program_id, accounts, epoch)
         }
 
         // ---------------------------------------------------- //

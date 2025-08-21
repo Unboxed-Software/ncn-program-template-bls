@@ -102,18 +102,7 @@ pub enum NCNProgramInstruction {
     // ---------------------------------------------------- //
     //                       SNAPSHOT                       //
     // ---------------------------------------------------- //
-    /// Initializes the Epoch State account for a specific epoch
-    /// The epoch state tracks the status of an epoch
-    #[account(0, name = "epoch_marker")]
-    #[account(1, writable, name = "epoch_state")]
-    #[account(2, name = "config")]
-    #[account(3, name = "ncn")]
-    #[account(4, writable, name = "account_payer")]
-    #[account(5, name = "system_program")]
-    InitializeEpochState {
-        /// Target epoch for initialization
-        epoch: u64,
-    },
+
 
 
 
@@ -144,19 +133,16 @@ pub enum NCNProgramInstruction {
     InitializeOperatorSnapshot{},
     
     /// Snapshots the vault operator delegation
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "config")]
-    #[account(2, name = "restaking_config")]
-    #[account(3, name = "ncn")]
-    #[account(4, name = "operator")]
-    #[account(5, name = "vault")]
-    #[account(6, name = "vault_ncn_ticket")]
-    #[account(7, name = "ncn_vault_ticket")]
-    #[account(8, name = "vault_operator_delegation")]
-    #[account(9, writable, name = "snapshot")]
-    SnapshotVaultOperatorDelegation{
-        epoch: u64,
-    },
+    #[account(0, name = "config")]
+    #[account(1, name = "restaking_config")]
+    #[account(2, name = "ncn")]
+    #[account(3, name = "operator")]
+    #[account(4, name = "vault")]
+    #[account(5, name = "vault_ncn_ticket")]
+    #[account(6, name = "ncn_vault_ticket")]
+    #[account(7, name = "vault_operator_delegation")]
+    #[account(8, writable, name = "snapshot")]
+    SnapshotVaultOperatorDelegation{},
 
     // ---------------------------------------------------- //
     //                         VOTE                         //
@@ -173,17 +159,6 @@ pub enum NCNProgramInstruction {
         operators_signature_bitmap: Vec<u8>,
     },
 
-    /// Close an epoch account
-    #[account(0, writable, name = "epoch_marker")]
-    #[account(1, writable, name = "epoch_state")]
-    #[account(2, name = "config")]
-    #[account(3, name = "ncn")]
-    #[account(4, writable, name = "account_to_close")]
-    #[account(5, writable, name = "account_payer")]
-    #[account(6, name = "system_program")]
-    CloseEpochAccount {
-        epoch: u64,
-    },
 
     // ---------------------------------------------------- //
     //                        ADMIN                         //

@@ -17,9 +17,7 @@ import {
   type ParsedAdminSetNewAdminInstruction,
   type ParsedAdminSetParametersInstruction,
   type ParsedCastVoteInstruction,
-  type ParsedCloseEpochAccountInstruction,
   type ParsedInitializeConfigInstruction,
-  type ParsedInitializeEpochStateInstruction,
   type ParsedInitializeOperatorSnapshotInstruction,
   type ParsedInitializeSnapshotInstruction,
   type ParsedInitializeVaultRegistryInstruction,
@@ -36,8 +34,6 @@ export const NCN_PROGRAM_PROGRAM_ADDRESS =
 
 export enum NcnProgramAccount {
   Config,
-  EpochMarker,
-  EpochState,
   NCNOperatorAccount,
   Snapshot,
   VaultRegistry,
@@ -51,13 +47,11 @@ export enum NcnProgramInstruction {
   RegisterOperator,
   UpdateOperatorBN128Keys,
   InitializeVoteCounter,
-  InitializeEpochState,
   InitializeSnapshot,
   ReallocSnapshot,
   InitializeOperatorSnapshot,
   SnapshotVaultOperatorDelegation,
   CastVote,
-  CloseEpochAccount,
   AdminSetParameters,
   AdminSetNewAdmin,
   AdminRegisterStMint,
@@ -86,33 +80,27 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.InitializeVoteCounter;
   }
   if (containsBytes(data, getU8Encoder().encode(6), 0)) {
-    return NcnProgramInstruction.InitializeEpochState;
-  }
-  if (containsBytes(data, getU8Encoder().encode(7), 0)) {
     return NcnProgramInstruction.InitializeSnapshot;
   }
-  if (containsBytes(data, getU8Encoder().encode(8), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(7), 0)) {
     return NcnProgramInstruction.ReallocSnapshot;
   }
-  if (containsBytes(data, getU8Encoder().encode(9), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(8), 0)) {
     return NcnProgramInstruction.InitializeOperatorSnapshot;
   }
-  if (containsBytes(data, getU8Encoder().encode(10), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(9), 0)) {
     return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
-  if (containsBytes(data, getU8Encoder().encode(11), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(10), 0)) {
     return NcnProgramInstruction.CastVote;
   }
-  if (containsBytes(data, getU8Encoder().encode(12), 0)) {
-    return NcnProgramInstruction.CloseEpochAccount;
-  }
-  if (containsBytes(data, getU8Encoder().encode(13), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(11), 0)) {
     return NcnProgramInstruction.AdminSetParameters;
   }
-  if (containsBytes(data, getU8Encoder().encode(14), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(12), 0)) {
     return NcnProgramInstruction.AdminSetNewAdmin;
   }
-  if (containsBytes(data, getU8Encoder().encode(15), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(13), 0)) {
     return NcnProgramInstruction.AdminRegisterStMint;
   }
   throw new Error(
@@ -142,9 +130,6 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.InitializeVoteCounter;
     } & ParsedInitializeVoteCounterInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.InitializeEpochState;
-    } & ParsedInitializeEpochStateInstruction<TProgram>)
-  | ({
       instructionType: NcnProgramInstruction.InitializeSnapshot;
     } & ParsedInitializeSnapshotInstruction<TProgram>)
   | ({
@@ -159,9 +144,6 @@ export type ParsedNcnProgramInstruction<
   | ({
       instructionType: NcnProgramInstruction.CastVote;
     } & ParsedCastVoteInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.CloseEpochAccount;
-    } & ParsedCloseEpochAccountInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.AdminSetParameters;
     } & ParsedAdminSetParametersInstruction<TProgram>)

@@ -17,7 +17,6 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
 
         let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
         fixture.warp_slot_incremental(1000).await?;
 
@@ -54,7 +53,6 @@ mod tests {
         const OPERATORS: usize = 10;
 
         let test_ncn = fixture.create_initial_test_ncn(OPERATORS, None).await?;
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
         fixture.warp_slot_incremental(1000).await?;
 
@@ -124,7 +122,6 @@ mod tests {
             .await?;
         fixture.add_delegation_in_test_ncn(&test_ncn, 100).await?;
         fixture.add_vault_registry_to_test_ncn(&test_ncn).await?;
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
         fixture.warp_slot_incremental(1000).await?;
 
@@ -215,7 +212,6 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
 
         let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         let operator = test_ncn.operators[0].operator_pubkey;
@@ -511,7 +507,6 @@ mod tests {
             .await?;
         fixture.add_vault_registry_to_test_ncn(&test_ncn).await?;
         fixture.register_operators_to_test_ncn(&test_ncn).await?;
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
         fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
         fixture
             .add_operator_snapshots_to_test_ncn(&test_ncn)

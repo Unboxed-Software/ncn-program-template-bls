@@ -195,9 +195,6 @@ mod fuzz_tests {
         // 4. Prepare the epoch consensus cycle
         // In a real system, these steps would run each epoch to prepare for voting on weather status
         {
-            // 4.a. Initialize the epoch state - creates a new state for the current epoch
-            fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
-
             // 4.b. Initialize the weight table - prepares the table that will track voting weights
 
             // 4.d. Take the snapshot - records the current state for this epoch
@@ -270,10 +267,6 @@ mod fuzz_tests {
 
             println!("  ✅ Voting completed successfully");
         }
-
-        // 9. Close epoch accounts but keep consensus result
-        // This simulates cleanup after epoch completion while preserving the final result
-        fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
 
         Ok(())
     }

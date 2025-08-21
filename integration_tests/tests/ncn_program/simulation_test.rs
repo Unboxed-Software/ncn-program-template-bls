@@ -225,9 +225,6 @@ mod tests {
         // 6. Prepare the epoch consensus cycle
         // In a real system, these steps would run each epoch to prepare for voting on weather status
         {
-            // 5.a. Initialize the epoch state - creates a new state for the current epoch
-            fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
-
             // 5.b. Initialize the weight table - prepares the table that will track voting weights
             let clock = fixture.clock().await;
             let epoch = clock.epoch;
@@ -377,12 +374,6 @@ mod tests {
 
             println!("✅ BLS aggregate signature verification successful!");
             println!("✅ Cast vote operations completed successfully!");
-        }
-
-        {
-            fixture.close_epoch_accounts_for_test_ncn(&test_ncn).await?;
-
-            println!("✅ Consensus result account persisted after epoch cleanup");
         }
 
         println!("✅ BLS aggregate signature verification implementation complete!");

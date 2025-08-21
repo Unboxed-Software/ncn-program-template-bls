@@ -5,16 +5,15 @@ use crate::{
     args::{Args, ProgramCommand},
     getters::{
         get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
-        get_current_slot, get_epoch_state, get_is_epoch_completed, get_ncn, get_ncn_operator_state,
-        get_ncn_program_config, get_ncn_vault_ticket, get_operator_snapshot, get_snapshot,
-        get_total_epoch_rent_cost, get_vault_ncn_ticket, get_vault_operator_delegation,
-        get_vault_registry, get_vote_counter,
+        get_ncn, get_ncn_operator_state, get_ncn_program_config, get_ncn_vault_ticket,
+        get_operator_snapshot, get_snapshot, get_total_epoch_rent_cost, get_vault_ncn_ticket,
+        get_vault_operator_delegation, get_vault_registry, get_vote_counter,
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
-        admin_set_parameters, crank_close_epoch_accounts, crank_register_vaults, crank_snapshot,
-        create_epoch_state, create_operator_snapshot, create_snapshot, create_vault_registry,
-        full_vault_update, register_operator, register_vault, snapshot_vault_operator_delegation,
+        admin_set_parameters, crank_register_vaults, crank_snapshot, create_operator_snapshot,
+        create_snapshot, create_vault_registry, full_vault_update, register_operator,
+        register_vault, snapshot_vault_operator_delegation,
     },
     keeper::keeper_loop::startup_ncn_keeper,
 };
@@ -183,9 +182,6 @@ impl CliHandler {
             ProgramCommand::CrankRegisterVaults {} => crank_register_vaults(self).await,
 
             ProgramCommand::CrankSnapshot {} => crank_snapshot(self, self.epoch).await,
-            ProgramCommand::CrankCloseEpochAccounts {} => {
-                crank_close_epoch_accounts(self, self.epoch).await
-            }
 
             // Admin
             ProgramCommand::AdminCreateConfig {
@@ -224,7 +220,7 @@ impl CliHandler {
             ProgramCommand::AdminRegisterStMint {} => {
                 admin_register_st_mint(self, self.vault()).await
             }
-            ProgramCommand::AdminSetTieBreaker { weather_status } => {
+            ProgramCommand::AdminSetTieBreaker { weather_status: _ } => {
                 // Tie breaker functionality has been removed
                 log::info!("Tie breaker functionality has been removed");
                 Ok(())
@@ -324,8 +320,6 @@ impl CliHandler {
 
                 register_operator(self, &operator, g1_array, g2_array, sig_array).await
             }
-
-            ProgramCommand::CreateEpochState {} => create_epoch_state(self, self.epoch).await,
 
             ProgramCommand::CreateSnapshot {} => create_snapshot(self, self.epoch).await,
             ProgramCommand::CreateOperatorSnapshot { operator } => {
@@ -486,47 +480,7 @@ impl CliHandler {
                 info!("{}", vault_registry);
                 Ok(())
             }
-            ProgramCommand::GetEpochState {} => {
-                let is_epoch_complete = get_is_epoch_completed(self, self.epoch).await?;
 
-                if is_epoch_complete {
-                    info!("\n\nEpoch {} is complete", self.epoch);
-                    return Ok(());
-                }
-
-                let epoch_state = get_epoch_state(self, self.epoch).await?;
-                let current_slot = get_current_slot(self).await?;
-                let current_state = {
-                    let (valid_slots_after_consensus, epochs_after_consensus_before_close) = {
-                        let config = get_ncn_program_config(self).await?;
-                        (
-                            config.valid_slots_after_consensus(),
-                            config.epochs_after_consensus_before_close(),
-                        )
-                    };
-                    let epoch_schedule = self.rpc_client().get_epoch_schedule().await?;
-
-                    // if epoch_state.set_weight_progress().tally() > 0 {
-                    //     epoch_state.current_state_patched(
-                    //         &epoch_schedule,
-                    //         valid_slots_after_consensus,
-                    //         epochs_after_consensus_before_close,
-                    //         current_slot,
-                    //     )
-                    // } else {
-                    epoch_state.current_state(
-                        &epoch_schedule,
-                        valid_slots_after_consensus,
-                        epochs_after_consensus_before_close,
-                        current_slot,
-                    )
-                    // }
-                };
-
-                info!("{}\nCurrent State: {:?}\n", epoch_state, current_state);
-
-                Ok(())
-            }
             ProgramCommand::GetSnapshot {} => {
                 let snapshot = get_snapshot(self, self.epoch).await?;
                 info!("{}", snapshot);
@@ -604,7 +558,7 @@ impl CliHandler {
             ProgramCommand::GetVaultStakes {} => {
                 let operators = get_all_operators_in_ncn(self).await?;
                 let snapshot = get_snapshot(self, self.epoch).await?;
-                let mut vault_stakes: HashMap<Pubkey, u128> = HashMap::new();
+                let vault_stakes: HashMap<Pubkey, u128> = HashMap::new();
                 for operator in operators.iter() {
                     let operator_snapshot = get_operator_snapshot(self, operator, self.epoch).await;
                     if let Ok(operator_snapshot) = operator_snapshot {
@@ -641,8 +595,7 @@ impl CliHandler {
             ProgramCommand::GetVaultOperatorStakes {} => {
                 let operators = get_all_operators_in_ncn(self).await?;
                 let snapshot = get_snapshot(self, self.epoch).await?;
-                let mut vault_operator_stakes: HashMap<Pubkey, HashMap<Pubkey, u128>> =
-                    HashMap::new();
+                let vault_operator_stakes: HashMap<Pubkey, HashMap<Pubkey, u128>> = HashMap::new();
 
                 // Collect stakes for each vault-operator pair
                 for operator in operators.iter() {
