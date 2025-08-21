@@ -536,21 +536,15 @@ impl NCNProgramClient {
 
     /// Sends a transaction to initialize the epoch snapshot account.
     pub async fn initialize_epoch_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        let (epoch_marker, _, _) =
-            EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
         let ix = InitializeEpochSnapshotBuilder::new()
-            .epoch_marker(epoch_marker)
-            .epoch_state(epoch_state)
             .ncn(ncn)
             .epoch_snapshot(epoch_snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
-            .epoch(epoch)
             .instruction();
 
         let blockhash = self.banks_client.get_latest_blockhash().await?;
@@ -584,19 +578,11 @@ impl NCNProgramClient {
         epoch: u64,
         num_reallocations: u64,
     ) -> TestResult<()> {
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
-        self.realloc_epoch_snapshot(
-            &ncn,
-            &epoch_state,
-            &epoch_snapshot,
-            &config,
-            epoch,
-            num_reallocations,
-        )
-        .await
+        self.realloc_epoch_snapshot(&ncn, &epoch_snapshot, &config, epoch, num_reallocations)
+            .await
     }
 
     /// Sends transactions to reallocate the epoch snapshot account.
@@ -604,7 +590,6 @@ impl NCNProgramClient {
     pub async fn realloc_epoch_snapshot(
         &mut self,
         ncn: &Pubkey,
-        epoch_state: &Pubkey,
         epoch_snapshot: &Pubkey,
         config: &Pubkey,
         epoch: u64,
@@ -613,7 +598,6 @@ impl NCNProgramClient {
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
 
         let ix = ReallocEpochSnapshotBuilder::new()
-            .epoch_state(*epoch_state)
             .ncn(*ncn)
             .epoch_snapshot(*epoch_snapshot)
             .account_payer(account_payer)

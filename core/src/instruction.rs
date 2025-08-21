@@ -1,6 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use shank::ShankInstruction;
-use solana_program::pubkey::Pubkey;
 
 use crate::config::ConfigAdminRole;
 
@@ -119,23 +118,18 @@ pub enum NCNProgramInstruction {
 
 
     /// Initializes the Epoch Snapshot
-    #[account(0, name = "epoch_marker")]
-    #[account(1, writable, name = "epoch_state")]
-    #[account(2, name = "ncn")]
-    #[account(3, writable, name = "epoch_snapshot")]
-    #[account(4, writable, name = "account_payer")]
-    #[account(5, name = "system_program")]
-    InitializeEpochSnapshot{
-        epoch: u64,
-    },
+    #[account(0, name = "ncn")]
+    #[account(1, writable, name = "epoch_snapshot")]
+    #[account(2, writable, name = "account_payer")]
+    #[account(3, name = "system_program")]
+    InitializeEpochSnapshot{ },
 
     /// Reallocates the epoch snapshot account to its full size
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "ncn")]
-    #[account(2, name = "config")]
-    #[account(3, writable, name = "epoch_snapshot")]
-    #[account(4, writable, name = "account_payer")]
-    #[account(5, name = "system_program")]
+    #[account(0, name = "ncn")]
+    #[account(1, name = "config")]
+    #[account(2, writable, name = "epoch_snapshot")]
+    #[account(3, writable, name = "account_payer")]
+    #[account(4, name = "system_program")]
     ReallocEpochSnapshot {
         epoch: u64,
     },

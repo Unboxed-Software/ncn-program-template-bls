@@ -489,23 +489,16 @@ pub async fn create_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<(
 
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
     let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
 
     // First, initialize the epoch snapshot account with minimal size
     let initialize_epoch_snapshot_ix = InitializeEpochSnapshotBuilder::new()
-        .epoch_marker(epoch_marker)
-        .epoch_state(epoch_state)
         .ncn(ncn)
         .epoch_snapshot(epoch_snapshot)
         .account_payer(account_payer)
         .system_program(system_program::id())
-        .epoch(epoch)
         .instruction();
 
     send_and_log_transaction(
@@ -526,7 +519,6 @@ pub async fn create_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<(
     realloc_ixs.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
 
     let realloc_epoch_snapshot_ix = ReallocEpochSnapshotBuilder::new()
-        .epoch_state(epoch_state)
         .ncn(ncn)
         .config(config)
         .epoch_snapshot(epoch_snapshot)

@@ -9,7 +9,6 @@ mod tests {
         let mut ncn_program_client = fixture.ncn_program_client();
 
         let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
-        fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
         let epoch = fixture.clock().await.epoch;
 

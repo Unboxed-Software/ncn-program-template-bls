@@ -37,7 +37,6 @@ export function getReallocEpochSnapshotDiscriminatorBytes() {
 
 export type ReallocEpochSnapshotInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
-  TAccountEpochState extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountConfig extends string | IAccountMeta<string> = string,
   TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
@@ -50,9 +49,6 @@ export type ReallocEpochSnapshotInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountEpochState extends string
-        ? WritableAccount<TAccountEpochState>
-        : TAccountEpochState,
       TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
       TAccountConfig extends string
         ? ReadonlyAccount<TAccountConfig>
@@ -110,14 +106,12 @@ export function getReallocEpochSnapshotInstructionDataCodec(): Codec<
 }
 
 export type ReallocEpochSnapshotInput<
-  TAccountEpochState extends string = string,
   TAccountNcn extends string = string,
   TAccountConfig extends string = string,
   TAccountEpochSnapshot extends string = string,
   TAccountAccountPayer extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  epochState: Address<TAccountEpochState>;
   ncn: Address<TAccountNcn>;
   config: Address<TAccountConfig>;
   epochSnapshot: Address<TAccountEpochSnapshot>;
@@ -127,7 +121,6 @@ export type ReallocEpochSnapshotInput<
 };
 
 export function getReallocEpochSnapshotInstruction<
-  TAccountEpochState extends string,
   TAccountNcn extends string,
   TAccountConfig extends string,
   TAccountEpochSnapshot extends string,
@@ -136,7 +129,6 @@ export function getReallocEpochSnapshotInstruction<
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
   input: ReallocEpochSnapshotInput<
-    TAccountEpochState,
     TAccountNcn,
     TAccountConfig,
     TAccountEpochSnapshot,
@@ -146,7 +138,6 @@ export function getReallocEpochSnapshotInstruction<
   config?: { programAddress?: TProgramAddress }
 ): ReallocEpochSnapshotInstruction<
   TProgramAddress,
-  TAccountEpochState,
   TAccountNcn,
   TAccountConfig,
   TAccountEpochSnapshot,
@@ -158,7 +149,6 @@ export function getReallocEpochSnapshotInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    epochState: { value: input.epochState ?? null, isWritable: true },
     ncn: { value: input.ncn ?? null, isWritable: false },
     config: { value: input.config ?? null, isWritable: false },
     epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: true },
@@ -182,7 +172,6 @@ export function getReallocEpochSnapshotInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.epochState),
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.config),
       getAccountMeta(accounts.epochSnapshot),
@@ -195,7 +184,6 @@ export function getReallocEpochSnapshotInstruction<
     ),
   } as ReallocEpochSnapshotInstruction<
     TProgramAddress,
-    TAccountEpochState,
     TAccountNcn,
     TAccountConfig,
     TAccountEpochSnapshot,
@@ -212,12 +200,11 @@ export type ParsedReallocEpochSnapshotInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    epochState: TAccountMetas[0];
-    ncn: TAccountMetas[1];
-    config: TAccountMetas[2];
-    epochSnapshot: TAccountMetas[3];
-    accountPayer: TAccountMetas[4];
-    systemProgram: TAccountMetas[5];
+    ncn: TAccountMetas[0];
+    config: TAccountMetas[1];
+    epochSnapshot: TAccountMetas[2];
+    accountPayer: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
   data: ReallocEpochSnapshotInstructionData;
 };
@@ -230,7 +217,7 @@ export function parseReallocEpochSnapshotInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedReallocEpochSnapshotInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 6) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -243,7 +230,6 @@ export function parseReallocEpochSnapshotInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      epochState: getNextAccount(),
       ncn: getNextAccount(),
       config: getNextAccount(),
       epochSnapshot: getNextAccount(),

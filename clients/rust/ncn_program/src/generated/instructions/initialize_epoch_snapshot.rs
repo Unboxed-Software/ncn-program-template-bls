@@ -10,10 +10,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct InitializeEpochSnapshot {
-    pub epoch_marker: solana_program::pubkey::Pubkey,
-
-    pub epoch_state: solana_program::pubkey::Pubkey,
-
     pub ncn: solana_program::pubkey::Pubkey,
 
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
@@ -24,27 +20,15 @@ pub struct InitializeEpochSnapshot {
 }
 
 impl InitializeEpochSnapshot {
-    pub fn instruction(
-        &self,
-        args: InitializeEpochSnapshotInstructionArgs,
-    ) -> solana_program::instruction::Instruction {
-        self.instruction_with_remaining_accounts(args, &[])
+    pub fn instruction(&self) -> solana_program::instruction::Instruction {
+        self.instruction_with_remaining_accounts(&[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: InitializeEpochSnapshotInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.epoch_marker,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.epoch_state,
-            false,
-        ));
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.ncn, false,
         ));
@@ -61,11 +45,9 @@ impl InitializeEpochSnapshot {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = InitializeEpochSnapshotInstructionData::new()
+        let data = InitializeEpochSnapshotInstructionData::new()
             .try_to_vec()
             .unwrap();
-        let mut args = args.try_to_vec().unwrap();
-        data.append(&mut args);
 
         solana_program::instruction::Instruction {
             program_id: crate::NCN_PROGRAM_ID,
@@ -92,47 +74,26 @@ impl Default for InitializeEpochSnapshotInstructionData {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct InitializeEpochSnapshotInstructionArgs {
-    pub epoch: u64,
-}
-
 /// Instruction builder for `InitializeEpochSnapshot`.
 ///
 /// ### Accounts:
 ///
-///   0. `[]` epoch_marker
-///   1. `[writable]` epoch_state
-///   2. `[]` ncn
-///   3. `[writable]` epoch_snapshot
-///   4. `[writable]` account_payer
-///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   0. `[]` ncn
+///   1. `[writable]` epoch_snapshot
+///   2. `[writable]` account_payer
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InitializeEpochSnapshotBuilder {
-    epoch_marker: Option<solana_program::pubkey::Pubkey>,
-    epoch_state: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
     account_payer: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    epoch: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
 impl InitializeEpochSnapshotBuilder {
     pub fn new() -> Self {
         Self::default()
-    }
-    #[inline(always)]
-    pub fn epoch_marker(&mut self, epoch_marker: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.epoch_marker = Some(epoch_marker);
-        self
-    }
-    #[inline(always)]
-    pub fn epoch_state(&mut self, epoch_state: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.epoch_state = Some(epoch_state);
-        self
     }
     #[inline(always)]
     pub fn ncn(&mut self, ncn: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -153,11 +114,6 @@ impl InitializeEpochSnapshotBuilder {
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
-        self.epoch = Some(epoch);
         self
     }
     /// Add an additional account to the instruction.
@@ -181,8 +137,6 @@ impl InitializeEpochSnapshotBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = InitializeEpochSnapshot {
-            epoch_marker: self.epoch_marker.expect("epoch_marker is not set"),
-            epoch_state: self.epoch_state.expect("epoch_state is not set"),
             ncn: self.ncn.expect("ncn is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
             account_payer: self.account_payer.expect("account_payer is not set"),
@@ -190,20 +144,13 @@ impl InitializeEpochSnapshotBuilder {
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
-        let args = InitializeEpochSnapshotInstructionArgs {
-            epoch: self.epoch.clone().expect("epoch is not set"),
-        };
 
-        accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
+        accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
 }
 
 /// `initialize_epoch_snapshot` CPI accounts.
 pub struct InitializeEpochSnapshotCpiAccounts<'a, 'b> {
-    pub epoch_marker: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
@@ -218,10 +165,6 @@ pub struct InitializeEpochSnapshotCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub epoch_marker: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
@@ -229,25 +172,19 @@ pub struct InitializeEpochSnapshotCpi<'a, 'b> {
     pub account_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The arguments for the instruction.
-    pub __args: InitializeEpochSnapshotInstructionArgs,
 }
 
 impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
         accounts: InitializeEpochSnapshotCpiAccounts<'a, 'b>,
-        args: InitializeEpochSnapshotInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
-            epoch_marker: accounts.epoch_marker,
-            epoch_state: accounts.epoch_state,
             ncn: accounts.ncn,
             epoch_snapshot: accounts.epoch_snapshot,
             account_payer: accounts.account_payer,
             system_program: accounts.system_program,
-            __args: args,
         }
     }
     #[inline(always)]
@@ -283,15 +220,7 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.epoch_marker.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.epoch_state.key,
-            false,
-        ));
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.ncn.key,
             false,
@@ -315,21 +244,17 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = InitializeEpochSnapshotInstructionData::new()
+        let data = InitializeEpochSnapshotInstructionData::new()
             .try_to_vec()
             .unwrap();
-        let mut args = self.__args.try_to_vec().unwrap();
-        data.append(&mut args);
 
         let instruction = solana_program::instruction::Instruction {
             program_id: crate::NCN_PROGRAM_ID,
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.epoch_marker.clone());
-        account_infos.push(self.epoch_state.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.epoch_snapshot.clone());
         account_infos.push(self.account_payer.clone());
@@ -350,12 +275,10 @@ impl<'a, 'b> InitializeEpochSnapshotCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` epoch_marker
-///   1. `[writable]` epoch_state
-///   2. `[]` ncn
-///   3. `[writable]` epoch_snapshot
-///   4. `[writable]` account_payer
-///   5. `[]` system_program
+///   0. `[]` ncn
+///   1. `[writable]` epoch_snapshot
+///   2. `[writable]` account_payer
+///   3. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct InitializeEpochSnapshotCpiBuilder<'a, 'b> {
     instruction: Box<InitializeEpochSnapshotCpiBuilderInstruction<'a, 'b>>,
@@ -365,32 +288,13 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(InitializeEpochSnapshotCpiBuilderInstruction {
             __program: program,
-            epoch_marker: None,
-            epoch_state: None,
             ncn: None,
             epoch_snapshot: None,
             account_payer: None,
             system_program: None,
-            epoch: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn epoch_marker(
-        &mut self,
-        epoch_marker: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.epoch_marker = Some(epoch_marker);
-        self
-    }
-    #[inline(always)]
-    pub fn epoch_state(
-        &mut self,
-        epoch_state: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.epoch_state = Some(epoch_state);
-        self
     }
     #[inline(always)]
     pub fn ncn(&mut self, ncn: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
@@ -419,11 +323,6 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
         system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn epoch(&mut self, epoch: u64) -> &mut Self {
-        self.instruction.epoch = Some(epoch);
         self
     }
     /// Add an additional account to the instruction.
@@ -467,21 +366,8 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = InitializeEpochSnapshotInstructionArgs {
-            epoch: self.instruction.epoch.clone().expect("epoch is not set"),
-        };
         let instruction = InitializeEpochSnapshotCpi {
             __program: self.instruction.__program,
-
-            epoch_marker: self
-                .instruction
-                .epoch_marker
-                .expect("epoch_marker is not set"),
-
-            epoch_state: self
-                .instruction
-                .epoch_state
-                .expect("epoch_state is not set"),
 
             ncn: self.instruction.ncn.expect("ncn is not set"),
 
@@ -499,7 +385,6 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
                 .instruction
                 .system_program
                 .expect("system_program is not set"),
-            __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -511,13 +396,10 @@ impl<'a, 'b> InitializeEpochSnapshotCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct InitializeEpochSnapshotCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    epoch_marker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    epoch_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     account_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    epoch: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

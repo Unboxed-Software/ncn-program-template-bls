@@ -392,9 +392,6 @@ ncn-program-bls-cli admin-set-weight \
 ### Maintenance Operations
 
 ```bash
-# Update all vault states
-ncn-program-bls-cli crank-update-all-vaults
-
 # Comprehensive vault updates
 ncn-program-bls-cli full-update-vaults
 
@@ -636,4 +633,3 @@ ncn-program-bls-cli --markdown-help > cli-reference.md
 **Next Steps**: After completing the basic setup, refer to the [API Documentation](api-docs.md) for detailed command reference and advanced usage patterns.
 
 **Support**: For issues or questions, consult the main project README.md or reach out to the Jito community on Discord.
-

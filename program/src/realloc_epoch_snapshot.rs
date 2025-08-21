@@ -3,7 +3,7 @@ use jito_jsm_core::loader::load_system_program;
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
     account_payer::AccountPayer, config::Config, epoch_snapshot::EpochSnapshot,
-    epoch_state::EpochState, error::NCNProgramError, utils::get_new_size,
+    error::NCNProgramError, utils::get_new_size,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
@@ -16,8 +16,8 @@ use solana_program::{
 /// - `epoch`: The target epoch
 ///
 /// ### Accounts:
-/// 1. `[writable]` epoch_state: The epoch state account for the target epoch
-/// 2. `[]` ncn: The NCN account
+/// 1. `[]` ncn: The NCN account
+/// 2. `[]` config: The NCN program configuration
 /// 3. `[writable]` epoch_snapshot: The epoch snapshot account to resize and initialize
 /// 4. `[writable, signer]` account_payer: Account paying for reallocation
 /// 5. `[]` system_program: Solana System Program
@@ -26,7 +26,7 @@ pub fn process_realloc_epoch_snapshot(
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_state, ncn, config, epoch_snapshot, account_payer, system_program] = accounts else {
+    let [ncn, config, epoch_snapshot, account_payer, system_program] = accounts else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -34,7 +34,6 @@ pub fn process_realloc_epoch_snapshot(
     load_system_program(system_program)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     Config::load(program_id, config, ncn.key, false)?;
-    EpochState::load(program_id, epoch_state, ncn.key, epoch, true)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
 
     let (epoch_snapshot_pda, epoch_snapshot_bump, _) =

@@ -133,9 +133,9 @@ pub fn process_instruction(
             msg!("Instruction: InitializeEpochState");
             process_initialize_epoch_state(program_id, accounts, epoch)
         }
-        NCNProgramInstruction::InitializeEpochSnapshot { epoch } => {
+        NCNProgramInstruction::InitializeEpochSnapshot {} => {
             msg!("Instruction: InitializeEpochSnapshot");
-            process_initialize_epoch_snapshot(program_id, accounts, epoch)
+            process_initialize_epoch_snapshot(program_id, accounts)
         }
         NCNProgramInstruction::ReallocEpochSnapshot { epoch } => {
             msg!("Instruction: ReallocEpochSnapshot");
