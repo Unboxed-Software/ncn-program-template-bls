@@ -4,11 +4,11 @@ use jito_restaking_core::{config::Config, ncn::Ncn};
 use ncn_program_core::{
     config::Config as NcnConfig,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE},
-    epoch_snapshot::EpochSnapshot,
     error::NCNProgramError,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
     schemes::Sha256Normalized,
+    snapshot::Snapshot,
     vote_counter::VoteCounter,
 };
 
@@ -36,7 +36,7 @@ use solana_program::{
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account (named `ncn_config` in code)
 /// 2. `[]` ncn: The NCN account
-/// 3. `[]` epoch_snapshot: Epoch snapshot containing stakes and operator snapshots
+/// 3. `[]` snapshot: Snapshot containing stakes and operator snapshots
 /// 4. `[]` restaking_config: Restaking configuration account
 /// 5. `[writable]` vote_counter: Vote counter PDA to increment on successful vote
 pub fn process_cast_vote(
@@ -49,14 +49,14 @@ pub fn process_cast_vote(
     let account_info_iter = &mut accounts.iter();
     let ncn_config = next_account_info(account_info_iter)?;
     let ncn = next_account_info(account_info_iter)?;
-    let epoch_snapshot = next_account_info(account_info_iter)?;
+    let snapshot = next_account_info(account_info_iter)?;
     let restaking_config = next_account_info(account_info_iter)?;
     let vote_counter = next_account_info(account_info_iter)?;
 
     NcnConfig::load(program_id, ncn_config, ncn.key, false)?;
     Config::load(&jito_restaking_program::id(), restaking_config, false)?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
-    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, false)?;
+    Snapshot::load(program_id, snapshot, ncn.key, false)?;
     VoteCounter::load(program_id, vote_counter, ncn.key, true)?;
 
     // Get the current counter value to use as the message for signature verification
@@ -77,10 +77,10 @@ pub fn process_cast_vote(
 
     let current_slot = Clock::get()?.slot;
 
-    let epoch_snapshot_data = epoch_snapshot.data.borrow();
-    let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
+    let snapshot_data = snapshot.data.borrow();
+    let snapshot = Snapshot::try_from_slice_unchecked(&snapshot_data)?;
 
-    let operator_count = epoch_snapshot.operator_count();
+    let operator_count = snapshot.operator_count();
 
     msg!("Total operators: {}", operator_count);
 
@@ -106,7 +106,7 @@ pub fn process_cast_vote(
     let mut aggregated_nonsigners_pubkey: Option<G1Point> = None;
     let mut non_signers_count: u64 = 0;
 
-    for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumerate() {
+    for (i, operator_snapshot) in snapshot.operator_snapshots().iter().enumerate() {
         if i >= operator_count as usize {
             break;
         }
@@ -163,7 +163,7 @@ pub fn process_cast_vote(
     }
 
     let total_aggregate_g1_pubkey_compressed =
-        G1CompressedPoint::from(epoch_snapshot.total_aggregated_g1_pubkey());
+        G1CompressedPoint::from(snapshot.total_aggregated_g1_pubkey());
     let total_aggregated_g1_pubkey = G1Point::try_from(&total_aggregate_g1_pubkey_compressed)
         .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
 

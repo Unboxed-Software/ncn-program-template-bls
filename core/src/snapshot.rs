@@ -21,17 +21,15 @@ use crate::{
     stake_weight::StakeWeights,
 };
 
-// PDA'd ["epoch_snapshot", NCN, NCN_EPOCH_SLOT]
+// PDA'd ["snapshot", NCN]
 #[derive(Debug, Clone, Copy, Zeroable, Pod, AccountDeserialize, ShankAccount)]
 #[repr(C)]
-pub struct EpochSnapshot {
+pub struct Snapshot {
     /// The NCN this snapshot is for
     ncn: Pubkey,
-    /// The epoch this snapshot is for
-    epoch: PodU64,
     /// Bump seed for the PDA
     bump: u8,
-    /// Slot Epoch snapshot was created
+    /// Slot Snapshot was created
     slot_created: PodU64,
     /// Number of operators in the epoch
     operator_count: PodU64,
@@ -49,17 +47,16 @@ pub struct EpochSnapshot {
     last_snapshot_slot: PodU64, // Track the last slot when the snapshot was taken
 }
 
-impl Discriminator for EpochSnapshot {
-    const DISCRIMINATOR: u8 = Discriminators::EpochSnapshot as u8;
+impl Discriminator for Snapshot {
+    const DISCRIMINATOR: u8 = Discriminators::Snapshot as u8;
 }
 
-impl EpochSnapshot {
-    const EPOCH_SNAPSHOT_SEED: &'static [u8] = b"epoch_snapshot";
+impl Snapshot {
+    const SNAPSHOT_SEED: &'static [u8] = b"snapshot";
     pub const SIZE: usize = 8 + size_of::<Self>();
 
     pub fn new(
         ncn: &Pubkey,
-        ncn_epoch: u64,
         bump: u8,
         current_slot: u64,
         operator_count: u64,
@@ -67,7 +64,6 @@ impl EpochSnapshot {
     ) -> Self {
         Self {
             ncn: *ncn,
-            epoch: PodU64::from(ncn_epoch),
             slot_created: PodU64::from(current_slot),
             last_snapshot_slot: PodU64::from(0),
             bump,
@@ -84,7 +80,6 @@ impl EpochSnapshot {
     pub fn initialize(
         &mut self,
         ncn: &Pubkey,
-        ncn_epoch: u64,
         bump: u8,
         current_slot: u64,
         operator_count: u64,
@@ -92,7 +87,6 @@ impl EpochSnapshot {
     ) {
         // Initializes field by field to avoid overflowing stack
         self.ncn = *ncn;
-        self.epoch = PodU64::from(ncn_epoch);
         self.slot_created = PodU64::from(current_slot);
         self.last_snapshot_slot = PodU64::from(0);
         self.bump = bump;
@@ -107,7 +101,7 @@ impl EpochSnapshot {
 
     pub fn seeds(ncn: &Pubkey) -> Vec<Vec<u8>> {
         Vec::from_iter(
-            [Self::EPOCH_SNAPSHOT_SEED.to_vec(), ncn.to_bytes().to_vec()]
+            [Self::SNAPSHOT_SEED.to_vec(), ncn.to_bytes().to_vec()]
                 .iter()
                 .cloned(),
         )
@@ -144,10 +138,6 @@ impl EpochSnapshot {
         Self::load(program_id, account_to_close, ncn, true)
     }
 
-    pub fn epoch(&self) -> u64 {
-        self.epoch.into()
-    }
-
     pub fn operator_count(&self) -> u64 {
         self.operator_count.into()
     }
@@ -176,12 +166,6 @@ impl EpochSnapshot {
         &mut self,
         current_slot: u64,
     ) -> Result<(), NCNProgramError> {
-        msg!(
-            "Incrementing operator registration for epoch {} at slot {}",
-            self.epoch(),
-            current_slot,
-        );
-
         self.operators_registered = PodU64::from(
             self.operators_registered()
                 .checked_add(1)
@@ -327,7 +311,7 @@ impl EpochSnapshot {
     }
 }
 
-// Operator snapshot entry within EpochSnapshot
+// Operator snapshot entry within Snapshot
 #[derive(Debug, Clone, Copy, Zeroable, Pod, ShankType)]
 #[repr(C)]
 pub struct OperatorSnapshot {
@@ -602,11 +586,10 @@ impl VaultOperatorStakeWeight {
 }
 
 #[rustfmt::skip]
-impl fmt::Display for EpochSnapshot {
+impl fmt::Display for Snapshot {
    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-       writeln!(f, "\n\n----------- Epoch Snapshot -------------")?;
+       writeln!(f, "\n\n----------- Snapshot -------------")?;
        writeln!(f, "  NCN:                          {}", self.ncn)?;
-       writeln!(f, "  Epoch:                        {}", self.epoch())?;
        writeln!(f, "  Bump:                         {}", self.bump)?;
        writeln!(f, "  Operator Count:               {}", self.operator_count())?;
        writeln!(f, "  Operators Registered:         {}", self.operators_registered())?;
@@ -672,13 +655,12 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_size() {
+    fn test_snapshot_size() {
         use std::mem::size_of;
 
-        msg!("EpochSnapshot size: {:?}", size_of::<EpochSnapshot>());
+        msg!("Snapshot size: {:?}", size_of::<Snapshot>());
 
         let expected_total = size_of::<Pubkey>() // ncn
-            + size_of::<PodU64>() // epoch
             + size_of::<u8>() // bump
             + size_of::<PodU64>() // slot_created
             + size_of::<PodU64>() // last_snapshot_slot
@@ -689,7 +671,7 @@ mod tests {
             + size_of::<[OperatorSnapshot; 256]>() // operator_snapshots
             + size_of::<StakeWeights>(); // minimum_stake
 
-        assert_eq!(size_of::<EpochSnapshot>(), expected_total);
+        assert_eq!(size_of::<Snapshot>(), expected_total);
     }
 
     #[test]
@@ -706,11 +688,10 @@ mod tests {
 
     #[test]
     fn test_increment_operator_registration_finalized() {
-        // Create an epoch snapshot
-        let mut snapshot = EpochSnapshot::new(
+        // Create a snapshot
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
             1,                    // ncn_epoch
-            1,                    // bump
             100,                  // current_slot
             1,                    // operator_count - set to 1
             StakeWeights::new(1), // minimum_stake
@@ -771,10 +752,9 @@ mod tests {
 
     #[test]
     fn test_add_g1_pubkey_to_total_aggregated_and_subtract() {
-        // Create an epoch snapshot
-        let mut epoch_snapshot = EpochSnapshot::new(
+        // Create a snapshot
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -782,43 +762,38 @@ mod tests {
         );
         // Initial aggregated is zero
         assert_eq!(
-            epoch_snapshot.total_aggregated_g1_pubkey(),
+            snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
         // Add first pubkey
         let pk1 = G1CompressedPoint::from_random().0;
-        epoch_snapshot.add_g1_pubkey_to_total_agg(&pk1).unwrap();
-        assert_eq!(epoch_snapshot.total_aggregated_g1_pubkey(), pk1);
+        snapshot.add_g1_pubkey_to_total_agg(&pk1).unwrap();
+        assert_eq!(snapshot.total_aggregated_g1_pubkey(), pk1);
 
         // Add second pubkey
         let pk2 = G1CompressedPoint::from_random().0;
-        epoch_snapshot.add_g1_pubkey_to_total_agg(&pk2).unwrap();
-        let after_add = epoch_snapshot.total_aggregated_g1_pubkey();
+        snapshot.add_g1_pubkey_to_total_agg(&pk2).unwrap();
+        let after_add = snapshot.total_aggregated_g1_pubkey();
         assert_ne!(after_add, pk1);
         assert_ne!(after_add, pk2);
 
         // Subtract second pubkey
-        epoch_snapshot
-            .subtract_g1_pubkey_from_total_agg(&pk2)
-            .unwrap();
-        let after_subtract = epoch_snapshot.total_aggregated_g1_pubkey();
+        snapshot.subtract_g1_pubkey_from_total_agg(&pk2).unwrap();
+        let after_subtract = snapshot.total_aggregated_g1_pubkey();
         assert_eq!(after_subtract, pk1);
 
         // Subtract first pubkey, should give zero point (identity)
-        epoch_snapshot
-            .subtract_g1_pubkey_from_total_agg(&pk1)
-            .unwrap();
-        let after_zero = epoch_snapshot.total_aggregated_g1_pubkey();
+        snapshot.subtract_g1_pubkey_from_total_agg(&pk1).unwrap();
+        let after_zero = snapshot.total_aggregated_g1_pubkey();
         assert_eq!(after_zero, G1CompressedPoint::default().0);
     }
 
     #[test]
     fn test_register_operator_g1_pubkey() {
-        // Create an epoch snapshot with default aggregated G1 pubkey (all zeros) using heap allocation
-        let mut epoch_snapshot = Box::new(EpochSnapshot::new(
+        // Create a snapshot with default aggregated G1 pubkey (all zeros) using heap allocation
+        let mut snapshot = Box::new(Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
@@ -827,7 +802,7 @@ mod tests {
 
         // Verify initial state - total_aggregated_g1_pubkey should be all zeros
         assert_eq!(
-            epoch_snapshot.total_aggregated_g1_pubkey(),
+            snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
@@ -835,29 +810,25 @@ mod tests {
         let operator_g1_pubkey = G1CompressedPoint::from_random().0;
 
         // Register the operator's G1 pubkey
-        let result = epoch_snapshot.register_operator_g1_pubkey(&operator_g1_pubkey);
+        let result = snapshot.register_operator_g1_pubkey(&operator_g1_pubkey);
         assert!(result.is_ok());
 
         // Verify the aggregated G1 pubkey is no longer all zeros
         assert_ne!(
-            epoch_snapshot.total_aggregated_g1_pubkey(),
+            snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
         // The aggregated pubkey should now equal the first operator's pubkey
         // since we started with zero point (identity element for addition)
-        assert_eq!(
-            epoch_snapshot.total_aggregated_g1_pubkey(),
-            operator_g1_pubkey
-        );
+        assert_eq!(snapshot.total_aggregated_g1_pubkey(), operator_g1_pubkey);
     }
 
     #[test]
     fn test_register_multiple_operator_g1_pubkeys() {
-        // Create an epoch snapshot using heap allocation
-        let mut epoch_snapshot = Box::new(EpochSnapshot::new(
+        // Create a snapshot using heap allocation
+        let mut snapshot = Box::new(Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
@@ -870,22 +841,22 @@ mod tests {
         let operator3_g1_pubkey = G1CompressedPoint::from_random().0;
 
         // Register first operator's G1 pubkey
-        epoch_snapshot
+        snapshot
             .register_operator_g1_pubkey(&operator1_g1_pubkey)
             .unwrap();
-        let after_first = epoch_snapshot.total_aggregated_g1_pubkey();
+        let after_first = snapshot.total_aggregated_g1_pubkey();
 
         // Register second operator's G1 pubkey
-        epoch_snapshot
+        snapshot
             .register_operator_g1_pubkey(&operator2_g1_pubkey)
             .unwrap();
-        let after_second = epoch_snapshot.total_aggregated_g1_pubkey();
+        let after_second = snapshot.total_aggregated_g1_pubkey();
 
         // Register third operator's G1 pubkey
-        epoch_snapshot
+        snapshot
             .register_operator_g1_pubkey(&operator3_g1_pubkey)
             .unwrap();
-        let after_third = epoch_snapshot.total_aggregated_g1_pubkey();
+        let after_third = snapshot.total_aggregated_g1_pubkey();
 
         // Verify that each registration changes the aggregated pubkey
         assert_ne!(after_first, [0u8; G1_COMPRESSED_POINT_SIZE]);
@@ -900,10 +871,7 @@ mod tests {
         let expected_aggregate = point1 + point2 + point3;
         let expected_compressed = G1CompressedPoint::try_from(expected_aggregate).unwrap();
 
-        assert_eq!(
-            epoch_snapshot.total_aggregated_g1_pubkey(),
-            expected_compressed.0
-        );
+        assert_eq!(snapshot.total_aggregated_g1_pubkey(), expected_compressed.0);
     }
 
     #[test]
@@ -962,15 +930,14 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_aggregation_order_independence() {
+    fn test_snapshot_aggregation_order_independence() {
         // Test that G1 pubkey aggregation is order-independent (commutative)
         let operator1_g1_pubkey = G1CompressedPoint::from_random().0;
         let operator2_g1_pubkey = G1CompressedPoint::from_random().0;
 
-        // Create two epoch snapshots using heap allocation to avoid stack overflow
-        let mut snapshot1 = EpochSnapshot::new(
+        // Create two snapshots using heap allocation to avoid stack overflow
+        let mut snapshot1 = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -986,9 +953,8 @@ mod tests {
             .register_operator_g1_pubkey(&operator2_g1_pubkey)
             .unwrap();
 
-        let mut snapshot2 = EpochSnapshot::new(
+        let mut snapshot2 = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -1010,11 +976,10 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_g1_pubkey_getter() {
-        // Create an epoch snapshot using heap allocation
-        let mut epoch_snapshot = Box::new(EpochSnapshot::new(
+    fn test_snapshot_g1_pubkey_getter() {
+        // Create a snapshot using heap allocation
+        let mut snapshot = Box::new(Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
@@ -1023,26 +988,23 @@ mod tests {
 
         // Initially should be all zeros
         assert_eq!(
-            epoch_snapshot.total_aggregated_g1_pubkey(),
+            snapshot.total_aggregated_g1_pubkey(),
             [0u8; G1_COMPRESSED_POINT_SIZE]
         );
 
         // Register an operator G1 pubkey
         let g1_pubkey = G1CompressedPoint::from_random().0;
-        epoch_snapshot
-            .register_operator_g1_pubkey(&g1_pubkey)
-            .unwrap();
+        snapshot.register_operator_g1_pubkey(&g1_pubkey).unwrap();
 
         // Verify getter returns the updated value
-        assert_eq!(epoch_snapshot.total_aggregated_g1_pubkey(), g1_pubkey);
+        assert_eq!(snapshot.total_aggregated_g1_pubkey(), g1_pubkey);
     }
 
     #[test]
-    fn test_epoch_snapshot_add_operator_snapshot() {
-        // Create an epoch snapshot using heap allocation
-        let mut epoch_snapshot = Box::new(EpochSnapshot::new(
+    fn test_snapshot_add_operator_snapshot() {
+        // Create a snapshot using heap allocation
+        let mut snapshot = Box::new(Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
@@ -1062,31 +1024,30 @@ mod tests {
         )
         .unwrap();
 
-        // Add the operator snapshot to the epoch snapshot
-        let result = epoch_snapshot.add_operator_snapshot(operator_snapshot);
+        // Add the operator snapshot to the snapshot
+        let result = snapshot.add_operator_snapshot(operator_snapshot);
         assert!(result.is_ok());
 
         {
             // Verify the operator snapshot was added using its index
-            let retrieved_snapshot = epoch_snapshot.get_operator_snapshot(0);
+            let retrieved_snapshot = snapshot.get_operator_snapshot(0);
             assert!(retrieved_snapshot.is_some());
             assert_eq!(retrieved_snapshot.unwrap().operator(), &operator_pubkey);
         }
 
         {
             // Verify the operator snapshot was added using its id
-            let retrieved_snapshot = epoch_snapshot.find_operator_snapshot(&operator_pubkey);
+            let retrieved_snapshot = snapshot.find_operator_snapshot(&operator_pubkey);
             assert!(retrieved_snapshot.is_some());
             assert_eq!(retrieved_snapshot.unwrap().operator(), &operator_pubkey);
         }
     }
 
     #[test]
-    fn test_epoch_snapshot_find_operator_snapshot() {
-        // Create an epoch snapshot using heap allocation
-        let mut epoch_snapshot = Box::new(EpochSnapshot::new(
+    fn test_snapshot_find_operator_snapshot() {
+        // Create a snapshot using heap allocation
+        let mut snapshot = Box::new(Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
@@ -1120,17 +1081,13 @@ mod tests {
         .unwrap();
 
         // Add both operator snapshots
-        epoch_snapshot
-            .add_operator_snapshot(operator1_snapshot)
-            .unwrap();
-        epoch_snapshot
-            .add_operator_snapshot(operator2_snapshot)
-            .unwrap();
+        snapshot.add_operator_snapshot(operator1_snapshot).unwrap();
+        snapshot.add_operator_snapshot(operator2_snapshot).unwrap();
 
         // Find operator snapshots by pubkey
-        let found1 = epoch_snapshot.find_operator_snapshot(&operator1_pubkey);
-        let found2 = epoch_snapshot.find_operator_snapshot(&operator2_pubkey);
-        let not_found = epoch_snapshot.find_operator_snapshot(&Pubkey::new_unique());
+        let found1 = snapshot.find_operator_snapshot(&operator1_pubkey);
+        let found2 = snapshot.find_operator_snapshot(&operator2_pubkey);
+        let not_found = snapshot.find_operator_snapshot(&Pubkey::new_unique());
 
         assert!(found1.is_some());
         assert_eq!(found1.unwrap().operator(), &operator1_pubkey);
@@ -1142,11 +1099,10 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_add_operator_snapshot_duplicate() {
-        // Create an epoch snapshot using heap allocation
-        let mut epoch_snapshot = Box::new(EpochSnapshot::new(
+    fn test_snapshot_add_operator_snapshot_duplicate() {
+        // Create a snapshot using heap allocation
+        let mut snapshot = Box::new(Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
@@ -1176,11 +1132,11 @@ mod tests {
         .unwrap();
 
         // Add first operator snapshot - should succeed
-        let result1 = epoch_snapshot.add_operator_snapshot(operator1_snapshot);
+        let result1 = snapshot.add_operator_snapshot(operator1_snapshot);
         assert!(result1.is_ok());
 
         // Try to add second operator snapshot with same index - should fail
-        let result2 = epoch_snapshot.add_operator_snapshot(operator2_snapshot);
+        let result2 = snapshot.add_operator_snapshot(operator2_snapshot);
         assert!(result2.is_err());
         assert_eq!(
             result2.unwrap_err(),
@@ -1189,11 +1145,10 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_get_active_operator_snapshots() {
-        // Create an epoch snapshot using heap allocation
-        let mut epoch_snapshot = Box::new(EpochSnapshot::new(
+    fn test_snapshot_get_active_operator_snapshots() {
+        // Create a snapshot using heap allocation
+        let mut snapshot = Box::new(Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
@@ -1225,15 +1180,15 @@ mod tests {
         .unwrap();
 
         // Add both operator snapshots
-        epoch_snapshot
+        snapshot
             .add_operator_snapshot(active_operator_snapshot)
             .unwrap();
-        epoch_snapshot
+        snapshot
             .add_operator_snapshot(inactive_operator_snapshot)
             .unwrap();
 
         // Get active operator snapshots
-        let active_snapshots = epoch_snapshot.get_active_operator_snapshots();
+        let active_snapshots = snapshot.get_active_operator_snapshots();
 
         // Should only return the active one
         assert_eq!(active_snapshots.len(), 1);
@@ -1242,75 +1197,69 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_initialize() {
+    fn test_snapshot_initialize() {
         let ncn = Pubkey::new_unique();
-        let mut epoch_snapshot = EpochSnapshot::new(
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
-        epoch_snapshot.initialize(
+        snapshot.initialize(
             &ncn,
-            5,                      // ncn_epoch
             2,                      // bump
             200,                    // current_slot
             10,                     // operator_count
             StakeWeights::new(100), // minimum_stake
         );
 
-        assert_eq!(epoch_snapshot.ncn, ncn);
-        assert_eq!(epoch_snapshot.epoch(), 5);
-        assert_eq!(epoch_snapshot.bump, 2);
-        assert_eq!(u64::from(epoch_snapshot.slot_created), 200u64);
-        assert_eq!(epoch_snapshot.operator_count(), 10);
-        assert_eq!(epoch_snapshot.minimum_stake().stake_weight(), 100);
+        assert_eq!(snapshot.ncn, ncn);
+        assert_eq!(snapshot.bump, 2);
+        assert_eq!(u64::from(snapshot.slot_created), 200u64);
+        assert_eq!(snapshot.operator_count(), 10);
+        assert_eq!(snapshot.minimum_stake().stake_weight(), 100);
     }
 
     #[test]
-    fn test_epoch_snapshot_seeds_and_pda() {
+    fn test_snapshot_seeds_and_pda() {
         let ncn = Pubkey::new_unique();
         let program_id = Pubkey::new_unique();
 
-        let seeds = EpochSnapshot::seeds(&ncn);
+        let seeds = Snapshot::seeds(&ncn);
         assert_eq!(seeds.len(), 2);
-        assert_eq!(seeds[0], b"epoch_snapshot");
+        assert_eq!(seeds[0], b"snapshot");
         assert_eq!(seeds[1], ncn.to_bytes().to_vec());
 
-        let (pda, bump, returned_seeds) = EpochSnapshot::find_program_address(&program_id, &ncn);
+        let (pda, bump, returned_seeds) = Snapshot::find_program_address(&program_id, &ncn);
         assert_eq!(returned_seeds, seeds);
         assert!(bump > 0);
         assert!(pda != Pubkey::default());
     }
 
     #[test]
-    fn test_epoch_snapshot_getters() {
+    fn test_snapshot_getters() {
         let ncn = Pubkey::new_unique();
-        let epoch_snapshot = EpochSnapshot::new(
+        let snapshot = Snapshot::new(
             &ncn,
-            10,                     // ncn_epoch
             3,                      // bump
             500,                    // current_slot
             15,                     // operator_count
             StakeWeights::new(200), // minimum_stake
         );
 
-        assert_eq!(epoch_snapshot.epoch(), 10);
-        assert_eq!(epoch_snapshot.operator_count(), 15);
-        assert_eq!(epoch_snapshot.operators_registered(), 0);
-        assert_eq!(epoch_snapshot.operators_can_vote_count(), 0);
-        assert_eq!(epoch_snapshot.last_snapshot_slot(), 0);
-        assert_eq!(epoch_snapshot.minimum_stake().stake_weight(), 200);
+        assert_eq!(snapshot.operator_count(), 15);
+        assert_eq!(snapshot.operators_registered(), 0);
+        assert_eq!(snapshot.operators_can_vote_count(), 0);
+        assert_eq!(snapshot.last_snapshot_slot(), 0);
+        assert_eq!(snapshot.minimum_stake().stake_weight(), 200);
     }
 
     #[test]
-    fn test_epoch_snapshot_increment_operator_registration() {
-        let mut epoch_snapshot = EpochSnapshot::new(
+    fn test_snapshot_increment_operator_registration() {
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -1318,24 +1267,23 @@ mod tests {
         );
 
         // First increment - should succeed
-        let result = epoch_snapshot.increment_operator_registration(150);
+        let result = snapshot.increment_operator_registration(150);
         assert!(result.is_ok());
-        assert_eq!(epoch_snapshot.operators_registered(), 1);
-        assert_eq!(epoch_snapshot.operators_can_vote_count(), 0); // operators_can_vote_count is not updated by this method
+        assert_eq!(snapshot.operators_registered(), 1);
+        assert_eq!(snapshot.operators_can_vote_count(), 0); // operators_can_vote_count is not updated by this method
 
         // Second increment - should finalize
-        let result = epoch_snapshot.increment_operator_registration(200);
+        let result = snapshot.increment_operator_registration(200);
         assert!(result.is_ok());
-        assert_eq!(epoch_snapshot.operators_registered(), 2);
-        assert_eq!(epoch_snapshot.operators_can_vote_count(), 0); // Still 0 - not updated by registration
-        assert_eq!(epoch_snapshot.last_snapshot_slot(), 200);
+        assert_eq!(snapshot.operators_registered(), 2);
+        assert_eq!(snapshot.operators_can_vote_count(), 0); // Still 0 - not updated by registration
+        assert_eq!(snapshot.last_snapshot_slot(), 200);
     }
 
     #[test]
-    fn test_epoch_snapshot_get_operator_snapshot() {
-        let mut epoch_snapshot = EpochSnapshot::new(
+    fn test_snapshot_get_operator_snapshot() {
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -1343,8 +1291,8 @@ mod tests {
         );
 
         // Test getting non-existent snapshot
-        assert!(epoch_snapshot.get_operator_snapshot(0).is_none());
-        assert!(epoch_snapshot.get_operator_snapshot(1).is_none());
+        assert!(snapshot.get_operator_snapshot(0).is_none());
+        assert!(snapshot.get_operator_snapshot(1).is_none());
 
         // Add an operator snapshot
         let operator_pubkey = Pubkey::new_unique();
@@ -1359,24 +1307,21 @@ mod tests {
         )
         .unwrap();
 
-        epoch_snapshot
-            .add_operator_snapshot(operator_snapshot)
-            .unwrap();
+        snapshot.add_operator_snapshot(operator_snapshot).unwrap();
 
         // Test getting existing snapshot
-        let retrieved = epoch_snapshot.get_operator_snapshot(0);
+        let retrieved = snapshot.get_operator_snapshot(0);
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap().operator(), &operator_pubkey);
 
         // Test getting out of bounds
-        assert!(epoch_snapshot.get_operator_snapshot(2).is_none());
+        assert!(snapshot.get_operator_snapshot(2).is_none());
     }
 
     #[test]
-    fn test_epoch_snapshot_get_mut_operator_snapshot() {
-        let mut epoch_snapshot = EpochSnapshot::new(
+    fn test_snapshot_get_mut_operator_snapshot() {
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -1396,12 +1341,10 @@ mod tests {
         )
         .unwrap();
 
-        epoch_snapshot
-            .add_operator_snapshot(operator_snapshot)
-            .unwrap();
+        snapshot.add_operator_snapshot(operator_snapshot).unwrap();
 
         // Test getting mutable reference
-        let mut_snapshot = epoch_snapshot.get_mut_operator_snapshot(0);
+        let mut_snapshot = snapshot.get_mut_operator_snapshot(0);
         assert!(mut_snapshot.is_some());
 
         // Modify the snapshot
@@ -1411,15 +1354,14 @@ mod tests {
         }
 
         // Verify the change persisted
-        let retrieved = epoch_snapshot.get_operator_snapshot(0);
+        let retrieved = snapshot.get_operator_snapshot(0);
         assert!(retrieved.unwrap().has_minimum_stake());
     }
 
     #[test]
-    fn test_epoch_snapshot_find_mut_operator_snapshot() {
-        let mut epoch_snapshot = EpochSnapshot::new(
+    fn test_snapshot_find_mut_operator_snapshot() {
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -1438,24 +1380,21 @@ mod tests {
         )
         .unwrap();
 
-        epoch_snapshot
-            .add_operator_snapshot(operator_snapshot)
-            .unwrap();
+        snapshot.add_operator_snapshot(operator_snapshot).unwrap();
 
         // Test finding by pubkey
-        let mut_found = epoch_snapshot.find_mut_operator_snapshot(&operator_pubkey);
+        let mut_found = snapshot.find_mut_operator_snapshot(&operator_pubkey);
         assert!(mut_found.is_some());
 
         // Test finding non-existent
-        let not_found = epoch_snapshot.find_mut_operator_snapshot(&Pubkey::new_unique());
+        let not_found = snapshot.find_mut_operator_snapshot(&Pubkey::new_unique());
         assert!(not_found.is_none());
     }
 
     #[test]
-    fn test_epoch_snapshot_add_operator_snapshot_index_overflow() {
-        let mut epoch_snapshot = EpochSnapshot::new(
+    fn test_snapshot_add_operator_snapshot_index_overflow() {
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
@@ -1473,7 +1412,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = epoch_snapshot.add_operator_snapshot(operator_snapshot);
+        let result = snapshot.add_operator_snapshot(operator_snapshot);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
@@ -1612,10 +1551,9 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_register_operator_g1_pubkey_invalid_pubkey() {
-        let mut epoch_snapshot = EpochSnapshot::new(
+    fn test_snapshot_register_operator_g1_pubkey_invalid_pubkey() {
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
@@ -1626,25 +1564,23 @@ mod tests {
         let mut invalid_pubkey = [0u8; G1_COMPRESSED_POINT_SIZE];
         invalid_pubkey[0] = 1; // Make it invalid G1 point
 
-        let result = epoch_snapshot.register_operator_g1_pubkey(&invalid_pubkey);
+        let result = snapshot.register_operator_g1_pubkey(&invalid_pubkey);
         assert!(result.is_err()); // Should fail with invalid G1 point
     }
 
     #[test]
-    fn test_epoch_snapshot_edge_cases() {
+    fn test_snapshot_edge_cases() {
         // Test with maximum values
-        let epoch_snapshot = EpochSnapshot::new(
+        let snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            u64::MAX,                     // ncn_epoch
             255,                          // bump
             u64::MAX,                     // current_slot
             MAX_OPERATORS as u64,         // operator_count
             StakeWeights::new(u128::MAX), // minimum_stake
         );
 
-        assert_eq!(epoch_snapshot.epoch(), u64::MAX);
-        assert_eq!(epoch_snapshot.operator_count(), MAX_OPERATORS as u64);
-        assert_eq!(epoch_snapshot.minimum_stake().stake_weight(), u128::MAX);
+        assert_eq!(snapshot.operator_count(), MAX_OPERATORS as u64);
+        assert_eq!(snapshot.minimum_stake().stake_weight(), u128::MAX);
     }
 
     #[test]
@@ -1668,10 +1604,9 @@ mod tests {
     }
 
     #[test]
-    fn test_epoch_snapshot_arithmetic_overflow_protection() {
-        let mut epoch_snapshot = EpochSnapshot::new(
+    fn test_snapshot_arithmetic_overflow_protection() {
+        let mut snapshot = Snapshot::new(
             &Pubkey::new_unique(),
-            1,                    // ncn_epoch
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
@@ -1679,9 +1614,9 @@ mod tests {
         );
 
         // Set to maximum values to test overflow
-        epoch_snapshot.operators_registered = PodU64::from(u64::MAX);
+        snapshot.operators_registered = PodU64::from(u64::MAX);
 
-        let result = epoch_snapshot.increment_operator_registration(200);
+        let result = snapshot.increment_operator_registration(200);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), NCNProgramError::ArithmeticOverflow);
     }

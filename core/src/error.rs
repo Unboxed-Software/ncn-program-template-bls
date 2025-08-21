@@ -104,8 +104,8 @@ pub enum NCNProgramError {
     OperatorHasNoMinimumStake,
     #[error("Operator snapshot is outdated")]
     OperatorSnapshotOutdated,
-    #[error("epoch snapshot already finalized")]
-    EpochSnapshotAlreadyFinalized,
+    #[error("snapshot already finalized")]
+    SnapshotAlreadyFinalized,
     #[error("Too many vault operator delegations")]
     TooManyVaultOperatorDelegations,
     #[error("Duplicate vault operator delegation")]
@@ -129,8 +129,8 @@ pub enum NCNProgramError {
     #[error("Consensus not reached")]
     ConsensusNotReached,
 
-    #[error("Epoch snapshot not finalized")]
-    EpochSnapshotNotFinalized,
+    #[error("Snapshot not finalized")]
+    SnapshotNotFinalized,
     #[error("Voting not valid, too many slots after consensus reached")]
     VotingNotValid,
     #[error("Tie breaker admin invalid")]

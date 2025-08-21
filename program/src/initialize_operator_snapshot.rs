@@ -4,19 +4,19 @@ use jito_restaking_core::{ncn::Ncn, ncn_operator_state::NcnOperatorState, operat
 use ncn_program_core::{
     account_payer::AccountPayer,
     epoch_marker::EpochMarker,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     error::NCNProgramError,
     g1_point::G1CompressedPoint,
     loaders::load_ncn_epoch,
     ncn_operator_account::NCNOperatorAccount,
+    snapshot::{OperatorSnapshot, Snapshot},
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey, sysvar::Sysvar,
 };
 
-/// Initializes a snapshot for a specific operator, storing their stake weights within the epoch snapshot.
+/// Initializes a snapshot for a specific operator, storing their stake weights within the snapshot.
 ///
 /// ### Parameters:
 /// - `epoch`: The target epoch
@@ -29,7 +29,7 @@ use solana_program::{
 /// 5. `[]` operator: The operator account to snapshot
 /// 6. `[]` ncn_operator_state: The connection between NCN and operator
 /// 7. `[]` ncn_operator_account: The ncn operator account PDA containing BLS keys (optional)
-/// 8. `[writable]` epoch_snapshot: Epoch snapshot account containing operator snapshots
+/// 8. `[writable]` snapshot: Snapshot account containing operator snapshots
 /// 9. `[writable, signer]` account_payer: Account paying for any additional rent
 /// 10. `[]` system_program: Solana System Program
 pub fn process_initialize_operator_snapshot(
@@ -37,7 +37,7 @@ pub fn process_initialize_operator_snapshot(
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_marker, epoch_state, restaking_config, ncn, operator, ncn_operator_state, ncn_operator_account, epoch_snapshot, account_payer, system_program] =
+    let [epoch_marker, epoch_state, restaking_config, ncn, operator, ncn_operator_state, ncn_operator_account, snapshot, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -54,21 +54,21 @@ pub fn process_initialize_operator_snapshot(
         operator,
         false,
     )?;
-    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, true)?;
+    Snapshot::load(program_id, snapshot, ncn.key, true)?;
     load_system_program(system_program)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
     EpochMarker::check_dne(program_id, epoch_marker, ncn.key, epoch)?;
 
     // Check if operator index is valid
     let ncn_operator_index = {
-        let epoch_snapshot_data = epoch_snapshot.data.borrow();
-        let epoch_snapshot = EpochSnapshot::try_from_slice_unchecked(&epoch_snapshot_data)?;
+        let snapshot_data = snapshot.data.borrow();
+        let snapshot = Snapshot::try_from_slice_unchecked(&snapshot_data)?;
 
         let ncn_operator_state_data = ncn_operator_state.data.borrow();
         let ncn_operator_state =
             NcnOperatorState::try_from_slice_unchecked(&ncn_operator_state_data)?;
 
-        let operator_count = epoch_snapshot.operator_count();
+        let operator_count = snapshot.operator_count();
         let operator_index = ncn_operator_state.index();
 
         if operator_index >= operator_count {
@@ -152,7 +152,7 @@ pub fn process_initialize_operator_snapshot(
     };
     msg!("G1 pubkey: {:?}", g1_pubkey);
 
-    // Create operator snapshot and add it to the epoch snapshot
+    // Create operator snapshot and add it to the snapshot
     let operator_snapshot = OperatorSnapshot::new(
         operator.key,
         current_slot,
@@ -162,20 +162,19 @@ pub fn process_initialize_operator_snapshot(
         g1_pubkey.unwrap_or(G1CompressedPoint::default().0),
     )?;
 
-    let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
-    let epoch_snapshot_account =
-        EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
+    let mut snapshot_data = snapshot.try_borrow_mut_data()?;
+    let snapshot_account = Snapshot::try_from_slice_unchecked_mut(&mut snapshot_data)?;
 
-    // Add the operator snapshot to the epoch snapshot
-    epoch_snapshot_account.add_operator_snapshot(operator_snapshot)?;
+    // Add the operator snapshot to the snapshot
+    snapshot_account.add_operator_snapshot(operator_snapshot)?;
 
     if is_active && g1_pubkey.is_some() {
-        epoch_snapshot_account.register_operator_g1_pubkey(&g1_pubkey.unwrap())?;
+        snapshot_account.register_operator_g1_pubkey(&g1_pubkey.unwrap())?;
     }
 
     if !is_active {
         // Increment operator registration for an inactive operator
-        epoch_snapshot_account.increment_operator_registration(current_slot)?;
+        snapshot_account.increment_operator_registration(current_slot)?;
     }
 
     Ok(())

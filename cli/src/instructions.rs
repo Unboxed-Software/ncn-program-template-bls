@@ -3,9 +3,9 @@ use std::time::Duration;
 use crate::{
     getters::{
         get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault,
-        get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot, get_operator_snapshot,
-        get_or_create_vault_registry, get_vault, get_vault_config, get_vault_registry,
-        get_vault_update_state_tracker,
+        get_all_vaults_in_ncn, get_current_slot, get_operator_snapshot,
+        get_or_create_vault_registry, get_snapshot, get_vault, get_vault_config,
+        get_vault_registry, get_vault_update_state_tracker,
     },
     handler::CliHandler,
     log::boring_progress_bar,
@@ -32,11 +32,10 @@ use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
         CastVoteBuilder, CloseEpochAccountBuilder,
-        InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
-        InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
-        InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
-        ReallocEpochSnapshotBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
-        SnapshotVaultOperatorDelegationBuilder,
+        InitializeConfigBuilder as InitializeNCNProgramConfigBuilder, InitializeEpochStateBuilder,
+        InitializeOperatorSnapshotBuilder, InitializeSnapshotBuilder,
+        InitializeVaultRegistryBuilder, ReallocSnapshotBuilder, RegisterOperatorBuilder,
+        RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -45,9 +44,9 @@ use ncn_program_core::{
     config::Config as NCNProgramConfig,
     constants::MAX_REALLOC_BYTES,
     epoch_marker::EpochMarker,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     ncn_operator_account::NCNOperatorAccount,
+    snapshot::{OperatorSnapshot, Snapshot},
     vault_registry::VaultRegistry,
 };
 use solana_client::rpc_config::RpcSendTransactionConfig;
@@ -484,58 +483,57 @@ pub async fn create_epoch_state(handler: &CliHandler, epoch: u64) -> Result<()> 
     Ok(())
 }
 
-pub async fn create_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
+pub async fn create_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
     let ncn = *handler.ncn()?;
 
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
-    let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
+    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
 
-    // First, initialize the epoch snapshot account with minimal size
-    let initialize_epoch_snapshot_ix = InitializeEpochSnapshotBuilder::new()
+    // First, initialize the snapshot account with minimal size
+    let initialize_snapshot_ix = InitializeSnapshotBuilder::new()
         .ncn(ncn)
-        .epoch_snapshot(epoch_snapshot)
+        .snapshot(snapshot)
         .account_payer(account_payer)
         .system_program(system_program::id())
         .instruction();
 
     send_and_log_transaction(
         handler,
-        &[initialize_epoch_snapshot_ix],
+        &[initialize_snapshot_ix],
         &[],
-        "Initialized Epoch Snapshot",
+        "Initialized Snapshot",
         &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
     )
     .await?;
 
-    // Then, reallocate the epoch snapshot account to full size and initialize the data
-    // Calculate number of reallocations needed based on EpochSnapshot::SIZE
+    // Then, reallocate the snapshot account to full size and initialize the data
+    // Calculate number of reallocations needed based on Snapshot::SIZE
     let num_reallocs =
-        ((EpochSnapshot::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1).max(1);
+        ((Snapshot::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1).max(1);
 
     let mut realloc_ixs = Vec::with_capacity(num_reallocs as usize + 1);
     realloc_ixs.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
 
-    let realloc_epoch_snapshot_ix = ReallocEpochSnapshotBuilder::new()
+    let realloc_snapshot_ix = ReallocSnapshotBuilder::new()
         .ncn(ncn)
         .config(config)
-        .epoch_snapshot(epoch_snapshot)
+        .snapshot(snapshot)
         .account_payer(account_payer)
         .system_program(system_program::id())
-        .epoch(epoch)
         .instruction();
 
     for _ in 0..num_reallocs {
-        realloc_ixs.push(realloc_epoch_snapshot_ix.clone());
+        realloc_ixs.push(realloc_snapshot_ix.clone());
     }
 
     send_and_log_transaction(
         handler,
         &realloc_ixs,
         &[],
-        "Reallocated and Initialized Epoch Snapshot",
+        "Reallocated and Initialized Snapshot",
         &[
             format!("NCN: {:?}", ncn),
             format!("Epoch: {:?}", epoch),
@@ -564,7 +562,7 @@ pub async fn create_operator_snapshot(
     let (ncn_operator_state, _, _) =
         NcnOperatorState::find_program_address(&handler.restaking_program_id, &ncn, &operator);
 
-    let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
+    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
     let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
@@ -586,7 +584,7 @@ pub async fn create_operator_snapshot(
             .operator(operator)
             .ncn_operator_state(ncn_operator_state)
             .ncn_operator_account(ncn_operator_account)
-            .epoch_snapshot(epoch_snapshot)
+            .snapshot(snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
             .epoch(epoch)
@@ -637,7 +635,7 @@ pub async fn snapshot_vault_operator_delegation(
     let (vault_operator_delegation, _, _) =
         VaultOperatorDelegation::find_program_address(&handler.vault_program_id, &vault, &operator);
 
-    let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
+    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let snapshot_vault_operator_delegation_ix = SnapshotVaultOperatorDelegationBuilder::new()
         .epoch_state(epoch_state)
@@ -649,7 +647,7 @@ pub async fn snapshot_vault_operator_delegation(
         .vault_ncn_ticket(vault_ncn_ticket)
         .ncn_vault_ticket(ncn_vault_ticket)
         .vault_operator_delegation(vault_operator_delegation)
-        .epoch_snapshot(epoch_snapshot)
+        .snapshot(snapshot)
         .epoch(epoch)
         .instruction();
 
@@ -742,7 +740,7 @@ pub async fn operator_cast_vote(
 
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
-    let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
+    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (restaking_config, _, _) =
         RestakingConfig::find_program_address(&handler.restaking_program_id);
@@ -750,7 +748,7 @@ pub async fn operator_cast_vote(
     let cast_vote_ix = CastVoteBuilder::new()
         .config(config)
         .ncn(ncn)
-        .epoch_snapshot(epoch_snapshot)
+        .snapshot(snapshot)
         .restaking_config(restaking_config)
         .aggregated_signature(agg_sig)
         .aggregated_g2(apk2)
@@ -957,22 +955,19 @@ pub async fn full_vault_update(handler: &CliHandler, vault: &Pubkey) -> Result<(
     Ok(())
 }
 
-pub async fn get_or_create_epoch_snapshot(
-    handler: &CliHandler,
-    epoch: u64,
-) -> Result<EpochSnapshot> {
+pub async fn get_or_create_snapshot(handler: &CliHandler, epoch: u64) -> Result<Snapshot> {
     let ncn = *handler.ncn()?;
-    let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
+    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
-    if get_account(handler, &epoch_snapshot)
+    if get_account(handler, &snapshot)
         .await?
-        .map_or(true, |snapshot| snapshot.data.len() < EpochSnapshot::SIZE)
+        .map_or(true, |snapshot| snapshot.data.len() < Snapshot::SIZE)
     {
-        create_epoch_snapshot(handler, epoch).await?;
-        check_created(handler, &epoch_snapshot).await?;
+        create_snapshot(handler, epoch).await?;
+        check_created(handler, &snapshot).await?;
     }
 
-    get_epoch_snapshot(handler, epoch).await
+    get_snapshot(handler, epoch).await
 }
 
 pub async fn get_or_create_operator_snapshot(
@@ -980,7 +975,7 @@ pub async fn get_or_create_operator_snapshot(
     operator: &Pubkey,
     epoch: u64,
 ) -> Result<OperatorSnapshot> {
-    // Try to get the operator snapshot from epoch snapshot
+    // Try to get the operator snapshot from snapshot
     match get_operator_snapshot(handler, operator, epoch).await {
         std::result::Result::Ok(snapshot) => std::result::Result::Ok(snapshot),
         std::result::Result::Err(_) => {
@@ -1035,10 +1030,10 @@ pub async fn crank_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
         .map(|entry| *entry.vault())
         .collect();
 
-    let epoch_snapshot = get_or_create_epoch_snapshot(handler, epoch).await?;
+    let snapshot = get_or_create_snapshot(handler, epoch).await?;
     // finalized() method not available - assuming not finalized for now
     if true {
-        // !epoch_snapshot.finalized() {
+        // !snapshot.finalized() {
         for operator in operators.iter() {
             // Create Vault Operator Delegation
             let result = get_or_create_operator_snapshot(handler, operator, epoch).await;
@@ -1184,17 +1179,17 @@ pub async fn crank_close_epoch_accounts(handler: &CliHandler, epoch: u64) -> Res
 
     // Ballot box functionality has been removed
 
-    // Note: Operator snapshots are now part of the epoch snapshot and cannot be closed individually
+    // Note: Operator snapshots are now part of the snapshot and cannot be closed individually
 
-    // Close Epoch Snapshot
-    let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
+    // Close Snapshot
+    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
-    let result = close_epoch_account(handler, ncn, epoch, epoch_snapshot).await;
+    let result = close_epoch_account(handler, ncn, epoch, snapshot).await;
 
     if let Err(err) = result {
         log::error!(
-            "Failed to close epoch snapshot: {:?} in epoch: {:?} with error: {:?}",
-            epoch_snapshot,
+            "Failed to close snapshot: {:?} in epoch: {:?} with error: {:?}",
+            snapshot,
             epoch,
             err
         );

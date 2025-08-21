@@ -10,8 +10,6 @@ import {
   combineCodec,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
   transformEncoder,
@@ -29,17 +27,16 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR = 8;
+export const INITIALIZE_SNAPSHOT_DISCRIMINATOR = 7;
 
-export function getReallocEpochSnapshotDiscriminatorBytes() {
-  return getU8Encoder().encode(REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR);
+export function getInitializeSnapshotDiscriminatorBytes() {
+  return getU8Encoder().encode(INITIALIZE_SNAPSHOT_DISCRIMINATOR);
 }
 
-export type ReallocEpochSnapshotInstruction<
+export type InitializeSnapshotInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountNcn extends string | IAccountMeta<string> = string,
-  TAccountConfig extends string | IAccountMeta<string> = string,
-  TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
+  TAccountSnapshot extends string | IAccountMeta<string> = string,
   TAccountAccountPayer extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -50,12 +47,9 @@ export type ReallocEpochSnapshotInstruction<
   IInstructionWithAccounts<
     [
       TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
-      TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
-        : TAccountConfig,
-      TAccountEpochSnapshot extends string
-        ? WritableAccount<TAccountEpochSnapshot>
-        : TAccountEpochSnapshot,
+      TAccountSnapshot extends string
+        ? WritableAccount<TAccountSnapshot>
+        : TAccountSnapshot,
       TAccountAccountPayer extends string
         ? WritableAccount<TAccountAccountPayer>
         : TAccountAccountPayer,
@@ -66,81 +60,61 @@ export type ReallocEpochSnapshotInstruction<
     ]
   >;
 
-export type ReallocEpochSnapshotInstructionData = {
-  discriminator: number;
-  epoch: bigint;
-};
+export type InitializeSnapshotInstructionData = { discriminator: number };
 
-export type ReallocEpochSnapshotInstructionDataArgs = {
-  epoch: number | bigint;
-};
+export type InitializeSnapshotInstructionDataArgs = {};
 
-export function getReallocEpochSnapshotInstructionDataEncoder(): Encoder<ReallocEpochSnapshotInstructionDataArgs> {
+export function getInitializeSnapshotInstructionDataEncoder(): Encoder<InitializeSnapshotInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', getU8Encoder()],
-      ['epoch', getU64Encoder()],
-    ]),
-    (value) => ({
-      ...value,
-      discriminator: REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR,
-    })
+    getStructEncoder([['discriminator', getU8Encoder()]]),
+    (value) => ({ ...value, discriminator: INITIALIZE_SNAPSHOT_DISCRIMINATOR })
   );
 }
 
-export function getReallocEpochSnapshotInstructionDataDecoder(): Decoder<ReallocEpochSnapshotInstructionData> {
-  return getStructDecoder([
-    ['discriminator', getU8Decoder()],
-    ['epoch', getU64Decoder()],
-  ]);
+export function getInitializeSnapshotInstructionDataDecoder(): Decoder<InitializeSnapshotInstructionData> {
+  return getStructDecoder([['discriminator', getU8Decoder()]]);
 }
 
-export function getReallocEpochSnapshotInstructionDataCodec(): Codec<
-  ReallocEpochSnapshotInstructionDataArgs,
-  ReallocEpochSnapshotInstructionData
+export function getInitializeSnapshotInstructionDataCodec(): Codec<
+  InitializeSnapshotInstructionDataArgs,
+  InitializeSnapshotInstructionData
 > {
   return combineCodec(
-    getReallocEpochSnapshotInstructionDataEncoder(),
-    getReallocEpochSnapshotInstructionDataDecoder()
+    getInitializeSnapshotInstructionDataEncoder(),
+    getInitializeSnapshotInstructionDataDecoder()
   );
 }
 
-export type ReallocEpochSnapshotInput<
+export type InitializeSnapshotInput<
   TAccountNcn extends string = string,
-  TAccountConfig extends string = string,
-  TAccountEpochSnapshot extends string = string,
+  TAccountSnapshot extends string = string,
   TAccountAccountPayer extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   ncn: Address<TAccountNcn>;
-  config: Address<TAccountConfig>;
-  epochSnapshot: Address<TAccountEpochSnapshot>;
+  snapshot: Address<TAccountSnapshot>;
   accountPayer: Address<TAccountAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
-  epoch: ReallocEpochSnapshotInstructionDataArgs['epoch'];
 };
 
-export function getReallocEpochSnapshotInstruction<
+export function getInitializeSnapshotInstruction<
   TAccountNcn extends string,
-  TAccountConfig extends string,
-  TAccountEpochSnapshot extends string,
+  TAccountSnapshot extends string,
   TAccountAccountPayer extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
-  input: ReallocEpochSnapshotInput<
+  input: InitializeSnapshotInput<
     TAccountNcn,
-    TAccountConfig,
-    TAccountEpochSnapshot,
+    TAccountSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): ReallocEpochSnapshotInstruction<
+): InitializeSnapshotInstruction<
   TProgramAddress,
   TAccountNcn,
-  TAccountConfig,
-  TAccountEpochSnapshot,
+  TAccountSnapshot,
   TAccountAccountPayer,
   TAccountSystemProgram
 > {
@@ -150,8 +124,7 @@ export function getReallocEpochSnapshotInstruction<
   // Original accounts.
   const originalAccounts = {
     ncn: { value: input.ncn ?? null, isWritable: false },
-    config: { value: input.config ?? null, isWritable: false },
-    epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: true },
+    snapshot: { value: input.snapshot ?? null, isWritable: true },
     accountPayer: { value: input.accountPayer ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -159,9 +132,6 @@ export function getReallocEpochSnapshotInstruction<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -173,20 +143,16 @@ export function getReallocEpochSnapshotInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.ncn),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.epochSnapshot),
+      getAccountMeta(accounts.snapshot),
       getAccountMeta(accounts.accountPayer),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getReallocEpochSnapshotInstructionDataEncoder().encode(
-      args as ReallocEpochSnapshotInstructionDataArgs
-    ),
-  } as ReallocEpochSnapshotInstruction<
+    data: getInitializeSnapshotInstructionDataEncoder().encode({}),
+  } as InitializeSnapshotInstruction<
     TProgramAddress,
     TAccountNcn,
-    TAccountConfig,
-    TAccountEpochSnapshot,
+    TAccountSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
   >;
@@ -194,30 +160,29 @@ export function getReallocEpochSnapshotInstruction<
   return instruction;
 }
 
-export type ParsedReallocEpochSnapshotInstruction<
+export type ParsedInitializeSnapshotInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     ncn: TAccountMetas[0];
-    config: TAccountMetas[1];
-    epochSnapshot: TAccountMetas[2];
-    accountPayer: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    snapshot: TAccountMetas[1];
+    accountPayer: TAccountMetas[2];
+    systemProgram: TAccountMetas[3];
   };
-  data: ReallocEpochSnapshotInstructionData;
+  data: InitializeSnapshotInstructionData;
 };
 
-export function parseReallocEpochSnapshotInstruction<
+export function parseInitializeSnapshotInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedReallocEpochSnapshotInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+): ParsedInitializeSnapshotInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -231,12 +196,11 @@ export function parseReallocEpochSnapshotInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       ncn: getNextAccount(),
-      config: getNextAccount(),
-      epochSnapshot: getNextAccount(),
+      snapshot: getNextAccount(),
       accountPayer: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getReallocEpochSnapshotInstructionDataDecoder().decode(
+    data: getInitializeSnapshotInstructionDataDecoder().decode(
       instruction.data
     ),
   };

@@ -220,7 +220,7 @@ pub enum ProgramCommand {
 
     CreateEpochState,
 
-    CreateEpochSnapshot,
+    CreateSnapshot,
 
     CreateOperatorSnapshot {
         #[arg(long, help = "Operator address")]
@@ -259,7 +259,7 @@ pub enum ProgramCommand {
     GetNCNProgramConfig,
     GetVaultRegistry,
     GetEpochState,
-    GetEpochSnapshot,
+    GetSnapshot,
     GetOperatorSnapshot {
         #[arg(long, env = "OPERATOR", help = "Operator Account Address")]
         operator: String,

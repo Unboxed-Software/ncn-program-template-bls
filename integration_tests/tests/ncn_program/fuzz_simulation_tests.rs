@@ -200,8 +200,8 @@ mod fuzz_tests {
 
             // 4.b. Initialize the weight table - prepares the table that will track voting weights
 
-            // 4.d. Take the epoch snapshot - records the current state for this epoch
-            fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
+            // 4.d. Take the snapshot - records the current state for this epoch
+            fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
 
             // 4.e. Take a snapshot for each operator - records their current stakes
             fixture

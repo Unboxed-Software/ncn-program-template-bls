@@ -160,9 +160,9 @@ pub enum NcnProgramError {
     /// 8740 - Operator snapshot is outdated
     #[error("Operator snapshot is outdated")]
     OperatorSnapshotOutdated = 0x2224,
-    /// 8741 - epoch snapshot already finalized
-    #[error("epoch snapshot already finalized")]
-    EpochSnapshotAlreadyFinalized = 0x2225,
+    /// 8741 - snapshot already finalized
+    #[error("snapshot already finalized")]
+    SnapshotAlreadyFinalized = 0x2225,
     /// 8742 - Too many vault operator delegations
     #[error("Too many vault operator delegations")]
     TooManyVaultOperatorDelegations = 0x2226,
@@ -196,9 +196,9 @@ pub enum NcnProgramError {
     /// 8752 - Consensus not reached
     #[error("Consensus not reached")]
     ConsensusNotReached = 0x2230,
-    /// 8753 - Epoch snapshot not finalized
-    #[error("Epoch snapshot not finalized")]
-    EpochSnapshotNotFinalized = 0x2231,
+    /// 8753 - Snapshot not finalized
+    #[error("Snapshot not finalized")]
+    SnapshotNotFinalized = 0x2231,
     /// 8754 - Voting not valid, too many slots after consensus reached
     #[error("Voting not valid, too many slots after consensus reached")]
     VotingNotValid = 0x2232,

@@ -6,9 +6,9 @@ use solana_sdk::{clock::DEFAULT_SLOTS_PER_EPOCH, native_token::lamports_to_sol};
 use crate::{
     getters::{
         get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
-        get_current_epoch_and_slot, get_epoch_snapshot, get_epoch_state, get_is_epoch_completed,
-        get_ncn_program_config, get_operator, get_operator_snapshot, get_vault, get_vault_config,
-        get_vault_operator_delegation, get_vault_registry,
+        get_current_epoch_and_slot, get_epoch_state, get_is_epoch_completed,
+        get_ncn_program_config, get_operator, get_operator_snapshot, get_snapshot, get_vault,
+        get_vault_config, get_vault_operator_delegation, get_vault_registry,
     },
     handler::CliHandler,
 };
@@ -459,7 +459,7 @@ macro_rules! emit_epoch_datapoint {
 #[allow(clippy::large_stack_frames)]
 pub async fn emit_epoch_metrics(handler: &CliHandler, epoch: u64) -> Result<()> {
     emit_epoch_metrics_state(handler, epoch).await?;
-    emit_epoch_metrics_epoch_snapshot(handler, epoch).await?;
+    emit_epoch_metrics_snapshot(handler, epoch).await?;
     emit_epoch_metrics_operator_snapshot(handler, epoch).await?;
     emit_epoch_metrics_ballot_box(handler, epoch).await?;
 
@@ -523,17 +523,17 @@ pub async fn emit_epoch_metrics_operator_snapshot(handler: &CliHandler, epoch: u
     Ok(())
 }
 
-/// Emits epoch snapshot metrics showing overall epoch state
+/// Emits snapshot metrics showing overall epoch state
 ///
-/// The epoch snapshot provides a high-level view of the epoch including
+/// The snapshot provides a high-level view of the epoch including
 /// total stake weights, operator counts, and other aggregate statistics.
-pub async fn emit_epoch_metrics_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
+pub async fn emit_epoch_metrics_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
     let (current_epoch, current_slot) = get_current_epoch_and_slot(handler).await?;
     let is_current_epoch = current_epoch == epoch;
 
-    let result = get_epoch_snapshot(handler, epoch).await;
+    let result = get_snapshot(handler, epoch).await;
 
-    if let Ok(epoch_snapshot) = result {
+    if let Ok(snapshot) = result {
         emit_epoch_datapoint!(
             "ncn-program-keeper-ee-epoch-snapshot",
             is_current_epoch,
@@ -542,20 +542,16 @@ pub async fn emit_epoch_metrics_epoch_snapshot(handler: &CliHandler, epoch: u64)
             ("keeper-epoch", epoch, i64),
             (
                 "total-stake",
-                format_stake_weight(epoch_snapshot.minimum_stake().stake_weight()),
+                format_stake_weight(snapshot.minimum_stake().stake_weight()),
                 f64
             ),
             (
                 "valid-operator-vault-delegations",
-                epoch_snapshot.operators_can_vote_count(),
+                snapshot.operators_can_vote_count(),
                 i64
             ),
-            (
-                "operators-registered",
-                epoch_snapshot.operators_registered(),
-                i64
-            ),
-            ("operator-count", epoch_snapshot.operator_count(), i64)
+            ("operators-registered", snapshot.operators_registered(), i64),
+            ("operator-count", snapshot.operator_count(), i64)
         );
     }
 
@@ -636,12 +632,12 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         // Progress tracking for each phase
         (
             "epoch-snapshot-progress-tally",
-            0, // epoch_snapshot_progress method not available on EpochState
+            0, // snapshot_progress method not available on EpochState
             i64
         ),
         (
             "epoch-snapshot-progress-total",
-            0, // epoch_snapshot_progress method not available on EpochState
+            0, // snapshot_progress method not available on EpochState
             i64
         ),
         // Voting phase has been removed - replaced with BLS signatures
@@ -655,7 +651,7 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         ),
         (
             "epoch-snapshot-account-status",
-            0, // epoch_snapshot method not available on EpochAccountStatus
+            0, // snapshot method not available on EpochAccountStatus
             i64
         ),
         (

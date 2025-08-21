@@ -1,9 +1,7 @@
 use solana_program::program_error::ProgramError;
 
 use crate::constants::MODULUS;
-use crate::{
-    constants::MAX_REALLOC_BYTES, epoch_snapshot::OperatorSnapshot, error::NCNProgramError,
-};
+use crate::{constants::MAX_REALLOC_BYTES, error::NCNProgramError, snapshot::OperatorSnapshot};
 use dashu::integer::UBig;
 
 /// Calculate new size for reallocation, capped at target size

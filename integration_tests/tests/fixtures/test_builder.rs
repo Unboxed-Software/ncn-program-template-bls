@@ -463,16 +463,16 @@ impl TestBuilder {
         Ok(())
     }
 
-    /// Initializes the EpochSnapshot account for the current epoch for the given TestNcn.
-    // 7. Create Epoch Snapshot
-    pub async fn add_epoch_snapshot_to_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
+    /// Initializes the Snapshot account for the current epoch for the given TestNcn.
+    // 7. Create Snapshot
+    pub async fn add_snapshot_to_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         let mut ncn_program_client = self.ncn_program_client();
 
         let clock = self.clock().await;
         let epoch = clock.epoch;
 
         ncn_program_client
-            .do_full_initialize_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+            .do_full_initialize_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
             .await?;
 
         Ok(())
@@ -638,11 +638,11 @@ impl TestBuilder {
     }
 
     /// Performs all necessary steps to snapshot the state of the TestNcn for the current epoch.
-    /// Initializes epoch state, epoch snapshot, operator snapshots, and VOD snapshots.
+    /// Initializes epoch state, snapshot, operator snapshots, and VOD snapshots.
     // Intermission 2 - all snapshots are taken
     pub async fn snapshot_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         self.add_epoch_state_for_test_ncn(test_ncn).await?;
-        self.add_epoch_snapshot_to_test_ncn(test_ncn).await?;
+        self.add_snapshot_to_test_ncn(test_ncn).await?;
 
         self.add_operator_snapshots_to_test_ncn(test_ncn).await?;
 
@@ -744,7 +744,7 @@ impl TestBuilder {
         Ok(())
     }
 
-    /// Closes all epoch-specific accounts (BallotBox, OperatorSnapshots, EpochSnapshot,  EpochState)
+    /// Closes all epoch-specific accounts (BallotBox, OperatorSnapshots, Snapshot,  EpochState)
     /// for a given epoch after the required cooldown period has passed.
     /// Asserts that the accounts are actually closed (deleted).
     pub async fn close_epoch_accounts_for_test_ncn(

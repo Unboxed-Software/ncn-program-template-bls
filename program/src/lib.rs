@@ -4,13 +4,13 @@ mod admin_set_new_admin;
 mod admin_set_parameters;
 mod cast_vote;
 mod close_epoch_account;
-mod initialize_epoch_snapshot;
 mod initialize_epoch_state;
+mod initialize_snapshot;
 
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
 mod initialize_vote_counter;
-mod realloc_epoch_snapshot;
+mod realloc_snapshot;
 
 mod register_operator;
 mod register_vault;
@@ -33,12 +33,12 @@ use crate::{
     admin_register_st_mint::process_admin_register_st_mint,
     admin_set_parameters::process_admin_set_parameters, cast_vote::process_cast_vote,
     close_epoch_account::process_close_epoch_account,
-    initialize_epoch_snapshot::process_initialize_epoch_snapshot,
     initialize_operator_snapshot::process_initialize_operator_snapshot,
+    initialize_snapshot::process_initialize_snapshot,
     initialize_vault_registry::process_initialize_vault_registry,
     initialize_vote_counter::process_initialize_vote_counter,
-    realloc_epoch_snapshot::process_realloc_epoch_snapshot,
-    register_operator::process_register_operator, register_vault::process_register_vault,
+    realloc_snapshot::process_realloc_snapshot, register_operator::process_register_operator,
+    register_vault::process_register_vault,
     snapshot_vault_operator_delegation::process_snapshot_vault_operator_delegation,
     update_operator_bn128_keys::process_update_operator_bn128_keys,
 };
@@ -133,13 +133,13 @@ pub fn process_instruction(
             msg!("Instruction: InitializeEpochState");
             process_initialize_epoch_state(program_id, accounts, epoch)
         }
-        NCNProgramInstruction::InitializeEpochSnapshot {} => {
-            msg!("Instruction: InitializeEpochSnapshot");
-            process_initialize_epoch_snapshot(program_id, accounts)
+        NCNProgramInstruction::InitializeSnapshot {} => {
+            msg!("Instruction: InitializeSnapshot");
+            process_initialize_snapshot(program_id, accounts)
         }
-        NCNProgramInstruction::ReallocEpochSnapshot { epoch } => {
-            msg!("Instruction: ReallocEpochSnapshot");
-            process_realloc_epoch_snapshot(program_id, accounts, epoch)
+        NCNProgramInstruction::ReallocSnapshot {} => {
+            msg!("Instruction: ReallocSnapshot");
+            process_realloc_snapshot(program_id, accounts)
         }
         NCNProgramInstruction::InitializeOperatorSnapshot { epoch } => {
             msg!("Instruction: InitializeOperatorSnapshot");

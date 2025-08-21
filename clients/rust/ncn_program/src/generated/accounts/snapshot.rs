@@ -13,14 +13,13 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct EpochSnapshot {
+pub struct Snapshot {
     pub discriminator: u64,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub ncn: Pubkey,
-    pub epoch: u64,
     pub bump: u8,
     pub slot_created: u64,
     pub operator_count: u64,
@@ -33,7 +32,7 @@ pub struct EpochSnapshot {
     pub last_snapshot_slot: u64,
 }
 
-impl EpochSnapshot {
+impl Snapshot {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -41,7 +40,7 @@ impl EpochSnapshot {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for EpochSnapshot {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for Snapshot {
     type Error = std::io::Error;
 
     fn try_from(
@@ -53,26 +52,26 @@ impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for EpochSnapsh
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountDeserialize for EpochSnapshot {
+impl anchor_lang::AccountDeserialize for Snapshot {
     fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
         Ok(Self::deserialize(buf)?)
     }
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountSerialize for EpochSnapshot {}
+impl anchor_lang::AccountSerialize for Snapshot {}
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::Owner for EpochSnapshot {
+impl anchor_lang::Owner for Snapshot {
     fn owner() -> Pubkey {
         crate::NCN_PROGRAM_ID
     }
 }
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::IdlBuild for EpochSnapshot {}
+impl anchor_lang::IdlBuild for Snapshot {}
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::Discriminator for EpochSnapshot {
+impl anchor_lang::Discriminator for Snapshot {
     const DISCRIMINATOR: &'static [u8] = &[0; 8];
 }

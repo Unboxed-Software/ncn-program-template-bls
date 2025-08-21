@@ -289,7 +289,7 @@ ncn-program-bls-cli set-epoch-weights
 #### Phase 2: State Snapshots
 
 ```bash
-# Create immutable epoch snapshot
+# Create immutable snapshot
 ncn-program-bls-cli create-epoch-snapshot
 
 # Snapshot individual operators

@@ -25,7 +25,7 @@ pub fn load_ncn_epoch(
         .ok_or(NCNProgramError::DenominatorIsZero)?;
 
     if ncn_epoch > current_ncn_epoch {
-        msg!("Epoch snapshots can only be initialized for current or past epochs");
+        msg!("Snapshots can only be initialized for current or past epochs");
         return Err(NCNProgramError::CannotCreateFutureWeightTables.into());
     }
 

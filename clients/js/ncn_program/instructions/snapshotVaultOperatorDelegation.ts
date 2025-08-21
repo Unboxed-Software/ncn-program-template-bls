@@ -50,7 +50,7 @@ export type SnapshotVaultOperatorDelegationInstruction<
   TAccountVaultOperatorDelegation extends
     | string
     | IAccountMeta<string> = string,
-  TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
+  TAccountSnapshot extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -81,9 +81,9 @@ export type SnapshotVaultOperatorDelegationInstruction<
       TAccountVaultOperatorDelegation extends string
         ? ReadonlyAccount<TAccountVaultOperatorDelegation>
         : TAccountVaultOperatorDelegation,
-      TAccountEpochSnapshot extends string
-        ? WritableAccount<TAccountEpochSnapshot>
-        : TAccountEpochSnapshot,
+      TAccountSnapshot extends string
+        ? WritableAccount<TAccountSnapshot>
+        : TAccountSnapshot,
       ...TRemainingAccounts,
     ]
   >;
@@ -137,7 +137,7 @@ export type SnapshotVaultOperatorDelegationInput<
   TAccountVaultNcnTicket extends string = string,
   TAccountNcnVaultTicket extends string = string,
   TAccountVaultOperatorDelegation extends string = string,
-  TAccountEpochSnapshot extends string = string,
+  TAccountSnapshot extends string = string,
 > = {
   epochState: Address<TAccountEpochState>;
   config: Address<TAccountConfig>;
@@ -148,7 +148,7 @@ export type SnapshotVaultOperatorDelegationInput<
   vaultNcnTicket: Address<TAccountVaultNcnTicket>;
   ncnVaultTicket: Address<TAccountNcnVaultTicket>;
   vaultOperatorDelegation: Address<TAccountVaultOperatorDelegation>;
-  epochSnapshot: Address<TAccountEpochSnapshot>;
+  snapshot: Address<TAccountSnapshot>;
   epoch: SnapshotVaultOperatorDelegationInstructionDataArgs['epoch'];
 };
 
@@ -162,7 +162,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
   TAccountVaultNcnTicket extends string,
   TAccountNcnVaultTicket extends string,
   TAccountVaultOperatorDelegation extends string,
-  TAccountEpochSnapshot extends string,
+  TAccountSnapshot extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
   input: SnapshotVaultOperatorDelegationInput<
@@ -175,7 +175,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
     TAccountVaultNcnTicket,
     TAccountNcnVaultTicket,
     TAccountVaultOperatorDelegation,
-    TAccountEpochSnapshot
+    TAccountSnapshot
   >,
   config?: { programAddress?: TProgramAddress }
 ): SnapshotVaultOperatorDelegationInstruction<
@@ -189,7 +189,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
   TAccountVaultNcnTicket,
   TAccountNcnVaultTicket,
   TAccountVaultOperatorDelegation,
-  TAccountEpochSnapshot
+  TAccountSnapshot
 > {
   // Program address.
   const programAddress = config?.programAddress ?? NCN_PROGRAM_PROGRAM_ADDRESS;
@@ -211,7 +211,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
       value: input.vaultOperatorDelegation ?? null,
       isWritable: false,
     },
-    epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: true },
+    snapshot: { value: input.snapshot ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -233,7 +233,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
       getAccountMeta(accounts.vaultNcnTicket),
       getAccountMeta(accounts.ncnVaultTicket),
       getAccountMeta(accounts.vaultOperatorDelegation),
-      getAccountMeta(accounts.epochSnapshot),
+      getAccountMeta(accounts.snapshot),
     ],
     programAddress,
     data: getSnapshotVaultOperatorDelegationInstructionDataEncoder().encode(
@@ -250,7 +250,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
     TAccountVaultNcnTicket,
     TAccountNcnVaultTicket,
     TAccountVaultOperatorDelegation,
-    TAccountEpochSnapshot
+    TAccountSnapshot
   >;
 
   return instruction;
@@ -271,7 +271,7 @@ export type ParsedSnapshotVaultOperatorDelegationInstruction<
     vaultNcnTicket: TAccountMetas[6];
     ncnVaultTicket: TAccountMetas[7];
     vaultOperatorDelegation: TAccountMetas[8];
-    epochSnapshot: TAccountMetas[9];
+    snapshot: TAccountMetas[9];
   };
   data: SnapshotVaultOperatorDelegationInstructionData;
 };
@@ -306,7 +306,7 @@ export function parseSnapshotVaultOperatorDelegationInstruction<
       vaultNcnTicket: getNextAccount(),
       ncnVaultTicket: getNextAccount(),
       vaultOperatorDelegation: getNextAccount(),
-      epochSnapshot: getNextAccount(),
+      snapshot: getNextAccount(),
     },
     data: getSnapshotVaultOperatorDelegationInstructionDataDecoder().decode(
       instruction.data

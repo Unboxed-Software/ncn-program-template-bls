@@ -114,8 +114,8 @@ export const NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_ALREADY_TAKED = 0x2222; // 873
 export const NCN_PROGRAM_ERROR__OPERATOR_HAS_NO_MINIMUM_STAKE = 0x2223; // 8739
 /** OperatorSnapshotOutdated: Operator snapshot is outdated */
 export const NCN_PROGRAM_ERROR__OPERATOR_SNAPSHOT_OUTDATED = 0x2224; // 8740
-/** EpochSnapshotAlreadyFinalized: epoch snapshot already finalized */
-export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_ALREADY_FINALIZED = 0x2225; // 8741
+/** SnapshotAlreadyFinalized: snapshot already finalized */
+export const NCN_PROGRAM_ERROR__SNAPSHOT_ALREADY_FINALIZED = 0x2225; // 8741
 /** TooManyVaultOperatorDelegations: Too many vault operator delegations */
 export const NCN_PROGRAM_ERROR__TOO_MANY_VAULT_OPERATOR_DELEGATIONS = 0x2226; // 8742
 /** DuplicateVaultOperatorDelegation: Duplicate vault operator delegation */
@@ -138,8 +138,8 @@ export const NCN_PROGRAM_ERROR__BALLOT_TALLY_NOT_EMPTY = 0x222e; // 8750
 export const NCN_PROGRAM_ERROR__CONSENSUS_ALREADY_REACHED = 0x222f; // 8751
 /** ConsensusNotReached: Consensus not reached */
 export const NCN_PROGRAM_ERROR__CONSENSUS_NOT_REACHED = 0x2230; // 8752
-/** EpochSnapshotNotFinalized: Epoch snapshot not finalized */
-export const NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED = 0x2231; // 8753
+/** SnapshotNotFinalized: Snapshot not finalized */
+export const NCN_PROGRAM_ERROR__SNAPSHOT_NOT_FINALIZED = 0x2231; // 8753
 /** VotingNotValid: Voting not valid, too many slots after consensus reached */
 export const NCN_PROGRAM_ERROR__VOTING_NOT_VALID = 0x2232; // 8754
 /** TieBreakerAdminInvalid: Tie breaker admin invalid */
@@ -276,8 +276,6 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__DUPLICATE_VAULT_OPERATOR_DELEGATION
   | typeof NCN_PROGRAM_ERROR__DUPLICATE_VOTE_CAST
   | typeof NCN_PROGRAM_ERROR__EPOCH_IS_CLOSING_DOWN
-  | typeof NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_ALREADY_FINALIZED
-  | typeof NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED
   | typeof NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED
   | typeof NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE
   | typeof NCN_PROGRAM_ERROR__G1_POINT_ADDITION_ERROR
@@ -331,6 +329,8 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__SECRET_KEY_ERROR
   | typeof NCN_PROGRAM_ERROR__SERIALIZATION_ERROR
   | typeof NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED
+  | typeof NCN_PROGRAM_ERROR__SNAPSHOT_ALREADY_FINALIZED
+  | typeof NCN_PROGRAM_ERROR__SNAPSHOT_NOT_FINALIZED
   | typeof NCN_PROGRAM_ERROR__TABLE_NOT_INITIALIZED
   | typeof NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID
   | typeof NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES
@@ -392,8 +392,6 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__DUPLICATE_VAULT_OPERATOR_DELEGATION]: `Duplicate vault operator delegation`,
     [NCN_PROGRAM_ERROR__DUPLICATE_VOTE_CAST]: `Duplicate Vote Cast`,
     [NCN_PROGRAM_ERROR__EPOCH_IS_CLOSING_DOWN]: `Epoch is closing down`,
-    [NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_ALREADY_FINALIZED]: `epoch snapshot already finalized`,
-    [NCN_PROGRAM_ERROR__EPOCH_SNAPSHOT_NOT_FINALIZED]: `Epoch snapshot not finalized`,
     [NCN_PROGRAM_ERROR__FEE_CAP_EXCEEDED]: `Fee cap exceeded`,
     [NCN_PROGRAM_ERROR__FEE_NOT_ACTIVE]: `Fee not active`,
     [NCN_PROGRAM_ERROR__G1_POINT_ADDITION_ERROR]: `G1 Point Addition Error`,
@@ -447,6 +445,8 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__SECRET_KEY_ERROR]: `Secret key error`,
     [NCN_PROGRAM_ERROR__SERIALIZATION_ERROR]: `Serialization error`,
     [NCN_PROGRAM_ERROR__SIGNATURE_VERIFICATION_FAILED]: `Signature verification failed`,
+    [NCN_PROGRAM_ERROR__SNAPSHOT_ALREADY_FINALIZED]: `snapshot already finalized`,
+    [NCN_PROGRAM_ERROR__SNAPSHOT_NOT_FINALIZED]: `Snapshot not finalized`,
     [NCN_PROGRAM_ERROR__TABLE_NOT_INITIALIZED]: `Table not initialized`,
     [NCN_PROGRAM_ERROR__TIE_BREAKER_ADMIN_INVALID]: `Tie breaker admin invalid`,
     [NCN_PROGRAM_ERROR__TIE_BREAKER_NOT_IN_PRIOR_VOTES]: `Tie breaking ballot must be one of the prior votes`,

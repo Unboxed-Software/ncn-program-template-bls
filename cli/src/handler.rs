@@ -5,15 +5,15 @@ use crate::{
     args::{Args, ProgramCommand},
     getters::{
         get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
-        get_current_slot, get_epoch_snapshot, get_epoch_state, get_is_epoch_completed, get_ncn,
-        get_ncn_operator_state, get_ncn_program_config, get_ncn_vault_ticket,
-        get_operator_snapshot, get_total_epoch_rent_cost, get_vault_ncn_ticket,
-        get_vault_operator_delegation, get_vault_registry,
+        get_current_slot, get_epoch_state, get_is_epoch_completed, get_ncn, get_ncn_operator_state,
+        get_ncn_program_config, get_ncn_vault_ticket, get_operator_snapshot, get_snapshot,
+        get_total_epoch_rent_cost, get_vault_ncn_ticket, get_vault_operator_delegation,
+        get_vault_registry,
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
         admin_set_parameters, crank_close_epoch_accounts, crank_register_vaults, crank_snapshot,
-        create_epoch_snapshot, create_epoch_state, create_operator_snapshot, create_vault_registry,
+        create_epoch_state, create_operator_snapshot, create_snapshot, create_vault_registry,
         full_vault_update, register_operator, register_vault, snapshot_vault_operator_delegation,
     },
     keeper::keeper_loop::startup_ncn_keeper,
@@ -313,7 +313,7 @@ impl CliHandler {
 
             ProgramCommand::CreateEpochState {} => create_epoch_state(self, self.epoch).await,
 
-            ProgramCommand::CreateEpochSnapshot {} => create_epoch_snapshot(self, self.epoch).await,
+            ProgramCommand::CreateSnapshot {} => create_snapshot(self, self.epoch).await,
             ProgramCommand::CreateOperatorSnapshot { operator } => {
                 let operator = Pubkey::from_str(&operator)
                     .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
@@ -443,9 +443,9 @@ impl CliHandler {
 
                 Ok(())
             }
-            ProgramCommand::GetEpochSnapshot {} => {
-                let epoch_snapshot = get_epoch_snapshot(self, self.epoch).await?;
-                info!("{}", epoch_snapshot);
+            ProgramCommand::GetSnapshot {} => {
+                let snapshot = get_snapshot(self, self.epoch).await?;
+                info!("{}", snapshot);
                 Ok(())
             }
             ProgramCommand::GetOperatorSnapshot { operator } => {
@@ -486,8 +486,8 @@ impl CliHandler {
             }
 
             ProgramCommand::GetOperatorStakes {} => {
-                // Get epoch snapshot for total stake
-                let epoch_snapshot = get_epoch_snapshot(self, self.epoch).await?;
+                // Get snapshot for total stake
+                let snapshot = get_snapshot(self, self.epoch).await?;
 
                 let operators = get_all_operators_in_ncn(self).await?;
                 // For each fully activated operator, get their operator snapshot
@@ -509,8 +509,8 @@ impl CliHandler {
                     println!(
                         "Operator: {}, Stake Weight: {}.{:02}%",
                         operator,
-                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() / 100,
-                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() % 100
+                        stake_weight * 10000 / snapshot.minimum_stake().stake_weight() / 100,
+                        stake_weight * 10000 / snapshot.minimum_stake().stake_weight() % 100
                     );
                 }
 
@@ -519,7 +519,7 @@ impl CliHandler {
 
             ProgramCommand::GetVaultStakes {} => {
                 let operators = get_all_operators_in_ncn(self).await?;
-                let epoch_snapshot = get_epoch_snapshot(self, self.epoch).await?;
+                let snapshot = get_snapshot(self, self.epoch).await?;
                 let mut vault_stakes: HashMap<Pubkey, u128> = HashMap::new();
                 for operator in operators.iter() {
                     let operator_snapshot = get_operator_snapshot(self, operator, self.epoch).await;
@@ -546,8 +546,8 @@ impl CliHandler {
                     println!(
                         "Vault: {}, Stake Weight: {}.{:02}%",
                         vault,
-                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() / 100,
-                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() % 100
+                        stake_weight * 10000 / snapshot.minimum_stake().stake_weight() / 100,
+                        stake_weight * 10000 / snapshot.minimum_stake().stake_weight() % 100
                     );
                 }
 
@@ -556,7 +556,7 @@ impl CliHandler {
 
             ProgramCommand::GetVaultOperatorStakes {} => {
                 let operators = get_all_operators_in_ncn(self).await?;
-                let epoch_snapshot = get_epoch_snapshot(self, self.epoch).await?;
+                let snapshot = get_snapshot(self, self.epoch).await?;
                 let mut vault_operator_stakes: HashMap<Pubkey, HashMap<Pubkey, u128>> =
                     HashMap::new();
 
@@ -580,7 +580,7 @@ impl CliHandler {
                 }
 
                 // Calculate total stake weight for percentage calculations
-                let total_stake_weight = epoch_snapshot.minimum_stake().stake_weight();
+                let total_stake_weight = snapshot.minimum_stake().stake_weight();
 
                 // Sort vaults by total stake
                 let mut vaults: Vec<_> = vault_operator_stakes.iter().collect();

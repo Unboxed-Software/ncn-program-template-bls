@@ -84,10 +84,10 @@ mod tests {
             fixture.warp_epoch_incremental(1).await?;
         }
 
-        let epoch_snapshot = ncn_program_client
-            .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
+        let snapshot = ncn_program_client
+            .get_snapshot(test_ncn.ncn_root.ncn_pubkey)
             .await?;
-        msg!("Epoch Snapshot before: {}", epoch_snapshot);
+        msg!("Snapshot before: {}", snapshot);
 
         {
             // Second Run
@@ -95,10 +95,10 @@ mod tests {
                 .update_snapshot_test_ncn_new_epoch(&test_ncn)
                 .await?;
 
-            let epoch_snapshot = ncn_program_client
-                .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
+            let snapshot = ncn_program_client
+                .get_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
-            msg!("Epoch Snapshot after: {}", epoch_snapshot);
+            msg!("Snapshot after: {}", snapshot);
 
             let result = fixture.vote_test_ncn(&test_ncn).await;
             assert_ncn_program_error(result, NCNProgramError::OperatorHasNoMinimumStake, Some(1));
@@ -124,7 +124,7 @@ mod tests {
         }
 
         fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
-        fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
+        fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
         fixture
             .add_operator_snapshots_to_test_ncn(&test_ncn)
             .await?;

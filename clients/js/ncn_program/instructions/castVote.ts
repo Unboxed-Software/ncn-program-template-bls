@@ -46,7 +46,7 @@ export type CastVoteInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountConfig extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
-  TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
+  TAccountSnapshot extends string | IAccountMeta<string> = string,
   TAccountRestakingConfig extends string | IAccountMeta<string> = string,
   TAccountVoteCounter extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
@@ -58,9 +58,9 @@ export type CastVoteInstruction<
         ? ReadonlyAccount<TAccountConfig>
         : TAccountConfig,
       TAccountNcn extends string ? ReadonlyAccount<TAccountNcn> : TAccountNcn,
-      TAccountEpochSnapshot extends string
-        ? ReadonlyAccount<TAccountEpochSnapshot>
-        : TAccountEpochSnapshot,
+      TAccountSnapshot extends string
+        ? ReadonlyAccount<TAccountSnapshot>
+        : TAccountSnapshot,
       TAccountRestakingConfig extends string
         ? ReadonlyAccount<TAccountRestakingConfig>
         : TAccountRestakingConfig,
@@ -124,13 +124,13 @@ export function getCastVoteInstructionDataCodec(): Codec<
 export type CastVoteInput<
   TAccountConfig extends string = string,
   TAccountNcn extends string = string,
-  TAccountEpochSnapshot extends string = string,
+  TAccountSnapshot extends string = string,
   TAccountRestakingConfig extends string = string,
   TAccountVoteCounter extends string = string,
 > = {
   config: Address<TAccountConfig>;
   ncn: Address<TAccountNcn>;
-  epochSnapshot: Address<TAccountEpochSnapshot>;
+  snapshot: Address<TAccountSnapshot>;
   restakingConfig: Address<TAccountRestakingConfig>;
   voteCounter: Address<TAccountVoteCounter>;
   aggregatedSignature: CastVoteInstructionDataArgs['aggregatedSignature'];
@@ -141,7 +141,7 @@ export type CastVoteInput<
 export function getCastVoteInstruction<
   TAccountConfig extends string,
   TAccountNcn extends string,
-  TAccountEpochSnapshot extends string,
+  TAccountSnapshot extends string,
   TAccountRestakingConfig extends string,
   TAccountVoteCounter extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
@@ -149,7 +149,7 @@ export function getCastVoteInstruction<
   input: CastVoteInput<
     TAccountConfig,
     TAccountNcn,
-    TAccountEpochSnapshot,
+    TAccountSnapshot,
     TAccountRestakingConfig,
     TAccountVoteCounter
   >,
@@ -158,7 +158,7 @@ export function getCastVoteInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountNcn,
-  TAccountEpochSnapshot,
+  TAccountSnapshot,
   TAccountRestakingConfig,
   TAccountVoteCounter
 > {
@@ -169,7 +169,7 @@ export function getCastVoteInstruction<
   const originalAccounts = {
     config: { value: input.config ?? null, isWritable: false },
     ncn: { value: input.ncn ?? null, isWritable: false },
-    epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: false },
+    snapshot: { value: input.snapshot ?? null, isWritable: false },
     restakingConfig: {
       value: input.restakingConfig ?? null,
       isWritable: false,
@@ -189,7 +189,7 @@ export function getCastVoteInstruction<
     accounts: [
       getAccountMeta(accounts.config),
       getAccountMeta(accounts.ncn),
-      getAccountMeta(accounts.epochSnapshot),
+      getAccountMeta(accounts.snapshot),
       getAccountMeta(accounts.restakingConfig),
       getAccountMeta(accounts.voteCounter),
     ],
@@ -201,7 +201,7 @@ export function getCastVoteInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountNcn,
-    TAccountEpochSnapshot,
+    TAccountSnapshot,
     TAccountRestakingConfig,
     TAccountVoteCounter
   >;
@@ -217,7 +217,7 @@ export type ParsedCastVoteInstruction<
   accounts: {
     config: TAccountMetas[0];
     ncn: TAccountMetas[1];
-    epochSnapshot: TAccountMetas[2];
+    snapshot: TAccountMetas[2];
     restakingConfig: TAccountMetas[3];
     voteCounter: TAccountMetas[4];
   };
@@ -247,7 +247,7 @@ export function parseCastVoteInstruction<
     accounts: {
       config: getNextAccount(),
       ncn: getNextAccount(),
-      epochSnapshot: getNextAccount(),
+      snapshot: getNextAccount(),
       restakingConfig: getNextAccount(),
       voteCounter: getNextAccount(),
     },

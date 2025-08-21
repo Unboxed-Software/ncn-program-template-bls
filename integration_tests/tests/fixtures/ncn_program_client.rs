@@ -10,10 +10,9 @@ use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
         CastVoteBuilder, CloseEpochAccountBuilder, InitializeConfigBuilder,
-        InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
-        InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
-        InitializeVoteCounterBuilder, ReallocEpochSnapshotBuilder, RegisterOperatorBuilder,
-        RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
+        InitializeEpochStateBuilder, InitializeOperatorSnapshotBuilder, InitializeSnapshotBuilder,
+        InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, ReallocSnapshotBuilder,
+        RegisterOperatorBuilder, RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
         UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
@@ -23,11 +22,11 @@ use ncn_program_core::{
     config::Config as NcnConfig,
     constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE, MAX_REALLOC_BYTES},
     epoch_marker::EpochMarker,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     error::NCNProgramError,
     fees::FeeConfig,
     ncn_operator_account::NCNOperatorAccount,
+    snapshot::{OperatorSnapshot, Snapshot},
     vault_registry::VaultRegistry,
     vote_counter::VoteCounter,
 };
@@ -189,15 +188,14 @@ impl NCNProgramClient {
         Ok(*EpochState::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
     }
 
-    /// Fetches the EpochSnapshot account for a given NCN and epoch.
-    pub async fn get_epoch_snapshot(&mut self, ncn: Pubkey) -> TestResult<Box<EpochSnapshot>> {
-        let address = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
+    /// Fetches the Snapshot account for a given NCN and epoch.
+    pub async fn get_snapshot(&mut self, ncn: Pubkey) -> TestResult<Box<Snapshot>> {
+        let address = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let raw_account = Box::new(self.banks_client.get_account(address).await?.unwrap());
 
-        let account = Box::new(
-            *EpochSnapshot::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap(),
-        );
+        let account =
+            Box::new(*Snapshot::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap());
 
         Ok(account)
     }
@@ -218,18 +216,18 @@ impl NCNProgramClient {
         Ok(*NCNOperatorAccount::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
     }
 
-    /// Fetches the OperatorSnapshot from the EpochSnapshot for a given operator, NCN, and epoch.
+    /// Fetches the OperatorSnapshot from the Snapshot for a given operator, NCN, and epoch.
     #[allow(dead_code)]
     pub async fn get_operator_snapshot(
         &mut self,
         operator: Pubkey,
         ncn: Pubkey,
     ) -> TestResult<OperatorSnapshot> {
-        // Get the epoch snapshot which contains the operator snapshots
-        let epoch_snapshot = self.get_epoch_snapshot(ncn).await?;
+        // Get the snapshot which contains the operator snapshots
+        let snapshot = self.get_snapshot(ncn).await?;
 
         // Find the operator snapshot by operator pubkey
-        let operator_snapshot = epoch_snapshot.find_operator_snapshot(&operator);
+        let operator_snapshot = snapshot.find_operator_snapshot(&operator);
 
         if operator_snapshot.is_none() {
             return Err(TestError::ProgramError(
@@ -525,24 +523,20 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Initializes the epoch snapshot account for a given NCN and epoch.
-    pub async fn do_initialize_epoch_snapshot(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-    ) -> TestResult<()> {
-        self.initialize_epoch_snapshot(ncn, epoch).await
+    /// Initializes the snapshot account for a given NCN and epoch.
+    pub async fn do_initialize_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
+        self.initialize_snapshot(ncn, epoch).await
     }
 
-    /// Sends a transaction to initialize the epoch snapshot account.
-    pub async fn initialize_epoch_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
+    /// Sends a transaction to initialize the snapshot account.
+    pub async fn initialize_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
+        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
-        let ix = InitializeEpochSnapshotBuilder::new()
+        let ix = InitializeSnapshotBuilder::new()
             .ncn(ncn)
-            .epoch_snapshot(epoch_snapshot)
+            .snapshot(snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
             .instruction();
@@ -557,53 +551,46 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Initializes and fully reallocates the epoch snapshot account for a given NCN and epoch.
-    pub async fn do_full_initialize_epoch_snapshot(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-    ) -> TestResult<()> {
-        self.do_initialize_epoch_snapshot(ncn, epoch).await?;
-        let num_reallocs =
-            (EpochSnapshot::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-        self.do_realloc_epoch_snapshot(ncn, epoch, num_reallocs)
-            .await?;
+    /// Initializes and fully reallocates the snapshot account for a given NCN and epoch.
+    pub async fn do_full_initialize_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
+        self.do_initialize_snapshot(ncn, epoch).await?;
+        let num_reallocs = (Snapshot::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
+        self.do_realloc_snapshot(ncn, epoch, num_reallocs).await?;
         Ok(())
     }
 
-    /// Reallocates the epoch snapshot account multiple times.
-    pub async fn do_realloc_epoch_snapshot(
+    /// Reallocates the snapshot account multiple times.
+    pub async fn do_realloc_snapshot(
         &mut self,
         ncn: Pubkey,
         epoch: u64,
         num_reallocations: u64,
     ) -> TestResult<()> {
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
+        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
-        self.realloc_epoch_snapshot(&ncn, &epoch_snapshot, &config, epoch, num_reallocations)
+        self.realloc_snapshot(&ncn, &snapshot, &config, epoch, num_reallocations)
             .await
     }
 
-    /// Sends transactions to reallocate the epoch snapshot account.
+    /// Sends transactions to reallocate the snapshot account.
     #[allow(clippy::too_many_arguments)]
-    pub async fn realloc_epoch_snapshot(
+    pub async fn realloc_snapshot(
         &mut self,
         ncn: &Pubkey,
-        epoch_snapshot: &Pubkey,
+        snapshot: &Pubkey,
         config: &Pubkey,
         epoch: u64,
         num_reallocations: u64,
     ) -> TestResult<()> {
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
 
-        let ix = ReallocEpochSnapshotBuilder::new()
+        let ix = ReallocSnapshotBuilder::new()
             .ncn(*ncn)
-            .epoch_snapshot(*epoch_snapshot)
+            .snapshot(*snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
             .config(*config)
-            .epoch(epoch)
             .instruction();
 
         let ixs = vec![ix; num_reallocations as usize];
@@ -618,7 +605,7 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Initializes the operator snapshot within the epoch snapshot for a given operator, NCN, and epoch.
+    /// Initializes the operator snapshot within the snapshot for a given operator, NCN, and epoch.
     pub async fn do_initialize_operator_snapshot(
         &mut self,
         operator: Pubkey,
@@ -643,7 +630,7 @@ impl NCNProgramClient {
         let ncn_operator_state =
             NcnOperatorState::find_program_address(&jito_restaking_program::id(), &ncn, &operator)
                 .0;
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
+        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
 
@@ -658,7 +645,7 @@ impl NCNProgramClient {
             .operator(operator)
             .ncn_operator_state(ncn_operator_state)
             .ncn_operator_account(ncn_operator_account)
-            .epoch_snapshot(epoch_snapshot)
+            .snapshot(snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
             .epoch(epoch)
@@ -699,7 +686,7 @@ impl NCNProgramClient {
 
         let config_pda = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
+        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let vault_ncn_ticket =
             VaultNcnTicket::find_program_address(&jito_vault_program::id(), &vault, &ncn).0;
@@ -724,7 +711,7 @@ impl NCNProgramClient {
             .vault_ncn_ticket(vault_ncn_ticket)
             .ncn_vault_ticket(ncn_vault_ticket)
             .vault_operator_delegation(vault_operator_delegation)
-            .epoch_snapshot(epoch_snapshot)
+            .snapshot(snapshot)
             .epoch(epoch)
             .instruction();
 
@@ -747,14 +734,14 @@ impl NCNProgramClient {
         signers_bitmap: Vec<u8>,
     ) -> Result<(), TestError> {
         let ncn_config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
-        let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
+        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
         let vote_counter = VoteCounter::find_program_address(&ncn_program::id(), &ncn).0;
 
         self.cast_vote(
             ncn_config,
             ncn,
-            epoch_snapshot,
+            snapshot,
             restaking_config,
             vote_counter,
             agg_sig,
@@ -770,7 +757,7 @@ impl NCNProgramClient {
         &mut self,
         ncn_config: Pubkey,
         ncn: Pubkey,
-        epoch_snapshot: Pubkey,
+        snapshot: Pubkey,
         restaking_config: Pubkey,
         vote_counter: Pubkey,
         agg_sig: [u8; 32],
@@ -782,7 +769,7 @@ impl NCNProgramClient {
         let ix = CastVoteBuilder::new()
             .config(ncn_config)
             .ncn(ncn)
-            .epoch_snapshot(epoch_snapshot)
+            .snapshot(snapshot)
             .restaking_config(restaking_config)
             .vote_counter(vote_counter)
             .aggregated_signature(agg_sig)
@@ -800,7 +787,7 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Closes an epoch-specific account (e.g., BallotBox, EpochSnapshot) after the epoch is finished.
+    /// Closes an epoch-specific account (e.g., BallotBox, Snapshot) after the epoch is finished.
     pub async fn do_close_epoch_account(
         &mut self,
         ncn: Pubkey,

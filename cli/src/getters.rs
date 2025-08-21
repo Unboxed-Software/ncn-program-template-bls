@@ -21,8 +21,8 @@ use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config as NCNProgramConfig,
     epoch_marker::EpochMarker,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
+    snapshot::{OperatorSnapshot, Snapshot},
     vault_registry::VaultRegistry,
 };
 use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
@@ -175,9 +175,8 @@ pub async fn get_epoch_state(handler: &CliHandler, epoch: u64) -> Result<EpochSt
     Ok(*account)
 }
 
-pub async fn get_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<EpochSnapshot> {
-    let (address, _, _) =
-        EpochSnapshot::find_program_address(&handler.ncn_program_id, handler.ncn()?);
+pub async fn get_snapshot(handler: &CliHandler, epoch: u64) -> Result<Snapshot> {
+    let (address, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, handler.ncn()?);
 
     let account = get_account(handler, &address).await?;
 
@@ -186,7 +185,7 @@ pub async fn get_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<Epoc
     }
     let account = account.unwrap();
 
-    let account = EpochSnapshot::try_from_slice_unchecked(account.data.as_slice())?;
+    let account = Snapshot::try_from_slice_unchecked(account.data.as_slice())?;
     Ok(*account)
 }
 
@@ -195,10 +194,10 @@ pub async fn get_operator_snapshot(
     operator: &Pubkey,
     epoch: u64,
 ) -> Result<OperatorSnapshot> {
-    let epoch_snapshot = get_epoch_snapshot(handler, epoch).await?;
+    let snapshot = get_snapshot(handler, epoch).await?;
 
-    // Get operator snapshot from epoch snapshot
-    let operator_snapshot = epoch_snapshot
+    // Get operator snapshot from snapshot
+    let operator_snapshot = snapshot
         .find_operator_snapshot(operator)
         .ok_or_else(|| anyhow::anyhow!("Operator snapshot not found for operator: {}", operator))?;
     Ok(*operator_snapshot)
@@ -601,7 +600,7 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
         .get_minimum_balance_for_rent_exemption(EpochState::SIZE)
         .await?;
     rent_cost += client
-        .get_minimum_balance_for_rent_exemption(EpochSnapshot::SIZE)
+        .get_minimum_balance_for_rent_exemption(Snapshot::SIZE)
         .await?;
 
     msg!(
@@ -611,9 +610,9 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
             .await?
     );
     msg!(
-        "Rent cost for EpochSnapshot {:?}",
+        "Rent cost for Snapshot {:?}",
         client
-            .get_minimum_balance_for_rent_exemption(EpochSnapshot::SIZE)
+            .get_minimum_balance_for_rent_exemption(Snapshot::SIZE)
             .await?
     );
     msg!(

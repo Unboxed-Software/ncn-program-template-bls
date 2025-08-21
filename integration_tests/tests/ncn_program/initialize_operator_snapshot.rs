@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use ncn_program_core::{epoch_snapshot::EpochSnapshot, error::NCNProgramError};
+    use ncn_program_core::{error::NCNProgramError, snapshot::Snapshot};
 
     use crate::fixtures::{
         ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,
@@ -17,7 +17,7 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
+        fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
 
         let clock = fixture.clock().await;
         let epoch = clock.epoch;
@@ -30,25 +30,24 @@ mod tests {
             .await?;
 
         // Check initial size is MAX_REALLOC_BYTES
-        // OperatorSnapshot is now embedded in EpochSnapshot, so we verify the epoch snapshot exists
-        let epoch_snapshot_address =
-            EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
-        let raw_account = fixture.get_account(&epoch_snapshot_address).await?.unwrap();
+        // OperatorSnapshot is now embedded in Snapshot, so we verify the snapshot exists
+        let snapshot_address = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
+        let raw_account = fixture.get_account(&snapshot_address).await?.unwrap();
         assert_eq!(raw_account.owner, ncn_program::id());
 
-        // Get operator snapshot from the epoch snapshot and verify it was initialized correctly
+        // Get operator snapshot from the snapshot and verify it was initialized correctly
         let operator_snapshot = ncn_program_client
             .get_operator_snapshot(operator, ncn)
             .await?;
 
-        // Verify initial state - operator snapshot should exist in the epoch snapshot
+        // Verify initial state - operator snapshot should exist in the snapshot
         assert_eq!(*operator_snapshot.operator(), operator);
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_add_operator_after_epoch_snapshot() -> TestResult<()> {
+    async fn test_add_operator_after_snapshot() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
@@ -57,7 +56,7 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
+        fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
 
         // Add New Operator
         fixture

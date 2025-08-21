@@ -365,7 +365,7 @@
       }
     },
     {
-      "name": "InitializeEpochSnapshot",
+      "name": "InitializeSnapshot",
       "accounts": [
         {
           "name": "ncn",
@@ -373,7 +373,7 @@
           "isSigner": false
         },
         {
-          "name": "epochSnapshot",
+          "name": "snapshot",
           "isMut": true,
           "isSigner": false
         },
@@ -395,7 +395,7 @@
       }
     },
     {
-      "name": "ReallocEpochSnapshot",
+      "name": "ReallocSnapshot",
       "accounts": [
         {
           "name": "ncn",
@@ -408,7 +408,7 @@
           "isSigner": false
         },
         {
-          "name": "epochSnapshot",
+          "name": "snapshot",
           "isMut": true,
           "isSigner": false
         },
@@ -423,12 +423,7 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
+      "args": [],
       "discriminant": {
         "type": "u8",
         "value": 8
@@ -473,7 +468,7 @@
           "isSigner": false
         },
         {
-          "name": "epochSnapshot",
+          "name": "snapshot",
           "isMut": true,
           "isSigner": false
         },
@@ -548,7 +543,7 @@
           "isSigner": false
         },
         {
-          "name": "epochSnapshot",
+          "name": "snapshot",
           "isMut": true,
           "isSigner": false
         }
@@ -578,7 +573,7 @@
           "isSigner": false
         },
         {
-          "name": "epochSnapshot",
+          "name": "snapshot",
           "isMut": false,
           "isSigner": false
         },
@@ -883,84 +878,6 @@
       }
     },
     {
-      "name": "EpochSnapshot",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorCount",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorsRegistered",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorsCanVoteCount",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "totalAggregatedG1Pubkey",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "operatorSnapshots",
-            "type": {
-              "array": [
-                {
-                  "defined": "OperatorSnapshot"
-                },
-                256
-              ]
-            }
-          },
-          {
-            "name": "minimumStake",
-            "type": {
-              "defined": "StakeWeights"
-            }
-          },
-          {
-            "name": "lastSnapshotSlot",
-            "type": {
-              "defined": "PodU64"
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "EpochState",
       "type": {
         "kind": "struct",
@@ -1077,6 +994,78 @@
       }
     },
     {
+      "name": "Snapshot",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ncn",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "slotCreated",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "operatorCount",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "operatorsRegistered",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "operatorsCanVoteCount",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "totalAggregatedG1Pubkey",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "operatorSnapshots",
+            "type": {
+              "array": [
+                {
+                  "defined": "OperatorSnapshot"
+                },
+                256
+              ]
+            }
+          },
+          {
+            "name": "minimumStake",
+            "type": {
+              "defined": "StakeWeights"
+            }
+          },
+          {
+            "name": "lastSnapshotSlot",
+            "type": {
+              "defined": "PodU64"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "VaultRegistry",
       "type": {
         "kind": "struct",
@@ -1147,105 +1136,6 @@
     }
   ],
   "types": [
-    {
-      "name": "OperatorSnapshot",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "operator",
-            "type": "publicKey"
-          },
-          {
-            "name": "g1Pubkey",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "lastSnapshotSlot",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "isActive",
-            "type": {
-              "defined": "PodBool"
-            }
-          },
-          {
-            "name": "ncnOperatorIndex",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorIndex",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "hasMinimumStake",
-            "type": {
-              "defined": "PodBool"
-            }
-          },
-          {
-            "name": "hasMinimumStakeNextEpoch",
-            "type": {
-              "defined": "PodBool"
-            }
-          },
-          {
-            "name": "stakeWeight",
-            "type": {
-              "defined": "StakeWeights"
-            }
-          },
-          {
-            "name": "nextEpochStakeWeight",
-            "type": {
-              "defined": "StakeWeights"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "VaultOperatorStakeWeight",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "vault",
-            "type": "publicKey"
-          },
-          {
-            "name": "vaultIndex",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "stakeWeight",
-            "type": {
-              "defined": "StakeWeights"
-            }
-          }
-        ]
-      }
-    },
     {
       "name": "EpochAccountStatus",
       "type": {
@@ -1341,6 +1231,105 @@
             "name": "fee",
             "type": {
               "defined": "PodU16"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OperatorSnapshot",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "publicKey"
+          },
+          {
+            "name": "g1Pubkey",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "slotCreated",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "lastSnapshotSlot",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "isActive",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
+            "name": "ncnOperatorIndex",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "operatorIndex",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "hasMinimumStake",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
+            "name": "hasMinimumStakeNextEpoch",
+            "type": {
+              "defined": "PodBool"
+            }
+          },
+          {
+            "name": "stakeWeight",
+            "type": {
+              "defined": "StakeWeights"
+            }
+          },
+          {
+            "name": "nextEpochStakeWeight",
+            "type": {
+              "defined": "StakeWeights"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultOperatorStakeWeight",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "publicKey"
+          },
+          {
+            "name": "vaultIndex",
+            "type": {
+              "defined": "PodU64"
+            }
+          },
+          {
+            "name": "stakeWeight",
+            "type": {
+              "defined": "StakeWeights"
             }
           }
         ]
@@ -1674,8 +1663,8 @@
     },
     {
       "code": 8741,
-      "name": "EpochSnapshotAlreadyFinalized",
-      "msg": "epoch snapshot already finalized"
+      "name": "SnapshotAlreadyFinalized",
+      "msg": "snapshot already finalized"
     },
     {
       "code": 8742,
@@ -1734,8 +1723,8 @@
     },
     {
       "code": 8753,
-      "name": "EpochSnapshotNotFinalized",
-      "msg": "Epoch snapshot not finalized"
+      "name": "SnapshotNotFinalized",
+      "msg": "Snapshot not finalized"
     },
     {
       "code": 8754,

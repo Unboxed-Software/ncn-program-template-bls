@@ -50,10 +50,9 @@ import {
   type StakeWeightsArgs,
 } from '../types';
 
-export type EpochSnapshot = {
+export type Snapshot = {
   discriminator: bigint;
   ncn: Address;
-  epoch: bigint;
   bump: number;
   slotCreated: bigint;
   operatorCount: bigint;
@@ -65,10 +64,9 @@ export type EpochSnapshot = {
   lastSnapshotSlot: bigint;
 };
 
-export type EpochSnapshotArgs = {
+export type SnapshotArgs = {
   discriminator: number | bigint;
   ncn: Address;
-  epoch: number | bigint;
   bump: number;
   slotCreated: number | bigint;
   operatorCount: number | bigint;
@@ -80,11 +78,10 @@ export type EpochSnapshotArgs = {
   lastSnapshotSlot: number | bigint;
 };
 
-export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
+export function getSnapshotEncoder(): Encoder<SnapshotArgs> {
   return getStructEncoder([
     ['discriminator', getU64Encoder()],
     ['ncn', getAddressEncoder()],
-    ['epoch', getU64Encoder()],
     ['bump', getU8Encoder()],
     ['slotCreated', getU64Encoder()],
     ['operatorCount', getU64Encoder()],
@@ -100,11 +97,10 @@ export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
   ]);
 }
 
-export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
+export function getSnapshotDecoder(): Decoder<Snapshot> {
   return getStructDecoder([
     ['discriminator', getU64Decoder()],
     ['ncn', getAddressDecoder()],
-    ['epoch', getU64Decoder()],
     ['bump', getU8Decoder()],
     ['slotCreated', getU64Decoder()],
     ['operatorCount', getU64Decoder()],
@@ -120,66 +116,59 @@ export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
   ]);
 }
 
-export function getEpochSnapshotCodec(): Codec<
-  EpochSnapshotArgs,
-  EpochSnapshot
-> {
-  return combineCodec(getEpochSnapshotEncoder(), getEpochSnapshotDecoder());
+export function getSnapshotCodec(): Codec<SnapshotArgs, Snapshot> {
+  return combineCodec(getSnapshotEncoder(), getSnapshotDecoder());
 }
 
-export function decodeEpochSnapshot<TAddress extends string = string>(
+export function decodeSnapshot<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress>
-): Account<EpochSnapshot, TAddress>;
-export function decodeEpochSnapshot<TAddress extends string = string>(
+): Account<Snapshot, TAddress>;
+export function decodeSnapshot<TAddress extends string = string>(
   encodedAccount: MaybeEncodedAccount<TAddress>
-): MaybeAccount<EpochSnapshot, TAddress>;
-export function decodeEpochSnapshot<TAddress extends string = string>(
+): MaybeAccount<Snapshot, TAddress>;
+export function decodeSnapshot<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
-): Account<EpochSnapshot, TAddress> | MaybeAccount<EpochSnapshot, TAddress> {
+): Account<Snapshot, TAddress> | MaybeAccount<Snapshot, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getEpochSnapshotDecoder()
+    getSnapshotDecoder()
   );
 }
 
-export async function fetchEpochSnapshot<TAddress extends string = string>(
+export async function fetchSnapshot<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig
-): Promise<Account<EpochSnapshot, TAddress>> {
-  const maybeAccount = await fetchMaybeEpochSnapshot(rpc, address, config);
+): Promise<Account<Snapshot, TAddress>> {
+  const maybeAccount = await fetchMaybeSnapshot(rpc, address, config);
   assertAccountExists(maybeAccount);
   return maybeAccount;
 }
 
-export async function fetchMaybeEpochSnapshot<TAddress extends string = string>(
+export async function fetchMaybeSnapshot<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig
-): Promise<MaybeAccount<EpochSnapshot, TAddress>> {
+): Promise<MaybeAccount<Snapshot, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeEpochSnapshot(maybeAccount);
+  return decodeSnapshot(maybeAccount);
 }
 
-export async function fetchAllEpochSnapshot(
+export async function fetchAllSnapshot(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig
-): Promise<Account<EpochSnapshot>[]> {
-  const maybeAccounts = await fetchAllMaybeEpochSnapshot(
-    rpc,
-    addresses,
-    config
-  );
+): Promise<Account<Snapshot>[]> {
+  const maybeAccounts = await fetchAllMaybeSnapshot(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
 }
 
-export async function fetchAllMaybeEpochSnapshot(
+export async function fetchAllMaybeSnapshot(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig
-): Promise<MaybeAccount<EpochSnapshot>[]> {
+): Promise<MaybeAccount<Snapshot>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeEpochSnapshot(maybeAccount));
+  return maybeAccounts.map((maybeAccount) => decodeSnapshot(maybeAccount));
 }

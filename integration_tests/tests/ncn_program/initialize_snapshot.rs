@@ -4,7 +4,7 @@ mod tests {
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
 
     #[tokio::test]
-    async fn test_initialize_epoch_snapshot_ok() -> TestResult<()> {
+    async fn test_initialize_snapshot_ok() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
         let mut ncn_program_client = fixture.ncn_program_client();
 
@@ -13,7 +13,7 @@ mod tests {
         let epoch = fixture.clock().await.epoch;
 
         ncn_program_client
-            .do_full_initialize_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+            .do_full_initialize_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
             .await?;
 
         Ok(())

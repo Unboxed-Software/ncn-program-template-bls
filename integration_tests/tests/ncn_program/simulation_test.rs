@@ -232,8 +232,8 @@ mod tests {
             let clock = fixture.clock().await;
             let epoch = clock.epoch;
 
-            // 5.d. Take the epoch snapshot - records the current state for this epoch
-            fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
+            // 5.d. Take the snapshot - records the current state for this epoch
+            fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
 
             for operator_root in test_ncn.operators.iter() {
                 let operator = operator_root.operator_pubkey;
@@ -243,8 +243,8 @@ mod tests {
                     .await?;
             }
 
-            let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn_pubkey).await?;
-            msg!("Epoch snapshot: {}", epoch_snapshot);
+            let snapshot = ncn_program_client.get_snapshot(ncn_pubkey).await?;
+            msg!("Snapshot: {}", snapshot);
 
             // 5.f. Take a snapshot for each vault and its delegation - records delegations
             fixture
@@ -254,9 +254,9 @@ mod tests {
 
         // 6. Cast votes from operators
         {
-            let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn_pubkey).await?;
+            let snapshot = ncn_program_client.get_snapshot(ncn_pubkey).await?;
 
-            msg!("Epoch snapshot: {}", epoch_snapshot);
+            msg!("Snapshot: {}", snapshot);
 
             {
                 // Get the current vote counter to use as the message
@@ -276,7 +276,7 @@ mod tests {
                 let mut non_signers_indices: Vec<usize> = vec![];
 
                 for (i, operator) in test_ncn.operators.iter().enumerate() {
-                    let operator_snapshot = epoch_snapshot
+                    let operator_snapshot = snapshot
                         .find_operator_snapshot(&operator.operator_pubkey)
                         .unwrap();
                     if operator_snapshot.has_minimum_stake() {
@@ -337,7 +337,7 @@ mod tests {
                 let mut non_signers_indices: Vec<usize> = (4..OPERATOR_COUNT).collect();
 
                 for (i, operator) in test_ncn.operators.iter().take(4).enumerate() {
-                    let operator_snapshot = epoch_snapshot
+                    let operator_snapshot = snapshot
                         .find_operator_snapshot(&operator.operator_pubkey)
                         .unwrap();
                     if operator_snapshot.has_minimum_stake() {

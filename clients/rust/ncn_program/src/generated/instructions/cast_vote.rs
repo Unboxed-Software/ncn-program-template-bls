@@ -14,7 +14,7 @@ pub struct CastVote {
 
     pub ncn: solana_program::pubkey::Pubkey,
 
-    pub epoch_snapshot: solana_program::pubkey::Pubkey,
+    pub snapshot: solana_program::pubkey::Pubkey,
 
     pub restaking_config: solana_program::pubkey::Pubkey,
 
@@ -43,7 +43,7 @@ impl CastVote {
             self.ncn, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.epoch_snapshot,
+            self.snapshot,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -98,14 +98,14 @@ pub struct CastVoteInstructionArgs {
 ///
 ///   0. `[]` config
 ///   1. `[]` ncn
-///   2. `[]` epoch_snapshot
+///   2. `[]` snapshot
 ///   3. `[]` restaking_config
 ///   4. `[writable]` vote_counter
 #[derive(Clone, Debug, Default)]
 pub struct CastVoteBuilder {
     config: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
-    epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
+    snapshot: Option<solana_program::pubkey::Pubkey>,
     restaking_config: Option<solana_program::pubkey::Pubkey>,
     vote_counter: Option<solana_program::pubkey::Pubkey>,
     aggregated_signature: Option<[u8; 32]>,
@@ -129,8 +129,8 @@ impl CastVoteBuilder {
         self
     }
     #[inline(always)]
-    pub fn epoch_snapshot(&mut self, epoch_snapshot: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.epoch_snapshot = Some(epoch_snapshot);
+    pub fn snapshot(&mut self, snapshot: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.snapshot = Some(snapshot);
         self
     }
     #[inline(always)]
@@ -184,7 +184,7 @@ impl CastVoteBuilder {
         let accounts = CastVote {
             config: self.config.expect("config is not set"),
             ncn: self.ncn.expect("ncn is not set"),
-            epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
+            snapshot: self.snapshot.expect("snapshot is not set"),
             restaking_config: self.restaking_config.expect("restaking_config is not set"),
             vote_counter: self.vote_counter.expect("vote_counter is not set"),
         };
@@ -213,7 +213,7 @@ pub struct CastVoteCpiAccounts<'a, 'b> {
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+    pub snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -229,7 +229,7 @@ pub struct CastVoteCpi<'a, 'b> {
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+    pub snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub restaking_config: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -248,7 +248,7 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             __program: program,
             config: accounts.config,
             ncn: accounts.ncn,
-            epoch_snapshot: accounts.epoch_snapshot,
+            snapshot: accounts.snapshot,
             restaking_config: accounts.restaking_config,
             vote_counter: accounts.vote_counter,
             __args: args,
@@ -297,7 +297,7 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.epoch_snapshot.key,
+            *self.snapshot.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -328,7 +328,7 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
         account_infos.push(self.__program.clone());
         account_infos.push(self.config.clone());
         account_infos.push(self.ncn.clone());
-        account_infos.push(self.epoch_snapshot.clone());
+        account_infos.push(self.snapshot.clone());
         account_infos.push(self.restaking_config.clone());
         account_infos.push(self.vote_counter.clone());
         remaining_accounts
@@ -349,7 +349,7 @@ impl<'a, 'b> CastVoteCpi<'a, 'b> {
 ///
 ///   0. `[]` config
 ///   1. `[]` ncn
-///   2. `[]` epoch_snapshot
+///   2. `[]` snapshot
 ///   3. `[]` restaking_config
 ///   4. `[writable]` vote_counter
 #[derive(Clone, Debug)]
@@ -363,7 +363,7 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
             __program: program,
             config: None,
             ncn: None,
-            epoch_snapshot: None,
+            snapshot: None,
             restaking_config: None,
             vote_counter: None,
             aggregated_signature: None,
@@ -387,11 +387,11 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn epoch_snapshot(
+    pub fn snapshot(
         &mut self,
-        epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+        snapshot: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.epoch_snapshot = Some(epoch_snapshot);
+        self.instruction.snapshot = Some(snapshot);
         self
     }
     #[inline(always)]
@@ -490,10 +490,7 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
 
             ncn: self.instruction.ncn.expect("ncn is not set"),
 
-            epoch_snapshot: self
-                .instruction
-                .epoch_snapshot
-                .expect("epoch_snapshot is not set"),
+            snapshot: self.instruction.snapshot.expect("snapshot is not set"),
 
             restaking_config: self
                 .instruction
@@ -518,7 +515,7 @@ struct CastVoteCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     restaking_config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vote_counter: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     aggregated_signature: Option<[u8; 32]>,

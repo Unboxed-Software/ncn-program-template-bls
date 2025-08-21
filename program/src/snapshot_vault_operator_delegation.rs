@@ -8,10 +8,10 @@ use jito_vault_core::{
 };
 use ncn_program_core::{
     config::Config as NcnConfig,
-    epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     error::NCNProgramError,
     loaders::load_ncn_epoch,
+    snapshot::{OperatorSnapshot, Snapshot},
     stake_weight::StakeWeights,
 };
 use solana_program::{
@@ -34,13 +34,13 @@ use solana_program::{
 /// 7. `[]` vault_ncn_ticket: The vault NCN ticket
 /// 8. `[]` ncn_vault_ticket: The NCN vault ticket
 /// 9. `[]` vault_operator_delegation: The delegation between vault and operator
-/// 10. `[writable]` epoch_snapshot: Epoch snapshot account containing operator snapshots
+/// 10. `[writable]` snapshot: Snapshot account containing operator snapshots
 pub fn process_snapshot_vault_operator_delegation(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_state, ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, epoch_snapshot] =
+    let [epoch_state, ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, snapshot] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -86,7 +86,7 @@ pub fn process_snapshot_vault_operator_delegation(
 
     let (_, ncn_epoch_length) = load_ncn_epoch(restaking_config, current_slot, None)?;
 
-    EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, true)?;
+    Snapshot::load(program_id, snapshot, ncn.key, true)?;
 
     // check vault is up to date
     let vault_needs_update = {
@@ -106,10 +106,9 @@ pub fn process_snapshot_vault_operator_delegation(
         (vault_account.vault_index(), vault_account.supported_mint)
     };
 
-    let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
-    let epoch_snapshot_account =
-        EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
-    let operator_snapshot = *epoch_snapshot_account
+    let mut snapshot_data = snapshot.try_borrow_mut_data()?;
+    let snapshot_account = Snapshot::try_from_slice_unchecked_mut(&mut snapshot_data)?;
+    let operator_snapshot = *snapshot_account
         .find_operator_snapshot(operator.key)
         .ok_or_else(|| {
             msg!(
@@ -187,7 +186,7 @@ pub fn process_snapshot_vault_operator_delegation(
             current_slot,
             &this_epoch_stake_weight,
             &next_epoch_stake_weight,
-            epoch_snapshot_account.minimum_stake(),
+            snapshot_account.minimum_stake(),
         )?;
 
         let ncn_operator_index = cloned_operator_snapshot.ncn_operator_index();
@@ -197,10 +196,10 @@ pub fn process_snapshot_vault_operator_delegation(
 
     // If operator is finalized, increment operator registration
     if !is_snapshoted {
-        epoch_snapshot_account.increment_operator_registration(current_slot)?;
+        snapshot_account.increment_operator_registration(current_slot)?;
     }
 
-    epoch_snapshot_account.update_operator_snapshot(
+    snapshot_account.update_operator_snapshot(
         cloned_operator_snapshot.ncn_operator_index() as usize,
         &cloned_operator_snapshot,
     );

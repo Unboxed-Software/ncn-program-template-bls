@@ -117,24 +117,22 @@ pub enum NCNProgramInstruction {
 
 
 
-    /// Initializes the Epoch Snapshot
+    /// Initializes the Snapshot
     #[account(0, name = "ncn")]
-    #[account(1, writable, name = "epoch_snapshot")]
+    #[account(1, writable, name = "snapshot")]
     #[account(2, writable, name = "account_payer")]
     #[account(3, name = "system_program")]
-    InitializeEpochSnapshot{ },
+    InitializeSnapshot{},
 
-    /// Reallocates the epoch snapshot account to its full size
+    /// Reallocates the snapshot account to its full size
     #[account(0, name = "ncn")]
     #[account(1, name = "config")]
-    #[account(2, writable, name = "epoch_snapshot")]
+    #[account(2, writable, name = "snapshot")]
     #[account(3, writable, name = "account_payer")]
     #[account(4, name = "system_program")]
-    ReallocEpochSnapshot {
-        epoch: u64,
-    },
+    ReallocSnapshot {},
 
-    /// Initializes the Operator Snapshot within the epoch snapshot
+    /// Initializes the Operator Snapshot within the snapshot
     #[account(0, name = "epoch_marker")]
     #[account(1, writable, name = "epoch_state")]
     #[account(2, name = "restaking_config")]
@@ -142,7 +140,7 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "operator")]
     #[account(5, name = "ncn_operator_state")]
     #[account(6, name = "ncn_operator_account")]
-    #[account(7, writable, name = "epoch_snapshot")]
+    #[account(7, writable, name = "snapshot")]
     #[account(8, writable, name = "account_payer")]
     #[account(9, name = "system_program")]
     InitializeOperatorSnapshot{
@@ -159,7 +157,7 @@ pub enum NCNProgramInstruction {
     #[account(6, name = "vault_ncn_ticket")]
     #[account(7, name = "ncn_vault_ticket")]
     #[account(8, name = "vault_operator_delegation")]
-    #[account(9, writable, name = "epoch_snapshot")]
+    #[account(9, writable, name = "snapshot")]
     SnapshotVaultOperatorDelegation{
         epoch: u64,
     },
@@ -170,7 +168,7 @@ pub enum NCNProgramInstruction {
     /// Cast a vote
     #[account(0, name = "config")]
     #[account(1, name = "ncn")]
-    #[account(2, name = "epoch_snapshot")]
+    #[account(2, name = "snapshot")]
     #[account(3, name = "restaking_config")]
     #[account(4, writable, name = "vote_counter")]
     CastVote {

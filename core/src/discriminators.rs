@@ -7,7 +7,7 @@ pub enum Discriminators {
 
     // Snapshots
     WeightTable = 0x10,
-    EpochSnapshot = 0x11,
+    Snapshot = 0x11,
     OperatorSnapshot = 0x12,
 
     // Voting - removed

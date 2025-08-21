@@ -19,12 +19,12 @@ import {
   type ParsedCastVoteInstruction,
   type ParsedCloseEpochAccountInstruction,
   type ParsedInitializeConfigInstruction,
-  type ParsedInitializeEpochSnapshotInstruction,
   type ParsedInitializeEpochStateInstruction,
   type ParsedInitializeOperatorSnapshotInstruction,
+  type ParsedInitializeSnapshotInstruction,
   type ParsedInitializeVaultRegistryInstruction,
   type ParsedInitializeVoteCounterInstruction,
-  type ParsedReallocEpochSnapshotInstruction,
+  type ParsedReallocSnapshotInstruction,
   type ParsedRegisterOperatorInstruction,
   type ParsedRegisterVaultInstruction,
   type ParsedSnapshotVaultOperatorDelegationInstruction,
@@ -37,9 +37,9 @@ export const NCN_PROGRAM_PROGRAM_ADDRESS =
 export enum NcnProgramAccount {
   Config,
   EpochMarker,
-  EpochSnapshot,
   EpochState,
   NCNOperatorAccount,
+  Snapshot,
   VaultRegistry,
   VoteCounter,
 }
@@ -52,8 +52,8 @@ export enum NcnProgramInstruction {
   UpdateOperatorBN128Keys,
   InitializeVoteCounter,
   InitializeEpochState,
-  InitializeEpochSnapshot,
-  ReallocEpochSnapshot,
+  InitializeSnapshot,
+  ReallocSnapshot,
   InitializeOperatorSnapshot,
   SnapshotVaultOperatorDelegation,
   CastVote,
@@ -89,10 +89,10 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.InitializeEpochState;
   }
   if (containsBytes(data, getU8Encoder().encode(7), 0)) {
-    return NcnProgramInstruction.InitializeEpochSnapshot;
+    return NcnProgramInstruction.InitializeSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(8), 0)) {
-    return NcnProgramInstruction.ReallocEpochSnapshot;
+    return NcnProgramInstruction.ReallocSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(9), 0)) {
     return NcnProgramInstruction.InitializeOperatorSnapshot;
@@ -145,11 +145,11 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.InitializeEpochState;
     } & ParsedInitializeEpochStateInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.InitializeEpochSnapshot;
-    } & ParsedInitializeEpochSnapshotInstruction<TProgram>)
+      instructionType: NcnProgramInstruction.InitializeSnapshot;
+    } & ParsedInitializeSnapshotInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.ReallocEpochSnapshot;
-    } & ParsedReallocEpochSnapshotInstruction<TProgram>)
+      instructionType: NcnProgramInstruction.ReallocSnapshot;
+    } & ParsedReallocSnapshotInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.InitializeOperatorSnapshot;
     } & ParsedInitializeOperatorSnapshotInstruction<TProgram>)

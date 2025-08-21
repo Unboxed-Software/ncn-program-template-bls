@@ -146,8 +146,8 @@ ncn-program-template-bls/
 - `RegisterOperator`: Adds operators with BLS public keys
 - `UpdateOperatorBN128Keys`: Updates operator cryptographic keys
 - `ReallocOperatorRegistry`: Expands operator storage capacity
-- `InitializeEpochSnapshot`: Creates immutable epoch state snapshot
-- `ReallocEpochSnapshot`: Expands snapshot storage
+- `InitializeSnapshot`: Creates immutable epoch state snapshot
+- `ReallocSnapshot`: Expands snapshot storage
 - `InitializeVoteCounter`: Creates vote counter for replay attack prevention
 - `InitializeOperatorSnapshot`: Captures individual operator state
 
@@ -205,10 +205,10 @@ pub struct EpochState {
 }
 ```
 
-#### **EpochSnapshot** - mutable epoch state
+#### **Snapshot** - mutable epoch state
 
 ```rust
-pub struct EpochSnapshot {
+pub struct Snapshot {
     ncn: Pubkey,                             // NCN reference
     epoch: PodU64,                           // Epoch number
     operator_count: PodU64,                  // Total operators
@@ -590,7 +590,7 @@ In the `cast_vote` instruction, the system handles partial signature aggregation
 let mut aggregated_nonsigners_pubkey: Option<G1Point> = None;
 let mut non_signers_count: u64 = 0;
 
-for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumerate() {
+for (i, operator_snapshot) in snapshot.operator_snapshots().iter().enumerate() {
     if i >= operator_count as usize {
         break;
     }
@@ -643,7 +643,7 @@ When not all operators sign, the system computes the effective aggregate public 
 
 ```rust:165:207:program/src/cast_vote.rs
 let total_aggregate_g1_pubkey_compressed =
-    G1CompressedPoint::from(epoch_snapshot.total_aggregated_g1_pubkey());
+    G1CompressedPoint::from(snapshot.total_aggregated_g1_pubkey());
 let total_aggregated_g1_pubkey = G1Point::try_from(&total_aggregate_g1_pubkey_compressed)
     .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
 
@@ -792,7 +792,7 @@ if signed {
 5. Register supported stake token mints with weights
 6. Register vaults (permissionless after NCN approval)
 7. Register operators with BLS keypairs
-8. Create EpochSnapshot: mutable state checkpoint
+8. Create Snapshot: mutable state checkpoint
 9. Initialize operator snapshots for each participant
 ```
 
@@ -1132,8 +1132,8 @@ sleep 2
 sleep 2
 ```
 
-- init the epoch_snapshot account:
-  Notice that for now you will need to init the epoch_state and the weight table before initing the epoch_snapshot, but this should change later
+- init the snapshot account:
+  Notice that for now you will need to init the epoch_state and the weight table before initing the snapshot, but this should change later
 
 ```bash
 
