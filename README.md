@@ -1163,7 +1163,7 @@ sleep 2
 ## Optimization Opportunities and Development TODOs
 
 [x]. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
-[]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
+[x]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
 []. since it is only one vault, the vault registry is not needed, consider removing it.
 []. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
 []. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
