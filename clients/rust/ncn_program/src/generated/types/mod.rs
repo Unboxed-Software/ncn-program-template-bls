@@ -16,7 +16,6 @@ pub(crate) mod r#st_mint_entry;
 pub(crate) mod r#stake_weights;
 pub(crate) mod r#vault_entry;
 pub(crate) mod r#vault_operator_stake_weight;
-pub(crate) mod r#weight_entry;
 
 pub use self::r#config_admin_role::*;
 pub use self::r#epoch_account_status::*;
@@ -29,4 +28,3 @@ pub use self::r#st_mint_entry::*;
 pub use self::r#stake_weights::*;
 pub use self::r#vault_entry::*;
 pub use self::r#vault_operator_stake_weight::*;
-pub use self::r#weight_entry::*;

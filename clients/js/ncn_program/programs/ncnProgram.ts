@@ -16,8 +16,6 @@ import {
   type ParsedAdminRegisterStMintInstruction,
   type ParsedAdminSetNewAdminInstruction,
   type ParsedAdminSetParametersInstruction,
-  type ParsedAdminSetStMintInstruction,
-  type ParsedAdminSetWeightInstruction,
   type ParsedCastVoteInstruction,
   type ParsedCloseEpochAccountInstruction,
   type ParsedInitializeConfigInstruction,
@@ -26,11 +24,9 @@ import {
   type ParsedInitializeOperatorSnapshotInstruction,
   type ParsedInitializeVaultRegistryInstruction,
   type ParsedInitializeVoteCounterInstruction,
-  type ParsedInitializeWeightTableInstruction,
   type ParsedReallocEpochSnapshotInstruction,
   type ParsedRegisterOperatorInstruction,
   type ParsedRegisterVaultInstruction,
-  type ParsedSetEpochWeightsInstruction,
   type ParsedSnapshotVaultOperatorDelegationInstruction,
   type ParsedUpdateOperatorBN128KeysInstruction,
 } from '../instructions';
@@ -46,7 +42,6 @@ export enum NcnProgramAccount {
   NCNOperatorAccount,
   VaultRegistry,
   VoteCounter,
-  WeightTable,
 }
 
 export enum NcnProgramInstruction {
@@ -57,8 +52,6 @@ export enum NcnProgramInstruction {
   UpdateOperatorBN128Keys,
   InitializeVoteCounter,
   InitializeEpochState,
-  InitializeWeightTable,
-  SetEpochWeights,
   InitializeEpochSnapshot,
   ReallocEpochSnapshot,
   InitializeOperatorSnapshot,
@@ -67,9 +60,7 @@ export enum NcnProgramInstruction {
   CloseEpochAccount,
   AdminSetParameters,
   AdminSetNewAdmin,
-  AdminSetWeight,
   AdminRegisterStMint,
-  AdminSetStMint,
 }
 
 export function identifyNcnProgramInstruction(
@@ -98,43 +89,31 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.InitializeEpochState;
   }
   if (containsBytes(data, getU8Encoder().encode(7), 0)) {
-    return NcnProgramInstruction.InitializeWeightTable;
-  }
-  if (containsBytes(data, getU8Encoder().encode(8), 0)) {
-    return NcnProgramInstruction.SetEpochWeights;
-  }
-  if (containsBytes(data, getU8Encoder().encode(9), 0)) {
     return NcnProgramInstruction.InitializeEpochSnapshot;
   }
-  if (containsBytes(data, getU8Encoder().encode(10), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(8), 0)) {
     return NcnProgramInstruction.ReallocEpochSnapshot;
   }
-  if (containsBytes(data, getU8Encoder().encode(11), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(9), 0)) {
     return NcnProgramInstruction.InitializeOperatorSnapshot;
   }
-  if (containsBytes(data, getU8Encoder().encode(12), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(10), 0)) {
     return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
-  if (containsBytes(data, getU8Encoder().encode(13), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(11), 0)) {
     return NcnProgramInstruction.CastVote;
   }
-  if (containsBytes(data, getU8Encoder().encode(14), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(12), 0)) {
     return NcnProgramInstruction.CloseEpochAccount;
   }
-  if (containsBytes(data, getU8Encoder().encode(15), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(13), 0)) {
     return NcnProgramInstruction.AdminSetParameters;
   }
-  if (containsBytes(data, getU8Encoder().encode(16), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(14), 0)) {
     return NcnProgramInstruction.AdminSetNewAdmin;
   }
-  if (containsBytes(data, getU8Encoder().encode(17), 0)) {
-    return NcnProgramInstruction.AdminSetWeight;
-  }
-  if (containsBytes(data, getU8Encoder().encode(18), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(15), 0)) {
     return NcnProgramInstruction.AdminRegisterStMint;
-  }
-  if (containsBytes(data, getU8Encoder().encode(19), 0)) {
-    return NcnProgramInstruction.AdminSetStMint;
   }
   throw new Error(
     'The provided instruction could not be identified as a ncnProgram instruction.'
@@ -166,12 +145,6 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.InitializeEpochState;
     } & ParsedInitializeEpochStateInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.InitializeWeightTable;
-    } & ParsedInitializeWeightTableInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.SetEpochWeights;
-    } & ParsedSetEpochWeightsInstruction<TProgram>)
-  | ({
       instructionType: NcnProgramInstruction.InitializeEpochSnapshot;
     } & ParsedInitializeEpochSnapshotInstruction<TProgram>)
   | ({
@@ -196,11 +169,5 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.AdminSetNewAdmin;
     } & ParsedAdminSetNewAdminInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.AdminSetWeight;
-    } & ParsedAdminSetWeightInstruction<TProgram>)
-  | ({
       instructionType: NcnProgramInstruction.AdminRegisterStMint;
-    } & ParsedAdminRegisterStMintInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.AdminSetStMint;
-    } & ParsedAdminSetStMintInstruction<TProgram>);
+    } & ParsedAdminRegisterStMintInstruction<TProgram>);

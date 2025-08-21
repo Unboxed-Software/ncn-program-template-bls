@@ -24,7 +24,6 @@ use ncn_program_core::{
     epoch_snapshot::{EpochSnapshot, OperatorSnapshot},
     epoch_state::EpochState,
     vault_registry::VaultRegistry,
-    weight_table::WeightTable,
 };
 use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use solana_client::{
@@ -173,21 +172,6 @@ pub async fn get_epoch_state(handler: &CliHandler, epoch: u64) -> Result<EpochSt
     let account = account.unwrap();
 
     let account = EpochState::try_from_slice_unchecked(account.data.as_slice())?;
-    Ok(*account)
-}
-
-pub async fn get_weight_table(handler: &CliHandler, epoch: u64) -> Result<WeightTable> {
-    let (address, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, handler.ncn()?, epoch);
-
-    let account = get_account(handler, &address).await?;
-
-    if account.is_none() {
-        return Err(anyhow::anyhow!("Account not found"));
-    }
-    let account = account.unwrap();
-
-    let account = WeightTable::try_from_slice_unchecked(account.data.as_slice())?;
     Ok(*account)
 }
 
@@ -617,9 +601,6 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
         .get_minimum_balance_for_rent_exemption(EpochState::SIZE)
         .await?;
     rent_cost += client
-        .get_minimum_balance_for_rent_exemption(WeightTable::SIZE)
-        .await?;
-    rent_cost += client
         .get_minimum_balance_for_rent_exemption(EpochSnapshot::SIZE)
         .await?;
 
@@ -627,12 +608,6 @@ pub async fn get_total_epoch_rent_cost(handler: &CliHandler) -> Result<u64> {
         "Rent cost for EpochState {:?}",
         client
             .get_minimum_balance_for_rent_exemption(EpochState::SIZE)
-            .await?
-    );
-    msg!(
-        "Rent cost for WeightTable {:?}",
-        client
-            .get_minimum_balance_for_rent_exemption(WeightTable::SIZE)
             .await?
     );
     msg!(

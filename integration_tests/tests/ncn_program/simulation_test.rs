@@ -2,7 +2,6 @@
 mod tests {
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
     use ncn_program_core::{
-        constants::WEIGHT,
         error::NCNProgramError,
         g1_point::{G1CompressedPoint, G1Point},
         g2_point::{G2CompressedPoint, G2Point},
@@ -32,7 +31,7 @@ mod tests {
 
         // 2. Define test parameters
         const OPERATOR_COUNT: usize = 13; // Number of operators to create for testing
-        let mint_keypair = (Keypair::new(), WEIGHT);
+        let mint_keypair = Keypair::new();
 
         let delegations = [
             1, // minimum delegation amount
@@ -86,7 +85,7 @@ mod tests {
         {
             // Create the vault
             fixture
-                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mint_keypair.0.insecure_clone()))
+                .add_vaults_to_test_ncn(&mut test_ncn, 1, Some(mint_keypair.insecure_clone()))
                 .await?;
         }
 
@@ -175,9 +174,9 @@ mod tests {
 
             // 4.d. Register all the Supported Token (ST) mints in the NCN program
             // This assigns weights to each mint for voting power calculations
-            let (mint, weight) = mint_keypair;
+            let mint = mint_keypair;
             ncn_program_client
-                .do_admin_register_st_mint(ncn_pubkey, mint.pubkey(), weight)
+                .do_admin_register_st_mint(ncn_pubkey, mint.pubkey())
                 .await?;
 
             // 4.c Register all the vaults in the NCN program
@@ -232,15 +231,6 @@ mod tests {
             // 5.b. Initialize the weight table - prepares the table that will track voting weights
             let clock = fixture.clock().await;
             let epoch = clock.epoch;
-            ncn_program_client
-                .do_full_initialize_weight_table(test_ncn.ncn_root.ncn_pubkey, epoch)
-                .await?;
-
-            // 5.c. Take a snapshot of the weights for each ST mint
-            // This records the current weights for the voting calculations
-            ncn_program_client
-                .do_set_epoch_weights(test_ncn.ncn_root.ncn_pubkey, epoch)
-                .await?;
 
             // 5.d. Take the epoch snapshot - records the current state for this epoch
             fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
@@ -264,8 +254,6 @@ mod tests {
 
         // 6. Cast votes from operators
         {
-            let epoch = fixture.clock().await.epoch;
-
             let epoch_snapshot = ncn_program_client.get_epoch_snapshot(ncn_pubkey).await?;
 
             msg!("Epoch snapshot: {}", epoch_snapshot);
@@ -291,7 +279,7 @@ mod tests {
                     let operator_snapshot = epoch_snapshot
                         .find_operator_snapshot(&operator.operator_pubkey)
                         .unwrap();
-                    if operator_snapshot.has_minimum_stake_weight() {
+                    if operator_snapshot.has_minimum_stake() {
                         sunny_apk2_pubkeys.push(operator.bn128_g2_pubkey);
                         let signature = operator
                             .bn128_privkey
@@ -352,7 +340,7 @@ mod tests {
                     let operator_snapshot = epoch_snapshot
                         .find_operator_snapshot(&operator.operator_pubkey)
                         .unwrap();
-                    if operator_snapshot.has_minimum_stake_weight() {
+                    if operator_snapshot.has_minimum_stake() {
                         apk2_pubkeys.push(operator.bn128_g2_pubkey);
                         let signature = operator
                             .bn128_privkey

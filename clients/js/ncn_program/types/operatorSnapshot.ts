@@ -41,8 +41,8 @@ export type OperatorSnapshot = {
   isActive: number;
   ncnOperatorIndex: bigint;
   operatorIndex: bigint;
-  hasMinimumStakeWeight: number;
-  hasMinimumStakeWeightNextEpoch: number;
+  hasMinimumStake: number;
+  hasMinimumStakeNextEpoch: number;
   stakeWeight: StakeWeights;
   nextEpochStakeWeight: StakeWeights;
 };
@@ -55,8 +55,8 @@ export type OperatorSnapshotArgs = {
   isActive: number;
   ncnOperatorIndex: number | bigint;
   operatorIndex: number | bigint;
-  hasMinimumStakeWeight: number;
-  hasMinimumStakeWeightNextEpoch: number;
+  hasMinimumStake: number;
+  hasMinimumStakeNextEpoch: number;
   stakeWeight: StakeWeightsArgs;
   nextEpochStakeWeight: StakeWeightsArgs;
 };
@@ -70,8 +70,8 @@ export function getOperatorSnapshotEncoder(): Encoder<OperatorSnapshotArgs> {
     ['isActive', getBoolEncoder()],
     ['ncnOperatorIndex', getU64Encoder()],
     ['operatorIndex', getU64Encoder()],
-    ['hasMinimumStakeWeight', getBoolEncoder()],
-    ['hasMinimumStakeWeightNextEpoch', getBoolEncoder()],
+    ['hasMinimumStake', getBoolEncoder()],
+    ['hasMinimumStakeNextEpoch', getBoolEncoder()],
     ['stakeWeight', getStakeWeightsEncoder()],
     ['nextEpochStakeWeight', getStakeWeightsEncoder()],
   ]);
@@ -86,8 +86,8 @@ export function getOperatorSnapshotDecoder(): Decoder<OperatorSnapshot> {
     ['isActive', getBoolDecoder()],
     ['ncnOperatorIndex', getU64Decoder()],
     ['operatorIndex', getU64Decoder()],
-    ['hasMinimumStakeWeight', getBoolDecoder()],
-    ['hasMinimumStakeWeightNextEpoch', getBoolDecoder()],
+    ['hasMinimumStake', getBoolDecoder()],
+    ['hasMinimumStakeNextEpoch', getBoolDecoder()],
     ['stakeWeight', getStakeWeightsDecoder()],
     ['nextEpochStakeWeight', getStakeWeightsDecoder()],
   ]);

@@ -37,7 +37,7 @@ pub struct Config {
     /// Bump seed for the PDA
     pub bump: u8,
     /// Minimum stake weight required to vote
-    pub minimum_stake_weight: StakeWeights,
+    pub minimum_stake: StakeWeights,
 }
 
 impl Discriminator for Config {
@@ -67,7 +67,7 @@ impl Config {
         epochs_before_stall: u64,
         epochs_after_consensus_before_close: u64,
         fee_config: &FeeConfig,
-        minimum_stake_weight: &StakeWeights,
+        minimum_stake: &StakeWeights,
         bump: u8,
     ) -> Self {
         Self {
@@ -79,7 +79,7 @@ impl Config {
             epochs_after_consensus_before_close: PodU64::from(epochs_after_consensus_before_close),
             fee_config: *fee_config,
             bump,
-            minimum_stake_weight: *minimum_stake_weight,
+            minimum_stake: *minimum_stake,
         }
     }
 
@@ -138,8 +138,8 @@ impl Config {
         self.epochs_after_consensus_before_close.into()
     }
 
-    pub fn minimum_stake_weight(&self) -> &StakeWeights {
-        &self.minimum_stake_weight
+    pub fn minimum_stake(&self) -> &StakeWeights {
+        &self.minimum_stake
     }
 }
 
@@ -153,7 +153,7 @@ impl fmt::Display for Config {
         writeln!(f, "  Epochs Before Stall:          {}", self.epochs_before_stall())?;
         writeln!(f, "  Starting Valid Epochs:        {}", self.starting_valid_epoch())?;
         writeln!(f, "  Close Epoch:                  {}", self.epochs_after_consensus_before_close())?;
-        writeln!(f, "  Minimum Stake Weight:         {:?}", self.minimum_stake_weight())?;
+        writeln!(f, "  Minimum Stake Weight:         {:?}", self.minimum_stake())?;
 
         Ok(())
     }
@@ -175,7 +175,7 @@ mod tests {
             + size_of::<PodU64>() // starting_valid_epoch
             + size_of::<FeeConfig>() // fee_config
             + 1 // bump
-            + size_of::<StakeWeights>(); // minimum_stake_weight
+            + size_of::<StakeWeights>(); // minimum_stake
 
         assert_eq!(size_of::<Config>(), expected_total);
         assert_eq!(size_of::<Config>() + 8, Config::SIZE);

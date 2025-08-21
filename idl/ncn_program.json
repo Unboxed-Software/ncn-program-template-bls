@@ -55,7 +55,7 @@
           "type": "u64"
         },
         {
-          "name": "minimumStakeWeight",
+          "name": "minimumStake",
           "type": "u128"
         },
         {
@@ -365,91 +365,6 @@
       }
     },
     {
-      "name": "InitializeWeightTable",
-      "accounts": [
-        {
-          "name": "epochMarker",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vaultRegistry",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightTable",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 7
-      }
-    },
-    {
-      "name": "SetEpochWeights",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vaultRegistry",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightTable",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 8
-      }
-    },
-    {
       "name": "InitializeEpochSnapshot",
       "accounts": [
         {
@@ -491,7 +406,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 7
       }
     },
     {
@@ -509,11 +424,6 @@
         },
         {
           "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightTable",
           "isMut": false,
           "isSigner": false
         },
@@ -541,7 +451,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 8
       }
     },
     {
@@ -606,7 +516,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
+        "value": 9
       }
     },
     {
@@ -658,11 +568,6 @@
           "isSigner": false
         },
         {
-          "name": "weightTable",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "epochSnapshot",
           "isMut": true,
           "isSigner": false
@@ -676,7 +581,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 10
       }
     },
     {
@@ -734,7 +639,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 11
       }
     },
     {
@@ -784,7 +689,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 14
+        "value": 12
       }
     },
     {
@@ -832,7 +737,7 @@
           }
         },
         {
-          "name": "minimumStakeWeight",
+          "name": "minimumStake",
           "type": {
             "option": "u128"
           }
@@ -840,7 +745,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 15
+        "value": 13
       }
     },
     {
@@ -877,50 +782,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 16
-      }
-    },
-    {
-      "name": "AdminSetWeight",
-      "accounts": [
-        {
-          "name": "epochState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightTable",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "weightTableAdmin",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "stMint",
-          "type": "publicKey"
-        },
-        {
-          "name": "weight",
-          "type": "u128"
-        },
-        {
-          "name": "epoch",
-          "type": "u64"
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 17
+        "value": 14
       }
     },
     {
@@ -952,58 +814,10 @@
           "isSigner": true
         }
       ],
-      "args": [
-        {
-          "name": "weight",
-          "type": {
-            "option": "u128"
-          }
-        }
-      ],
+      "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 18
-      }
-    },
-    {
-      "name": "AdminSetStMint",
-      "accounts": [
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vaultRegistry",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "admin",
-          "isMut": true,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "stMint",
-          "type": "publicKey"
-        },
-        {
-          "name": "weight",
-          "type": {
-            "option": "u128"
-          }
-        }
-      ],
-      "discriminant": {
-        "type": "u8",
-        "value": 19
+        "value": 15
       }
     }
   ],
@@ -1056,7 +870,7 @@
             "type": "u8"
           },
           {
-            "name": "minimumStakeWeight",
+            "name": "minimumStake",
             "type": {
               "defined": "StakeWeights"
             }
@@ -1152,7 +966,7 @@
             }
           },
           {
-            "name": "minimumStakeWeight",
+            "name": "minimumStake",
             "type": {
               "defined": "StakeWeights"
             }
@@ -1201,12 +1015,6 @@
             "name": "accountStatus",
             "type": {
               "defined": "EpochAccountStatus"
-            }
-          },
-          {
-            "name": "setWeightProgress",
-            "type": {
-              "defined": "Progress"
             }
           },
           {
@@ -1356,62 +1164,6 @@
           }
         ]
       }
-    },
-    {
-      "name": "WeightTable",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ncn",
-            "type": "publicKey"
-          },
-          {
-            "name": "epoch",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "vaultCount",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "vaultRegistry",
-            "type": {
-              "array": [
-                {
-                  "defined": "VaultEntry"
-                },
-                1
-              ]
-            }
-          },
-          {
-            "name": "table",
-            "type": {
-              "array": [
-                {
-                  "defined": "WeightEntry"
-                },
-                1
-              ]
-            }
-          }
-        ]
-      }
     }
   ],
   "types": [
@@ -1464,13 +1216,13 @@
             }
           },
           {
-            "name": "hasMinimumStakeWeight",
+            "name": "hasMinimumStake",
             "type": {
               "defined": "PodBool"
             }
           },
           {
-            "name": "hasMinimumStakeWeightNextEpoch",
+            "name": "hasMinimumStakeNextEpoch",
             "type": {
               "defined": "PodBool"
             }
@@ -1521,10 +1273,6 @@
         "fields": [
           {
             "name": "epochState",
-            "type": "u8"
-          },
-          {
-            "name": "weightTable",
             "type": "u8"
           }
         ]
@@ -1649,12 +1397,6 @@
                 32
               ]
             }
-          },
-          {
-            "name": "weight",
-            "type": {
-              "defined": "PodU128"
-            }
           }
         ]
       }
@@ -1680,38 +1422,6 @@
           },
           {
             "name": "slotRegistered",
-            "type": {
-              "defined": "PodU64"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "WeightEntry",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "stMintEntry",
-            "type": {
-              "defined": "StMintEntry"
-            }
-          },
-          {
-            "name": "weight",
-            "type": {
-              "defined": "PodU128"
-            }
-          },
-          {
-            "name": "slotSet",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "slotUpdated",
             "type": {
               "defined": "PodU64"
             }

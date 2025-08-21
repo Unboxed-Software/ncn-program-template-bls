@@ -12,5 +12,4 @@ use borsh::BorshSerialize;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct EpochAccountStatus {
     pub epoch_state: u8,
-    pub weight_table: u8,
 }

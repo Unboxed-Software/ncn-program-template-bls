@@ -5,7 +5,7 @@ use crate::{
         get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault,
         get_all_vaults_in_ncn, get_current_slot, get_epoch_snapshot, get_operator_snapshot,
         get_or_create_vault_registry, get_vault, get_vault_config, get_vault_registry,
-        get_vault_update_state_tracker, get_weight_table,
+        get_vault_update_state_tracker,
     },
     handler::CliHandler,
     log::boring_progress_bar,
@@ -31,12 +31,12 @@ use log::info;
 use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
-        AdminSetWeightBuilder, CastVoteBuilder, CloseEpochAccountBuilder,
+        CastVoteBuilder, CloseEpochAccountBuilder,
         InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
         InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
         InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
-        InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder, RegisterOperatorBuilder,
-        RegisterVaultBuilder, SetEpochWeightsBuilder, SnapshotVaultOperatorDelegationBuilder,
+        ReallocEpochSnapshotBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
+        SnapshotVaultOperatorDelegationBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -49,7 +49,6 @@ use ncn_program_core::{
     epoch_state::EpochState,
     ncn_operator_account::NCNOperatorAccount,
     vault_registry::VaultRegistry,
-    weight_table::WeightTable,
 };
 use solana_client::rpc_config::RpcSendTransactionConfig;
 
@@ -77,7 +76,7 @@ pub async fn admin_create_config(
     epochs_before_stall: u64,
     valid_slots_after_consensus: u64,
     epochs_after_consensus_before_close: u64,
-    minimum_stake_weight: u128,
+    minimum_stake: u128,
 ) -> Result<()> {
     let keypair = handler.keypair()?;
     let client = handler.rpc_client();
@@ -102,7 +101,7 @@ pub async fn admin_create_config(
         .epochs_before_stall(epochs_before_stall)
         .epochs_after_consensus_before_close(epochs_after_consensus_before_close)
         .valid_slots_after_consensus(valid_slots_after_consensus)
-        .minimum_stake_weight(minimum_stake_weight)
+        .minimum_stake(minimum_stake)
         .ncn_fee_bps(ncn_fee_bps)
         .instruction();
 
@@ -133,11 +132,7 @@ pub async fn admin_create_config(
     Ok(())
 }
 
-pub async fn admin_register_st_mint(
-    handler: &CliHandler,
-    vault: &Pubkey,
-    weight: Option<u128>,
-) -> Result<()> {
+pub async fn admin_register_st_mint(handler: &CliHandler, vault: &Pubkey) -> Result<()> {
     let keypair = handler.keypair()?;
 
     let ncn = *handler.ncn()?;
@@ -157,10 +152,6 @@ pub async fn admin_register_st_mint(
         .ncn(ncn)
         .st_mint(vault_account.supported_mint);
 
-    if let Some(weight) = weight {
-        register_st_mint_builder.weight(weight);
-    }
-
     let register_st_mint_ix = register_st_mint_builder.instruction();
 
     send_and_log_transaction(
@@ -171,69 +162,12 @@ pub async fn admin_register_st_mint(
         &[
             format!("NCN: {:?}", ncn),
             format!("ST Mint: {:?}", vault_account.supported_mint),
-            format!("Weight: {:?}", weight.unwrap_or_default()),
         ],
     )
     .await?;
 
     Ok(())
 }
-
-pub async fn admin_set_weight(
-    handler: &CliHandler,
-    vault: &Pubkey,
-    epoch: u64,
-    weight: u128,
-) -> Result<()> {
-    let vault_account = get_vault(handler, vault).await?;
-
-    admin_set_weight_with_st_mint(handler, &vault_account.supported_mint, epoch, weight).await
-}
-
-pub async fn admin_set_weight_with_st_mint(
-    handler: &CliHandler,
-    st_mint: &Pubkey,
-    epoch: u64,
-    weight: u128,
-) -> Result<()> {
-    let keypair = handler.keypair()?;
-
-    let ncn = *handler.ncn()?;
-
-    let (weight_table, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let admin_set_weight_ix = AdminSetWeightBuilder::new()
-        .ncn(ncn)
-        .weight_table(weight_table)
-        .epoch_state(epoch_state)
-        .weight_table_admin(keypair.pubkey())
-        .st_mint(*st_mint)
-        .weight(weight)
-        .epoch(epoch)
-        .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[admin_set_weight_ix],
-        &[],
-        "Set Weight",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Epoch: {:?}", epoch),
-            format!("ST Mint: {:?}", st_mint),
-            format!("Weight: {:?}", weight),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-// Tie breaker functionality has been removed from the program
 
 pub async fn admin_set_new_admin(
     handler: &CliHandler,
@@ -550,122 +484,6 @@ pub async fn create_epoch_state(handler: &CliHandler, epoch: u64) -> Result<()> 
     Ok(())
 }
 
-pub async fn create_weight_table(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (vault_registry, _, _) = VaultRegistry::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let (weight_table, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (epoch_marker, _, _) = EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-
-    let weight_table_account = get_account(handler, &weight_table).await?;
-
-    // Skip if weight table already exists
-    if weight_table_account.is_none() {
-        // Initialize weight table
-        let initialize_weight_table_ix = InitializeWeightTableBuilder::new()
-            .epoch_marker(epoch_marker)
-            .vault_registry(vault_registry)
-            .ncn(ncn)
-            .epoch_state(epoch_state)
-            .weight_table(weight_table)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .epoch(epoch)
-            .instruction();
-
-        send_and_log_transaction(
-            handler,
-            &[initialize_weight_table_ix],
-            &[],
-            "Initialized Weight Table",
-            &[format!("NCN: {:?}", ncn), format!("Epoch: {:?}", epoch)],
-        )
-        .await?;
-    }
-
-    // Number of reallocations needed based on WeightTable::SIZE
-    let num_reallocs = (WeightTable::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-
-    // Realloc weight table - ReallocWeightTableBuilder not available
-    // let realloc_weight_table_ix = ReallocWeightTableBuilder::new()
-    //     .config(config)
-    //     .weight_table(weight_table)
-    //     .ncn(ncn)
-    //     .epoch_state(epoch_state)
-    //     .vault_registry(vault_registry)
-    //     .epoch(epoch)
-    //     .account_payer(account_payer)
-    //     .system_program(system_program::id())
-    //     .instruction();
-
-    let mut realloc_ixs = Vec::with_capacity(num_reallocs as usize);
-    realloc_ixs.push(ComputeBudgetInstruction::set_compute_unit_limit(1_400_000));
-    for _ in 0..num_reallocs {
-        // realloc_ixs.push(realloc_weight_table_ix.clone()); // ReallocWeightTableBuilder not available
-    }
-
-    send_and_log_transaction(
-        handler,
-        &realloc_ixs,
-        &[],
-        "Reallocated Weight Table",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Epoch: {:?}", epoch),
-            format!("Number of reallocations: {:?}", num_reallocs),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn set_epoch_weights(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let ncn = *handler.ncn()?;
-
-    let (weight_table, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (vault_registry, _, _) = VaultRegistry::find_program_address(&handler.ncn_program_id, &ncn);
-
-    let set_epoch_weights_ix = SetEpochWeightsBuilder::new()
-        .ncn(ncn)
-        .weight_table(weight_table)
-        .epoch_state(epoch_state)
-        .vault_registry(vault_registry)
-        .epoch(epoch)
-        .instruction();
-
-    send_and_log_transaction(
-        handler,
-        &[set_epoch_weights_ix],
-        &[],
-        "Set Epoch Weights",
-        &[
-            format!("NCN: {:?}", ncn),
-            format!("Epoch: {:?}", epoch),
-            format!("Weight Table: {:?}", weight_table),
-            format!("Epoch State: {:?}", epoch_state),
-            format!("Vault Registry: {:?}", vault_registry),
-        ],
-    )
-    .await?;
-
-    Ok(())
-}
-
 pub async fn create_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
     let ncn = *handler.ncn()?;
 
@@ -673,9 +491,6 @@ pub async fn create_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<(
 
     let (epoch_state, _, _) =
         EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let (weight_table, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
     let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
@@ -714,7 +529,6 @@ pub async fn create_epoch_snapshot(handler: &CliHandler, epoch: u64) -> Result<(
         .epoch_state(epoch_state)
         .ncn(ncn)
         .config(config)
-        .weight_table(weight_table)
         .epoch_snapshot(epoch_snapshot)
         .account_payer(account_payer)
         .system_program(system_program::id())
@@ -831,9 +645,6 @@ pub async fn snapshot_vault_operator_delegation(
     let (vault_operator_delegation, _, _) =
         VaultOperatorDelegation::find_program_address(&handler.vault_program_id, &vault, &operator);
 
-    let (weight_table, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
     let (epoch_snapshot, _, _) = EpochSnapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let snapshot_vault_operator_delegation_ix = SnapshotVaultOperatorDelegationBuilder::new()
@@ -846,7 +657,6 @@ pub async fn snapshot_vault_operator_delegation(
         .vault_ncn_ticket(vault_ncn_ticket)
         .ncn_vault_ticket(ncn_vault_ticket)
         .vault_operator_delegation(vault_operator_delegation)
-        .weight_table(weight_table)
         .epoch_snapshot(epoch_snapshot)
         .epoch(epoch)
         .instruction();
@@ -1155,22 +965,6 @@ pub async fn full_vault_update(handler: &CliHandler, vault: &Pubkey) -> Result<(
     Ok(())
 }
 
-pub async fn get_or_create_weight_table(handler: &CliHandler, epoch: u64) -> Result<WeightTable> {
-    let ncn = *handler.ncn()?;
-
-    let (weight_table, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    if get_account(handler, &weight_table)
-        .await?
-        .map_or(true, |table| table.data.len() < WeightTable::SIZE)
-    {
-        create_weight_table(handler, epoch).await?;
-        check_created(handler, &weight_table).await?;
-    }
-    get_weight_table(handler, epoch).await
-}
-
 pub async fn get_or_create_epoch_snapshot(
     handler: &CliHandler,
     epoch: u64,
@@ -1414,21 +1208,6 @@ pub async fn crank_close_epoch_accounts(handler: &CliHandler, epoch: u64) -> Res
         );
     }
 
-    // Close Weight Table
-    let (weight_table, _, _) =
-        WeightTable::find_program_address(&handler.ncn_program_id, &ncn, epoch);
-
-    let result = close_epoch_account(handler, ncn, epoch, weight_table).await;
-
-    if let Err(err) = result {
-        log::error!(
-            "Failed to close weight table: {:?} in epoch: {:?} with error: {:?}",
-            weight_table,
-            epoch,
-            err
-        );
-    }
-
     // Close Epoch State
     let (epoch_state, _, _) =
         EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
@@ -1444,12 +1223,6 @@ pub async fn crank_close_epoch_accounts(handler: &CliHandler, epoch: u64) -> Res
         );
     }
 
-    Ok(())
-}
-
-pub async fn crank_set_weight(handler: &CliHandler, epoch: u64) -> Result<()> {
-    create_weight_table(handler, epoch).await?;
-    set_epoch_weights(handler, epoch).await?;
     Ok(())
 }
 

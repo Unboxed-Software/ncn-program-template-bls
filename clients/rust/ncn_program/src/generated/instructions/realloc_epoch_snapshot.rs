@@ -16,8 +16,6 @@ pub struct ReallocEpochSnapshot {
 
     pub config: solana_program::pubkey::Pubkey,
 
-    pub weight_table: solana_program::pubkey::Pubkey,
-
     pub epoch_snapshot: solana_program::pubkey::Pubkey,
 
     pub account_payer: solana_program::pubkey::Pubkey,
@@ -38,7 +36,7 @@ impl ReallocEpochSnapshot {
         args: ReallocEpochSnapshotInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.epoch_state,
             false,
@@ -48,10 +46,6 @@ impl ReallocEpochSnapshot {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.config,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.weight_table,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -88,7 +82,7 @@ pub struct ReallocEpochSnapshotInstructionData {
 
 impl ReallocEpochSnapshotInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 10 }
+        Self { discriminator: 8 }
     }
 }
 
@@ -111,16 +105,14 @@ pub struct ReallocEpochSnapshotInstructionArgs {
 ///   0. `[writable]` epoch_state
 ///   1. `[]` ncn
 ///   2. `[]` config
-///   3. `[]` weight_table
-///   4. `[writable]` epoch_snapshot
-///   5. `[writable]` account_payer
-///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   3. `[writable]` epoch_snapshot
+///   4. `[writable]` account_payer
+///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct ReallocEpochSnapshotBuilder {
     epoch_state: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     config: Option<solana_program::pubkey::Pubkey>,
-    weight_table: Option<solana_program::pubkey::Pubkey>,
     epoch_snapshot: Option<solana_program::pubkey::Pubkey>,
     account_payer: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
@@ -145,11 +137,6 @@ impl ReallocEpochSnapshotBuilder {
     #[inline(always)]
     pub fn config(&mut self, config: solana_program::pubkey::Pubkey) -> &mut Self {
         self.config = Some(config);
-        self
-    }
-    #[inline(always)]
-    pub fn weight_table(&mut self, weight_table: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.weight_table = Some(weight_table);
         self
     }
     #[inline(always)]
@@ -197,7 +184,6 @@ impl ReallocEpochSnapshotBuilder {
             epoch_state: self.epoch_state.expect("epoch_state is not set"),
             ncn: self.ncn.expect("ncn is not set"),
             config: self.config.expect("config is not set"),
-            weight_table: self.weight_table.expect("weight_table is not set"),
             epoch_snapshot: self.epoch_snapshot.expect("epoch_snapshot is not set"),
             account_payer: self.account_payer.expect("account_payer is not set"),
             system_program: self
@@ -220,8 +206,6 @@ pub struct ReallocEpochSnapshotCpiAccounts<'a, 'b> {
 
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub account_payer: &'b solana_program::account_info::AccountInfo<'a>,
@@ -239,8 +223,6 @@ pub struct ReallocEpochSnapshotCpi<'a, 'b> {
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub weight_table: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub epoch_snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -262,7 +244,6 @@ impl<'a, 'b> ReallocEpochSnapshotCpi<'a, 'b> {
             epoch_state: accounts.epoch_state,
             ncn: accounts.ncn,
             config: accounts.config,
-            weight_table: accounts.weight_table,
             epoch_snapshot: accounts.epoch_snapshot,
             account_payer: accounts.account_payer,
             system_program: accounts.system_program,
@@ -302,7 +283,7 @@ impl<'a, 'b> ReallocEpochSnapshotCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.epoch_state.key,
             false,
@@ -313,10 +294,6 @@ impl<'a, 'b> ReallocEpochSnapshotCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.weight_table.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -349,12 +326,11 @@ impl<'a, 'b> ReallocEpochSnapshotCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(7 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.epoch_state.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.config.clone());
-        account_infos.push(self.weight_table.clone());
         account_infos.push(self.epoch_snapshot.clone());
         account_infos.push(self.account_payer.clone());
         account_infos.push(self.system_program.clone());
@@ -377,10 +353,9 @@ impl<'a, 'b> ReallocEpochSnapshotCpi<'a, 'b> {
 ///   0. `[writable]` epoch_state
 ///   1. `[]` ncn
 ///   2. `[]` config
-///   3. `[]` weight_table
-///   4. `[writable]` epoch_snapshot
-///   5. `[writable]` account_payer
-///   6. `[]` system_program
+///   3. `[writable]` epoch_snapshot
+///   4. `[writable]` account_payer
+///   5. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct ReallocEpochSnapshotCpiBuilder<'a, 'b> {
     instruction: Box<ReallocEpochSnapshotCpiBuilderInstruction<'a, 'b>>,
@@ -393,7 +368,6 @@ impl<'a, 'b> ReallocEpochSnapshotCpiBuilder<'a, 'b> {
             epoch_state: None,
             ncn: None,
             config: None,
-            weight_table: None,
             epoch_snapshot: None,
             account_payer: None,
             system_program: None,
@@ -421,14 +395,6 @@ impl<'a, 'b> ReallocEpochSnapshotCpiBuilder<'a, 'b> {
         config: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.config = Some(config);
-        self
-    }
-    #[inline(always)]
-    pub fn weight_table(
-        &mut self,
-        weight_table: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.weight_table = Some(weight_table);
         self
     }
     #[inline(always)]
@@ -516,11 +482,6 @@ impl<'a, 'b> ReallocEpochSnapshotCpiBuilder<'a, 'b> {
 
             config: self.instruction.config.expect("config is not set"),
 
-            weight_table: self
-                .instruction
-                .weight_table
-                .expect("weight_table is not set"),
-
             epoch_snapshot: self
                 .instruction
                 .epoch_snapshot
@@ -550,7 +511,6 @@ struct ReallocEpochSnapshotCpiBuilderInstruction<'a, 'b> {
     epoch_state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    weight_table: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     epoch_snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     account_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,

@@ -2,13 +2,11 @@ use std::fmt::{Debug, Formatter};
 
 use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
 use ncn_program_core::{
-    constants::WEIGHT,
     epoch_state::EpochState,
     g1_point::{G1CompressedPoint, G1Point},
     g2_point::{G2CompressedPoint, G2Point},
     schemes::Sha256Normalized,
     utils::create_signer_bitmap,
-    weight_table::WeightTable,
 };
 use solana_program::{clock::Clock, native_token::sol_to_lamports, pubkey::Pubkey};
 use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestContext};
@@ -352,7 +350,7 @@ impl TestBuilder {
     pub async fn add_delegation_in_test_ncn(
         &mut self,
         test_ncn: &TestNcn,
-        delegation_amount: usize,
+        delegation_amount: u64,
     ) -> TestResult<()> {
         let mut vault_program_client = self.vault_program_client();
 
@@ -362,7 +360,7 @@ impl TestBuilder {
                     .do_add_delegation(
                         vault_root,
                         &operator_root.operator_pubkey,
-                        delegation_amount as u64,
+                        delegation_amount,
                     )
                     .await
                     .unwrap();
@@ -373,7 +371,7 @@ impl TestBuilder {
     }
 
     /// Registers all vaults in the TestNcn with the NCN program's vault registry.
-    /// Updates vault state, registers stMints with default weights, and registers the vault itself.
+    /// Updates vault state, registers stMints, and registers the vault itself.
     // 5. Setup Tracked Mints
     pub async fn add_vault_registry_to_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         let mut ncn_program_client = self.ncn_program_client();
@@ -410,7 +408,7 @@ impl TestBuilder {
                 NcnVaultTicket::find_program_address(&jito_restaking_program::id(), &ncn, &vault).0;
 
             ncn_program_client
-                .do_admin_register_st_mint(ncn, st_mint, WEIGHT)
+                .do_admin_register_st_mint(ncn, st_mint)
                 .await?;
 
             ncn_program_client
@@ -460,57 +458,6 @@ impl TestBuilder {
         let epoch = clock.epoch;
         ncn_program_client
             .do_intialize_epoch_state(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        Ok(())
-    }
-
-    /// Initializes the WeightTable for the current epoch and sets weights based on admin input (default weights).
-    // 6a. Admin Set weights
-    pub async fn add_admin_weights_for_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
-        let mut ncn_program_client = self.ncn_program_client();
-
-        let clock = self.clock().await;
-        let epoch = clock.epoch;
-        ncn_program_client
-            .do_full_initialize_weight_table(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-        let vault_registry = ncn_program_client.get_vault_registry(ncn).await?;
-
-        for entry in vault_registry.st_mint_list {
-            if entry.is_empty() {
-                continue;
-            }
-
-            let st_mint = entry.st_mint();
-            ncn_program_client
-                .do_admin_set_weight(
-                    test_ncn.ncn_root.ncn_pubkey,
-                    epoch,
-                    *st_mint,
-                    entry.weight(),
-                )
-                .await?;
-        }
-
-        Ok(())
-    }
-
-    /// Initializes the WeightTable for the current epoch and sets weights based on the NCN's vault registry.
-    // 6b. Set weights using vault registry
-    pub async fn add_weights_for_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
-        let mut ncn_program_client = self.ncn_program_client();
-
-        let clock = self.clock().await;
-        let epoch = clock.epoch;
-        ncn_program_client
-            .do_full_initialize_weight_table(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
-        ncn_program_client
-            .do_set_epoch_weights(test_ncn.ncn_root.ncn_pubkey, epoch)
             .await?;
 
         Ok(())
@@ -691,11 +638,10 @@ impl TestBuilder {
     }
 
     /// Performs all necessary steps to snapshot the state of the TestNcn for the current epoch.
-    /// Initializes epoch state, weight table, epoch snapshot, operator snapshots, and VOD snapshots.
+    /// Initializes epoch state, epoch snapshot, operator snapshots, and VOD snapshots.
     // Intermission 2 - all snapshots are taken
     pub async fn snapshot_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         self.add_epoch_state_for_test_ncn(test_ncn).await?;
-        self.add_weights_for_test_ncn(test_ncn).await?;
         self.add_epoch_snapshot_to_test_ncn(test_ncn).await?;
 
         self.add_operator_snapshots_to_test_ncn(test_ncn).await?;
@@ -711,7 +657,6 @@ impl TestBuilder {
         test_ncn: &TestNcn,
     ) -> TestResult<()> {
         self.add_epoch_state_for_test_ncn(test_ncn).await?;
-        self.add_weights_for_test_ncn(test_ncn).await?;
         self.add_vault_operator_delegation_snapshots_to_test_ncn(test_ncn)
             .await?;
 
@@ -799,7 +744,7 @@ impl TestBuilder {
         Ok(())
     }
 
-    /// Closes all epoch-specific accounts (BallotBox, OperatorSnapshots, EpochSnapshot, WeightTable, EpochState)
+    /// Closes all epoch-specific accounts (BallotBox, OperatorSnapshots, EpochSnapshot,  EpochState)
     /// for a given epoch after the required cooldown period has passed.
     /// Asserts that the accounts are actually closed (deleted).
     pub async fn close_epoch_accounts_for_test_ncn(
@@ -823,19 +768,6 @@ impl TestBuilder {
         }
 
         // Close Accounts in reverse order of creation
-
-        // Weight Table
-        {
-            let (weight_table, _, _) =
-                WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch_to_close);
-
-            ncn_program_client
-                .do_close_epoch_account(ncn, epoch_to_close, weight_table)
-                .await?;
-
-            let result = self.get_account(&weight_table).await?;
-            assert!(result.is_none());
-        }
 
         // Epoch State
         {

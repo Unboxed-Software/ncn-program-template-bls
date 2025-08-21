@@ -137,7 +137,6 @@ pub enum ProgramCommand {
     CrankRegisterVaults {},
     CrankSnapshot {},
     CrankCloseEpochAccounts {},
-    SetEpochWeights {},
 
     /// Admin
     AdminCreateConfig {
@@ -158,21 +157,11 @@ pub enum ProgramCommand {
         epochs_after_consensus_before_close: u64,
         #[arg(long, help = "Tie breaker admin address")]
         tie_breaker_admin: Option<String>,
-        #[arg(
-            long,
-            help = "Minimum stake weight required for operators (in lamports)"
-        )]
-        minimum_stake_weight: u128,
+        #[arg(long, help = "Minimum stake required for operators (in lamports)")]
+        minimum_stake: u128,
     },
-    AdminRegisterStMint {
-        #[arg(long, help = "Weight")]
-        weight: Option<u128>,
-    },
+    AdminRegisterStMint {},
 
-    AdminSetWeight {
-        #[arg(long, help = "Weight value")]
-        weight: u128,
-    },
     AdminSetTieBreaker {
         #[arg(long, help = "tie breaker for voting")]
         weather_status: u8,
@@ -231,8 +220,6 @@ pub enum ProgramCommand {
 
     CreateEpochState,
 
-    CreateWeightTable,
-
     CreateEpochSnapshot,
 
     CreateOperatorSnapshot {
@@ -271,7 +258,6 @@ pub enum ProgramCommand {
     GetAllVaultsInNcn,
     GetNCNProgramConfig,
     GetVaultRegistry,
-    GetWeightTable,
     GetEpochState,
     GetEpochSnapshot,
     GetOperatorSnapshot {

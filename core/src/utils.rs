@@ -46,7 +46,7 @@ pub fn get_epoch(slot: u64, ncn_epoch_length: u64) -> Result<u64, NCNProgramErro
 pub fn can_operator_vote(operator_snapshot: OperatorSnapshot) -> bool {
     // Check if operator has already voted in this epoch
 
-    operator_snapshot.is_active() && operator_snapshot.has_minimum_stake_weight()
+    operator_snapshot.is_active() && operator_snapshot.has_minimum_stake()
 }
 
 /// Computes a scalar alpha by hashing together all prover-controlled inputs and reducing modulo the curve order.

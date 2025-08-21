@@ -5,7 +5,7 @@ use crate::{
     handler::CliHandler,
     instructions::{
         crank_close_epoch_accounts, crank_post_vote_cooldown, crank_register_vaults,
-        crank_set_weight, crank_snapshot, create_epoch_state,
+        crank_snapshot, create_epoch_state,
     },
     keeper::{
         keeper_metrics::{emit_epoch_metrics, emit_error, emit_heartbeat, emit_ncn_metrics},
@@ -22,10 +22,9 @@ use tokio::time::sleep;
 /// Main entry point for the NCN (Network Coordinated Node) keeper
 ///
 /// The keeper is responsible for progressing epoch states through their lifecycle:
-/// 1. SetWeight - Set stake weights for the epoch
-/// 2. Snapshot - Take snapshots of operator and vault states
-/// 3. Vote - Operators vote on the epoch's outcome
-/// 4. PostVoteCooldown - Wait period after voting
+/// 1. Snapshot - Take snapshots of operator and vault states
+/// 2. Vote - Operators vote on the epoch's outcome
+/// 3. PostVoteCooldown - Wait period after voting
 /// 5. Close - Close and finalize the epoch
 ///
 /// The keeper runs in a continuous loop, handling multiple epochs and automatically
@@ -211,8 +210,6 @@ pub async fn startup_ncn_keeper(
         );
 
         let result = match current_state {
-            // SetWeight: Establish stake weights for all supported tokens
-            State::SetWeight => crank_set_weight(handler, state.epoch).await,
             // Snapshot: Capture operator and vault state snapshots
             State::Snapshot => crank_snapshot(handler, state.epoch).await,
             // Vote: No need to do anything here

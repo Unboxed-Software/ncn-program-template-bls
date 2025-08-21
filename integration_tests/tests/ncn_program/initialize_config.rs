@@ -73,7 +73,7 @@ mod tests {
                 10001,
                 &ncn_root.ncn_admin.pubkey(), // Use NCN admin as fee wallet
                 400,                          // Default fee BPS
-                100,                          // minimum_stake_weight
+                100,                          // minimum_stake
             )
             .await;
         assert_ncn_program_error(result, NCNProgramError::InvalidEpochsBeforeStall, None);
@@ -89,7 +89,7 @@ mod tests {
                 10001,
                 &ncn_root.ncn_admin.pubkey(), // Use NCN admin as fee wallet
                 400,                          // Default fee BPS
-                100,                          // minimum_stake_weight
+                100,                          // minimum_stake
             )
             .await;
         assert_ncn_program_error(result, NCNProgramError::InvalidEpochsBeforeClose, None);
@@ -105,7 +105,7 @@ mod tests {
                 50,                           // Invalid - too low
                 &ncn_root.ncn_admin.pubkey(), // Use NCN admin as fee wallet
                 400,                          // Default fee BPS
-                100,                          // minimum_stake_weight
+                100,                          // minimum_stake
             )
             .await;
         assert_ncn_program_error(result, NCNProgramError::InvalidSlotsAfterConsensus, None);

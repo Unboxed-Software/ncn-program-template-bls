@@ -8,12 +8,8 @@
 
 import {
   combineCodec,
-  getOptionDecoder,
-  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU128Decoder,
-  getU128Encoder,
   getU8Decoder,
   getU8Encoder,
   transformEncoder,
@@ -26,8 +22,6 @@ import {
   type IInstruction,
   type IInstructionWithAccounts,
   type IInstructionWithData,
-  type Option,
-  type OptionOrNullable,
   type ReadonlyAccount,
   type TransactionSigner,
   type WritableAccount,
@@ -36,7 +30,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const ADMIN_REGISTER_ST_MINT_DISCRIMINATOR = 18;
+export const ADMIN_REGISTER_ST_MINT_DISCRIMINATOR = 15;
 
 export function getAdminRegisterStMintDiscriminatorBytes() {
   return getU8Encoder().encode(ADMIN_REGISTER_ST_MINT_DISCRIMINATOR);
@@ -72,21 +66,13 @@ export type AdminRegisterStMintInstruction<
     ]
   >;
 
-export type AdminRegisterStMintInstructionData = {
-  discriminator: number;
-  weight: Option<bigint>;
-};
+export type AdminRegisterStMintInstructionData = { discriminator: number };
 
-export type AdminRegisterStMintInstructionDataArgs = {
-  weight: OptionOrNullable<number | bigint>;
-};
+export type AdminRegisterStMintInstructionDataArgs = {};
 
 export function getAdminRegisterStMintInstructionDataEncoder(): Encoder<AdminRegisterStMintInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', getU8Encoder()],
-      ['weight', getOptionEncoder(getU128Encoder())],
-    ]),
+    getStructEncoder([['discriminator', getU8Encoder()]]),
     (value) => ({
       ...value,
       discriminator: ADMIN_REGISTER_ST_MINT_DISCRIMINATOR,
@@ -95,10 +81,7 @@ export function getAdminRegisterStMintInstructionDataEncoder(): Encoder<AdminReg
 }
 
 export function getAdminRegisterStMintInstructionDataDecoder(): Decoder<AdminRegisterStMintInstructionData> {
-  return getStructDecoder([
-    ['discriminator', getU8Decoder()],
-    ['weight', getOptionDecoder(getU128Decoder())],
-  ]);
+  return getStructDecoder([['discriminator', getU8Decoder()]]);
 }
 
 export function getAdminRegisterStMintInstructionDataCodec(): Codec<
@@ -123,7 +106,6 @@ export type AdminRegisterStMintInput<
   stMint: Address<TAccountStMint>;
   vaultRegistry: Address<TAccountVaultRegistry>;
   admin: TransactionSigner<TAccountAdmin>;
-  weight: AdminRegisterStMintInstructionDataArgs['weight'];
 };
 
 export function getAdminRegisterStMintInstruction<
@@ -166,9 +148,6 @@ export function getAdminRegisterStMintInstruction<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
@@ -179,9 +158,7 @@ export function getAdminRegisterStMintInstruction<
       getAccountMeta(accounts.admin),
     ],
     programAddress,
-    data: getAdminRegisterStMintInstructionDataEncoder().encode(
-      args as AdminRegisterStMintInstructionDataArgs
-    ),
+    data: getAdminRegisterStMintInstructionDataEncoder().encode({}),
   } as AdminRegisterStMintInstruction<
     TProgramAddress,
     TAccountConfig,

@@ -17,4 +17,3 @@ export * from './stakeWeights';
 export * from './stMintEntry';
 export * from './vaultEntry';
 export * from './vaultOperatorStakeWeight';
-export * from './weightEntry';

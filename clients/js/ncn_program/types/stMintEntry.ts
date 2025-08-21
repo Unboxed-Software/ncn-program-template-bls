@@ -16,8 +16,6 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU128Decoder,
-  getU128Encoder,
   type Address,
   type Codec,
   type Decoder,
@@ -28,20 +26,14 @@ import {
 export type StMintEntry = {
   stMint: Address;
   reserveSwitchboardFeed: ReadonlyUint8Array;
-  weight: bigint;
 };
 
-export type StMintEntryArgs = {
-  stMint: Address;
-  reserveSwitchboardFeed: ReadonlyUint8Array;
-  weight: number | bigint;
-};
+export type StMintEntryArgs = StMintEntry;
 
 export function getStMintEntryEncoder(): Encoder<StMintEntryArgs> {
   return getStructEncoder([
     ['stMint', getAddressEncoder()],
     ['reserveSwitchboardFeed', fixEncoderSize(getBytesEncoder(), 32)],
-    ['weight', getU128Encoder()],
   ]);
 }
 
@@ -49,7 +41,6 @@ export function getStMintEntryDecoder(): Decoder<StMintEntry> {
   return getStructDecoder([
     ['stMint', getAddressDecoder()],
     ['reserveSwitchboardFeed', fixDecoderSize(getBytesDecoder(), 32)],
-    ['weight', getU128Decoder()],
   ]);
 }
 

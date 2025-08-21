@@ -13,7 +13,6 @@ use ncn_program_core::{
     error::NCNProgramError,
     loaders::load_ncn_epoch,
     stake_weight::StakeWeights,
-    weight_table::WeightTable,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
@@ -35,14 +34,13 @@ use solana_program::{
 /// 7. `[]` vault_ncn_ticket: The vault NCN ticket
 /// 8. `[]` ncn_vault_ticket: The NCN vault ticket
 /// 9. `[]` vault_operator_delegation: The delegation between vault and operator
-/// 10. `[]` weight_table: The weight table for the epoch
-/// 11. `[writable]` epoch_snapshot: Epoch snapshot account containing operator snapshots
+/// 10. `[writable]` epoch_snapshot: Epoch snapshot account containing operator snapshots
 pub fn process_snapshot_vault_operator_delegation(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_state, ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, weight_table, epoch_snapshot] =
+    let [epoch_state, ncn_config, restaking_config, ncn, operator, vault, vault_ncn_ticket, ncn_vault_ticket, vault_operator_delegation, epoch_snapshot] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -88,7 +86,6 @@ pub fn process_snapshot_vault_operator_delegation(
 
     let (_, ncn_epoch_length) = load_ncn_epoch(restaking_config, current_slot, None)?;
 
-    WeightTable::load(program_id, weight_table, ncn.key, epoch, false)?;
     EpochSnapshot::load(program_id, epoch_snapshot, ncn.key, true)?;
 
     // check vault is up to date
@@ -168,21 +165,12 @@ pub fn process_snapshot_vault_operator_delegation(
     msg!("Vault operator delegation active status: {}", is_active);
 
     let (total_stake_weight, next_epoch_stake_weight) = {
-        let weight_table_data = weight_table.data.borrow();
-        let weight_table_account = WeightTable::try_from_slice_unchecked(&weight_table_data)?;
-
-        weight_table_account.check_registry_for_vault(vault_index)?;
-
         let (total_stake_weight, next_epoch_stake_weight): (u128, u128) = if is_active {
             let vault_operator_delegation_data = vault_operator_delegation.data.borrow();
             let vault_operator_delegation_account =
                 VaultOperatorDelegation::try_from_slice_unchecked(&vault_operator_delegation_data)?;
 
-            OperatorSnapshot::calculate_stake_weights(
-                vault_operator_delegation_account,
-                weight_table_account,
-                &st_mint,
-            )?
+            OperatorSnapshot::calculate_stake_weights(vault_operator_delegation_account)?
         } else {
             (0u128, 0u128)
         };
@@ -199,7 +187,7 @@ pub fn process_snapshot_vault_operator_delegation(
             current_slot,
             &this_epoch_stake_weight,
             &next_epoch_stake_weight,
-            epoch_snapshot_account.minimum_stake_weight(),
+            epoch_snapshot_account.minimum_stake(),
         )?;
 
         let ncn_operator_index = cloned_operator_snapshot.ncn_operator_index();

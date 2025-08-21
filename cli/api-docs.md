@@ -145,7 +145,7 @@ Crank Functions
 
 Admin
 
-**Usage:** `ncn-program-bls-cli admin-create-config [OPTIONS] --ncn-fee-wallet <NCN_FEE_WALLET> --ncn-fee-bps <NCN_FEE_BPS> --minimum-stake-weight <MINIMUM_STAKE_WEIGHT>`
+**Usage:** `ncn-program-bls-cli admin-create-config [OPTIONS] --ncn-fee-wallet <NCN_FEE_WALLET> --ncn-fee-bps <NCN_FEE_BPS> --minimum-stake <MINIMUM_STAKE>`
 
 ###### **Options:**
 
@@ -161,7 +161,7 @@ Admin
 
   Default value: `10`
 * `--tie-breaker-admin <TIE_BREAKER_ADMIN>` — Tie breaker admin address
-* `--minimum-stake-weight <MINIMUM_STAKE_WEIGHT>` — Minimum stake weight required for operators (in lamports)
+* `--minimum-stake <MINIMUM_STAKE>` — Minimum stake weight required for operators (in lamports)
 
 
 

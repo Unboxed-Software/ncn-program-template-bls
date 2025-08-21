@@ -8,14 +8,13 @@ use crate::{
         get_current_slot, get_epoch_snapshot, get_epoch_state, get_is_epoch_completed, get_ncn,
         get_ncn_operator_state, get_ncn_program_config, get_ncn_vault_ticket,
         get_operator_snapshot, get_total_epoch_rent_cost, get_vault_ncn_ticket,
-        get_vault_operator_delegation, get_vault_registry, get_weight_table,
+        get_vault_operator_delegation, get_vault_registry,
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
-        admin_set_parameters, admin_set_weight, crank_close_epoch_accounts, crank_register_vaults,
-        crank_snapshot, create_epoch_snapshot, create_epoch_state, create_operator_snapshot,
-        create_vault_registry, create_weight_table, full_vault_update, register_operator,
-        register_vault, set_epoch_weights, snapshot_vault_operator_delegation,
+        admin_set_parameters, crank_close_epoch_accounts, crank_register_vaults, crank_snapshot,
+        create_epoch_snapshot, create_epoch_state, create_operator_snapshot, create_vault_registry,
+        full_vault_update, register_operator, register_vault, snapshot_vault_operator_delegation,
     },
     keeper::keeper_loop::startup_ncn_keeper,
 };
@@ -188,8 +187,6 @@ impl CliHandler {
                 crank_close_epoch_accounts(self, self.epoch).await
             }
 
-            ProgramCommand::SetEpochWeights {} => set_epoch_weights(self, self.epoch).await,
-
             // Admin
             ProgramCommand::AdminCreateConfig {
                 ncn_fee_wallet,
@@ -198,7 +195,7 @@ impl CliHandler {
                 valid_slots_after_consensus,
                 epochs_after_consensus_before_close,
                 tie_breaker_admin,
-                minimum_stake_weight,
+                minimum_stake,
             } => {
                 let tie_breaker = if let Some(admin_str) = tie_breaker_admin {
                     Some(
@@ -220,15 +217,12 @@ impl CliHandler {
                     epochs_before_stall,
                     valid_slots_after_consensus,
                     epochs_after_consensus_before_close,
-                    minimum_stake_weight,
+                    minimum_stake,
                 )
                 .await
             }
-            ProgramCommand::AdminRegisterStMint { weight } => {
-                admin_register_st_mint(self, self.vault(), weight).await
-            }
-            ProgramCommand::AdminSetWeight { weight } => {
-                admin_set_weight(self, self.vault(), self.epoch, weight).await
+            ProgramCommand::AdminRegisterStMint {} => {
+                admin_register_st_mint(self, self.vault()).await
             }
             ProgramCommand::AdminSetTieBreaker { weather_status } => {
                 // Tie breaker functionality has been removed
@@ -319,8 +313,6 @@ impl CliHandler {
 
             ProgramCommand::CreateEpochState {} => create_epoch_state(self, self.epoch).await,
 
-            ProgramCommand::CreateWeightTable {} => create_weight_table(self, self.epoch).await,
-
             ProgramCommand::CreateEpochSnapshot {} => create_epoch_snapshot(self, self.epoch).await,
             ProgramCommand::CreateOperatorSnapshot { operator } => {
                 let operator = Pubkey::from_str(&operator)
@@ -410,11 +402,6 @@ impl CliHandler {
                 info!("{}", vault_registry);
                 Ok(())
             }
-            ProgramCommand::GetWeightTable {} => {
-                let weight_table = get_weight_table(self, self.epoch).await?;
-                info!("{}", weight_table);
-                Ok(())
-            }
             ProgramCommand::GetEpochState {} => {
                 let is_epoch_complete = get_is_epoch_completed(self, self.epoch).await?;
 
@@ -435,23 +422,21 @@ impl CliHandler {
                     };
                     let epoch_schedule = self.rpc_client().get_epoch_schedule().await?;
 
-                    if epoch_state.set_weight_progress().tally() > 0 {
-                        let weight_table = get_weight_table(self, self.epoch).await?;
-                        epoch_state.current_state_patched(
-                            &epoch_schedule,
-                            valid_slots_after_consensus,
-                            epochs_after_consensus_before_close,
-                            weight_table.st_mint_count() as u64,
-                            current_slot,
-                        )
-                    } else {
-                        epoch_state.current_state(
-                            &epoch_schedule,
-                            valid_slots_after_consensus,
-                            epochs_after_consensus_before_close,
-                            current_slot,
-                        )
-                    }
+                    // if epoch_state.set_weight_progress().tally() > 0 {
+                    //     epoch_state.current_state_patched(
+                    //         &epoch_schedule,
+                    //         valid_slots_after_consensus,
+                    //         epochs_after_consensus_before_close,
+                    //         current_slot,
+                    //     )
+                    // } else {
+                    epoch_state.current_state(
+                        &epoch_schedule,
+                        valid_slots_after_consensus,
+                        epochs_after_consensus_before_close,
+                        current_slot,
+                    )
+                    // }
                 };
 
                 info!("{}\nCurrent State: {:?}\n", epoch_state, current_state);
@@ -524,11 +509,8 @@ impl CliHandler {
                     println!(
                         "Operator: {}, Stake Weight: {}.{:02}%",
                         operator,
-                        stake_weight * 10000
-                            / epoch_snapshot.minimum_stake_weight().stake_weight()
-                            / 100,
-                        stake_weight * 10000 / epoch_snapshot.minimum_stake_weight().stake_weight()
-                            % 100
+                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() / 100,
+                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() % 100
                     );
                 }
 
@@ -564,11 +546,8 @@ impl CliHandler {
                     println!(
                         "Vault: {}, Stake Weight: {}.{:02}%",
                         vault,
-                        stake_weight * 10000
-                            / epoch_snapshot.minimum_stake_weight().stake_weight()
-                            / 100,
-                        stake_weight * 10000 / epoch_snapshot.minimum_stake_weight().stake_weight()
-                            % 100
+                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() / 100,
+                        stake_weight * 10000 / epoch_snapshot.minimum_stake().stake_weight() % 100
                     );
                 }
 
@@ -601,7 +580,7 @@ impl CliHandler {
                 }
 
                 // Calculate total stake weight for percentage calculations
-                let total_stake_weight = epoch_snapshot.minimum_stake_weight().stake_weight();
+                let total_stake_weight = epoch_snapshot.minimum_stake().stake_weight();
 
                 // Sort vaults by total stake
                 let mut vaults: Vec<_> = vault_operator_stakes.iter().collect();

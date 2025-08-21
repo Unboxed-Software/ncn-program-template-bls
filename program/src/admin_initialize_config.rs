@@ -39,7 +39,7 @@ pub fn process_admin_initialize_config(
     epochs_before_stall: u64,
     epochs_after_consensus_before_close: u64,
     valid_slots_after_consensus: u64,
-    minimum_stake_weight: u128,
+    minimum_stake: u128,
     ncn_fee_bps: u16,
 ) -> ProgramResult {
     let [config, ncn, ncn_fee_wallet, ncn_admin, tie_breaker_admin, account_payer, system_program] =
@@ -158,7 +158,7 @@ pub fn process_admin_initialize_config(
         tie_breaker_admin.key
     );
 
-    let minimum_stake_weight = StakeWeights::new(minimum_stake_weight);
+    let minimum_stake = StakeWeights::new(minimum_stake);
 
     *config = Config::new(
         ncn.key,
@@ -168,7 +168,7 @@ pub fn process_admin_initialize_config(
         epochs_before_stall,
         epochs_after_consensus_before_close,
         &fee_config,
-        &minimum_stake_weight,
+        &minimum_stake,
         config_bump,
     );
     config.fee_config.check_fees_okay(epoch)?;

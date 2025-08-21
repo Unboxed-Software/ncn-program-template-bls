@@ -102,7 +102,7 @@ pub struct InitializeConfigInstructionArgs {
     pub epochs_before_stall: u64,
     pub epochs_after_consensus_before_close: u64,
     pub valid_slots_after_consensus: u64,
-    pub minimum_stake_weight: u128,
+    pub minimum_stake: u128,
     pub ncn_fee_bps: u16,
 }
 
@@ -129,7 +129,7 @@ pub struct InitializeConfigBuilder {
     epochs_before_stall: Option<u64>,
     epochs_after_consensus_before_close: Option<u64>,
     valid_slots_after_consensus: Option<u64>,
-    minimum_stake_weight: Option<u128>,
+    minimum_stake: Option<u128>,
     ncn_fee_bps: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -196,8 +196,8 @@ impl InitializeConfigBuilder {
         self
     }
     #[inline(always)]
-    pub fn minimum_stake_weight(&mut self, minimum_stake_weight: u128) -> &mut Self {
-        self.minimum_stake_weight = Some(minimum_stake_weight);
+    pub fn minimum_stake(&mut self, minimum_stake: u128) -> &mut Self {
+        self.minimum_stake = Some(minimum_stake);
         self
     }
     #[inline(always)]
@@ -251,10 +251,10 @@ impl InitializeConfigBuilder {
                 .valid_slots_after_consensus
                 .clone()
                 .expect("valid_slots_after_consensus is not set"),
-            minimum_stake_weight: self
-                .minimum_stake_weight
+            minimum_stake: self
+                .minimum_stake
                 .clone()
-                .expect("minimum_stake_weight is not set"),
+                .expect("minimum_stake is not set"),
             ncn_fee_bps: self.ncn_fee_bps.clone().expect("ncn_fee_bps is not set"),
         };
 
@@ -448,7 +448,7 @@ impl<'a, 'b> InitializeConfigCpiBuilder<'a, 'b> {
             epochs_before_stall: None,
             epochs_after_consensus_before_close: None,
             valid_slots_after_consensus: None,
-            minimum_stake_weight: None,
+            minimum_stake: None,
             ncn_fee_bps: None,
             __remaining_accounts: Vec::new(),
         });
@@ -527,8 +527,8 @@ impl<'a, 'b> InitializeConfigCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn minimum_stake_weight(&mut self, minimum_stake_weight: u128) -> &mut Self {
-        self.instruction.minimum_stake_weight = Some(minimum_stake_weight);
+    pub fn minimum_stake(&mut self, minimum_stake: u128) -> &mut Self {
+        self.instruction.minimum_stake = Some(minimum_stake);
         self
     }
     #[inline(always)]
@@ -593,11 +593,11 @@ impl<'a, 'b> InitializeConfigCpiBuilder<'a, 'b> {
                 .valid_slots_after_consensus
                 .clone()
                 .expect("valid_slots_after_consensus is not set"),
-            minimum_stake_weight: self
+            minimum_stake: self
                 .instruction
-                .minimum_stake_weight
+                .minimum_stake
                 .clone()
-                .expect("minimum_stake_weight is not set"),
+                .expect("minimum_stake is not set"),
             ncn_fee_bps: self
                 .instruction
                 .ncn_fee_bps
@@ -654,7 +654,7 @@ struct InitializeConfigCpiBuilderInstruction<'a, 'b> {
     epochs_before_stall: Option<u64>,
     epochs_after_consensus_before_close: Option<u64>,
     valid_slots_after_consensus: Option<u64>,
-    minimum_stake_weight: Option<u128>,
+    minimum_stake: Option<u128>,
     ncn_fee_bps: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

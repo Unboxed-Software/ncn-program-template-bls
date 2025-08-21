@@ -3,7 +3,7 @@ mod fuzz_tests {
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
     use ncn_program_core::{
-        constants::{MAX_OPERATORS, WEIGHT},
+        constants::MAX_OPERATORS,
         g1_point::{G1CompressedPoint, G1Point},
         g2_point::{G2CompressedPoint, G2Point},
         schemes::Sha256Normalized,
@@ -14,7 +14,6 @@ mod fuzz_tests {
     // Struct to configure mint token parameters for simulation
     struct MintConfig {
         keypair: Keypair,
-        weight: u128,       // Weight for voting power calculation
         vault_count: usize, // Number of vaults to create for this mint
     }
 
@@ -49,7 +48,7 @@ mod fuzz_tests {
 
         // 2.b. Initialize operators and establish NCN <> operator relationships
         {
-            for i in 0..config.operator_count {
+            for _i in 0..config.operator_count {
                 // Set operator fee to the configured value
                 let operator_fees_bps: Option<u16> = Some(config.operator_fee_bps);
 
@@ -88,7 +87,7 @@ mod fuzz_tests {
         // 2.c. Initialize vaults and establish NCN <> vaults and vault <> operator relationships
         {
             // Create vaults for each mint according to the configuration
-            for (mint_idx, mint_config) in config.mints.iter().enumerate() {
+            for (_mint_idx, mint_config) in config.mints.iter().enumerate() {
                 fixture
                     .add_vaults_to_test_ncn(
                         &mut test_ncn,
@@ -167,11 +166,7 @@ mod fuzz_tests {
             // This assigns weights to each mint for voting power calculations
             for mint_config in config.mints.iter() {
                 ncn_program_client
-                    .do_admin_register_st_mint(
-                        ncn_pubkey,
-                        mint_config.keypair.pubkey(),
-                        mint_config.weight,
-                    )
+                    .do_admin_register_st_mint(ncn_pubkey, mint_config.keypair.pubkey())
                     .await?;
             }
 
@@ -196,7 +191,6 @@ mod fuzz_tests {
 
         // 4. Register all operators in the NCN program
         fixture.register_operators_to_test_ncn(&test_ncn).await?;
-        for _ in 0..config.operator_count {}
 
         // 4. Prepare the epoch consensus cycle
         // In a real system, these steps would run each epoch to prepare for voting on weather status
@@ -205,17 +199,6 @@ mod fuzz_tests {
             fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
 
             // 4.b. Initialize the weight table - prepares the table that will track voting weights
-            let clock = fixture.clock().await;
-            let epoch = clock.epoch;
-            ncn_program_client
-                .do_full_initialize_weight_table(test_ncn.ncn_root.ncn_pubkey, epoch)
-                .await?;
-
-            // 4.c. Take a snapshot of the weights for each ST mint
-            // This records the current weights for the voting calculations
-            ncn_program_client
-                .do_set_epoch_weights(test_ncn.ncn_root.ncn_pubkey, epoch)
-                .await?;
 
             // 4.d. Take the epoch snapshot - records the current state for this epoch
             fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
@@ -225,15 +208,10 @@ mod fuzz_tests {
                 .add_operator_snapshots_to_test_ncn(&test_ncn)
                 .await?;
 
-            for _ in 0..config.operator_count {}
-
             // 4.f. Take a snapshot for each vault and its delegation - records delegations
             fixture
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
-
-            let total_vault_operator_snapshots = test_ncn.vaults.len() * config.operator_count;
-            for _ in 0..total_vault_operator_snapshots {}
 
             println!("  ✅ Epoch preparation completed");
         }
@@ -243,8 +221,6 @@ mod fuzz_tests {
 
         // 5. Cast votes from operators
         {
-            let epoch = fixture.clock().await.epoch;
-
             // Get the current vote counter to use as the message
             let vote_counter = ncn_program_client
                 .get_vote_counter(ncn_pubkey)
@@ -312,7 +288,6 @@ mod fuzz_tests {
             operator_count: MAX_OPERATORS,
             mints: vec![MintConfig {
                 keypair: Keypair::new(),
-                weight: WEIGHT,
                 vault_count: 1,
             }],
             delegations: vec![
@@ -334,7 +309,6 @@ mod fuzz_tests {
             operator_count: 50, // High number of operators
             mints: vec![MintConfig {
                 keypair: Keypair::new(),
-                weight: WEIGHT,
                 vault_count: 1,
             }],
             delegations: vec![sol_to_lamports(1000.0)],
@@ -356,7 +330,6 @@ mod fuzz_tests {
                 operator_count: 15,
                 mints: vec![MintConfig {
                     keypair: Keypair::new(),
-                    weight: WEIGHT,
                     vault_count: 1,
                 }],
                 delegations: vec![sol_to_lamports(50.0)],
@@ -367,7 +340,6 @@ mod fuzz_tests {
                 operator_count: 20,
                 mints: vec![MintConfig {
                     keypair: Keypair::new(),
-                    weight: 2 * WEIGHT, // Double weight
                     vault_count: 1,
                 }],
                 delegations: vec![
@@ -380,7 +352,6 @@ mod fuzz_tests {
                 operator_count: 30,
                 mints: vec![MintConfig {
                     keypair: Keypair::new(),
-                    weight: WEIGHT, // Standard weight
                     vault_count: 1,
                 }],
                 delegations: vec![

@@ -61,7 +61,7 @@ export type EpochSnapshot = {
   operatorsCanVoteCount: bigint;
   totalAggregatedG1Pubkey: ReadonlyUint8Array;
   operatorSnapshots: Array<OperatorSnapshot>;
-  minimumStakeWeight: StakeWeights;
+  minimumStake: StakeWeights;
   lastSnapshotSlot: bigint;
 };
 
@@ -76,7 +76,7 @@ export type EpochSnapshotArgs = {
   operatorsCanVoteCount: number | bigint;
   totalAggregatedG1Pubkey: ReadonlyUint8Array;
   operatorSnapshots: Array<OperatorSnapshotArgs>;
-  minimumStakeWeight: StakeWeightsArgs;
+  minimumStake: StakeWeightsArgs;
   lastSnapshotSlot: number | bigint;
 };
 
@@ -95,7 +95,7 @@ export function getEpochSnapshotEncoder(): Encoder<EpochSnapshotArgs> {
       'operatorSnapshots',
       getArrayEncoder(getOperatorSnapshotEncoder(), { size: 256 }),
     ],
-    ['minimumStakeWeight', getStakeWeightsEncoder()],
+    ['minimumStake', getStakeWeightsEncoder()],
     ['lastSnapshotSlot', getU64Encoder()],
   ]);
 }
@@ -115,7 +115,7 @@ export function getEpochSnapshotDecoder(): Decoder<EpochSnapshot> {
       'operatorSnapshots',
       getArrayDecoder(getOperatorSnapshotDecoder(), { size: 256 }),
     ],
-    ['minimumStakeWeight', getStakeWeightsDecoder()],
+    ['minimumStake', getStakeWeightsDecoder()],
     ['lastSnapshotSlot', getU64Decoder()],
   ]);
 }

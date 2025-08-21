@@ -17,7 +17,6 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        fixture.add_weights_for_test_ncn(&test_ncn).await?;
         fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
 
         let clock = fixture.clock().await;
@@ -58,7 +57,6 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        fixture.add_weights_for_test_ncn(&test_ncn).await?;
         fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
 
         // Add New Operator

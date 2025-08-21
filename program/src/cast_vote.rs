@@ -36,7 +36,7 @@ use solana_program::{
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account (named `ncn_config` in code)
 /// 2. `[]` ncn: The NCN account
-/// 3. `[]` epoch_snapshot: Epoch snapshot containing stake weights and operator snapshots
+/// 3. `[]` epoch_snapshot: Epoch snapshot containing stakes and operator snapshots
 /// 4. `[]` restaking_config: Restaking configuration account
 /// 5. `[writable]` vote_counter: Vote counter PDA to increment on successful vote
 pub fn process_cast_vote(
@@ -120,7 +120,7 @@ pub fn process_cast_vote(
                 get_epoch(operator_snapshot.last_snapshot_slot(), ncn_epoch_length)?;
             let current_epoch = get_epoch(current_slot, ncn_epoch_length)?;
             let has_minimum_stake =
-                operator_snapshot.has_minimum_stake_weight_now(current_epoch, snapshot_epoch)?;
+                operator_snapshot.has_minimum_stake_now(current_epoch, snapshot_epoch)?;
             if !has_minimum_stake {
                 msg!(
                     "The operator {} does not have enough stake to vote",

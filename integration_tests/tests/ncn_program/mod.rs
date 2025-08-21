@@ -1,6 +1,4 @@
 mod admin_set_parameters;
-mod admin_set_st_mint;
-mod admin_update_weight_table;
 mod cast_vote;
 mod close_epoch_accounts;
 mod epoch_state;
@@ -10,7 +8,6 @@ mod initialize_epoch_snapshot;
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
 mod initialize_vote_counter;
-mod initialize_weight_table;
 mod meta_tests;
 mod register_operator;
 mod register_vault;

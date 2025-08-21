@@ -87,7 +87,7 @@ export type InitializeConfigInstructionData = {
   epochsBeforeStall: bigint;
   epochsAfterConsensusBeforeClose: bigint;
   validSlotsAfterConsensus: bigint;
-  minimumStakeWeight: bigint;
+  minimumStake: bigint;
   ncnFeeBps: number;
 };
 
@@ -95,7 +95,7 @@ export type InitializeConfigInstructionDataArgs = {
   epochsBeforeStall: number | bigint;
   epochsAfterConsensusBeforeClose: number | bigint;
   validSlotsAfterConsensus: number | bigint;
-  minimumStakeWeight: number | bigint;
+  minimumStake: number | bigint;
   ncnFeeBps: number;
 };
 
@@ -106,7 +106,7 @@ export function getInitializeConfigInstructionDataEncoder(): Encoder<InitializeC
       ['epochsBeforeStall', getU64Encoder()],
       ['epochsAfterConsensusBeforeClose', getU64Encoder()],
       ['validSlotsAfterConsensus', getU64Encoder()],
-      ['minimumStakeWeight', getU128Encoder()],
+      ['minimumStake', getU128Encoder()],
       ['ncnFeeBps', getU16Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR })
@@ -119,7 +119,7 @@ export function getInitializeConfigInstructionDataDecoder(): Decoder<InitializeC
     ['epochsBeforeStall', getU64Decoder()],
     ['epochsAfterConsensusBeforeClose', getU64Decoder()],
     ['validSlotsAfterConsensus', getU64Decoder()],
-    ['minimumStakeWeight', getU128Decoder()],
+    ['minimumStake', getU128Decoder()],
     ['ncnFeeBps', getU16Decoder()],
   ]);
 }
@@ -153,7 +153,7 @@ export type InitializeConfigInput<
   epochsBeforeStall: InitializeConfigInstructionDataArgs['epochsBeforeStall'];
   epochsAfterConsensusBeforeClose: InitializeConfigInstructionDataArgs['epochsAfterConsensusBeforeClose'];
   validSlotsAfterConsensus: InitializeConfigInstructionDataArgs['validSlotsAfterConsensus'];
-  minimumStakeWeight: InitializeConfigInstructionDataArgs['minimumStakeWeight'];
+  minimumStake: InitializeConfigInstructionDataArgs['minimumStake'];
   ncnFeeBps: InitializeConfigInstructionDataArgs['ncnFeeBps'];
 };
 

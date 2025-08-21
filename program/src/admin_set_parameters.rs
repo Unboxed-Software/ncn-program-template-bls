@@ -34,7 +34,7 @@ pub fn process_admin_set_parameters(
     starting_valid_epoch: Option<u64>,
     epochs_before_stall: Option<u64>,
     epochs_after_consensus_before_close: Option<u64>,
-    minimum_stake_weight: Option<u128>,
+    minimum_stake: Option<u128>,
     valid_slots_after_consensus: Option<u64>,
 ) -> ProgramResult {
     let [config, ncn_account, ncn_admin] = accounts else {
@@ -113,18 +113,18 @@ pub fn process_admin_set_parameters(
         config.valid_slots_after_consensus = PodU64::from(slots);
     }
 
-    if let Some(weight) = minimum_stake_weight {
+    if let Some(weight) = minimum_stake {
         if weight == 0 {
             msg!("Error: Minimum stake weight cannot be zero");
             return Err(NCNProgramError::InvalidMinimumStakeWeight.into());
         }
-        let minimum_stake_weight = StakeWeights::new(weight);
+        let minimum_stake = StakeWeights::new(weight);
         msg!(
-            "Updating minimum_stake_weight from {} to {}",
-            config.minimum_stake_weight.stake_weight(),
-            minimum_stake_weight.stake_weight()
+            "Updating minimum_stake from {} to {}",
+            config.minimum_stake.stake_weight(),
+            minimum_stake.stake_weight()
         );
-        config.minimum_stake_weight = minimum_stake_weight;
+        config.minimum_stake = minimum_stake;
     }
 
     Ok(())

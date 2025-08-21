@@ -34,8 +34,8 @@ pub enum NCNProgramInstruction {
         epochs_after_consensus_before_close: u64,
         /// Number of slots after consensus where voting is still valid
         valid_slots_after_consensus: u64,
-        /// Minimum stake weight for a validator to be considered valid
-        minimum_stake_weight: u128,
+        /// Minimum stake for a validator to be considered valid
+        minimum_stake: u128,
         /// NCN fee basis points (bps) for the NCN program
         ncn_fee_bps: u16,
     },
@@ -117,30 +117,6 @@ pub enum NCNProgramInstruction {
     },
 
 
-    /// Initializes the weight table for a given epoch
-    #[account(0, name = "epoch_marker")]
-    #[account(1, writable, name = "epoch_state")]
-    #[account(2, name = "vault_registry")]
-    #[account(3, name = "ncn")]
-    #[account(4, writable, name = "weight_table")]
-    #[account(5, writable, name = "account_payer")]
-    #[account(6, name = "system_program")]
-    InitializeWeightTable{
-        /// Target epoch for the weight table
-        epoch: u64,
-    },
-
-
-    /// Set weights for the weight table using the vault registry
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "ncn")]
-    #[account(2, name = "vault_registry")]
-    #[account(3, writable, name = "weight_table")]
-    SetEpochWeights{
-        epoch: u64,
-    },
-
-
 
     /// Initializes the Epoch Snapshot
     #[account(0, name = "epoch_marker")]
@@ -157,10 +133,9 @@ pub enum NCNProgramInstruction {
     #[account(0, writable, name = "epoch_state")]
     #[account(1, name = "ncn")]
     #[account(2, name = "config")]
-    #[account(3, name = "weight_table")]
-    #[account(4, writable, name = "epoch_snapshot")]
-    #[account(5, writable, name = "account_payer")]
-    #[account(6, name = "system_program")]
+    #[account(3, writable, name = "epoch_snapshot")]
+    #[account(4, writable, name = "account_payer")]
+    #[account(5, name = "system_program")]
     ReallocEpochSnapshot {
         epoch: u64,
     },
@@ -190,8 +165,7 @@ pub enum NCNProgramInstruction {
     #[account(6, name = "vault_ncn_ticket")]
     #[account(7, name = "ncn_vault_ticket")]
     #[account(8, name = "vault_operator_delegation")]
-    #[account(9, name = "weight_table")]
-    #[account(10, writable, name = "epoch_snapshot")]
+    #[account(9, writable, name = "epoch_snapshot")]
     SnapshotVaultOperatorDelegation{
         epoch: u64,
     },
@@ -235,7 +209,7 @@ pub enum NCNProgramInstruction {
         epochs_before_stall: Option<u64>,
         epochs_after_consensus_before_close: Option<u64>,
         valid_slots_after_consensus: Option<u64>,
-        minimum_stake_weight: Option<u128>,
+        minimum_stake: Option<u128>,
     },
 
 
@@ -248,34 +222,11 @@ pub enum NCNProgramInstruction {
         role: ConfigAdminRole,
     },
 
-    /// Sets a weight
-    #[account(0, writable, name = "epoch_state")]
-    #[account(1, name = "ncn")]
-    #[account(2, writable, name = "weight_table")]
-    #[account(3, signer, name = "weight_table_admin")]
-    AdminSetWeight{
-        st_mint: Pubkey,
-        weight: u128,
-        epoch: u64,
-    },
-
     /// Registers a new ST mint in the Vault Registry
     #[account(0, name = "config")]
     #[account(1, name = "ncn")]
     #[account(2, name = "st_mint")]
     #[account(3, writable, name = "vault_registry")]
     #[account(4, signer, writable, name = "admin")]
-    AdminRegisterStMint{
-        weight: Option<u128>,
-    },
-
-    /// Updates an ST mint in the Vault Registry
-    #[account(0, name = "config")]
-    #[account(1, name = "ncn")]
-    #[account(2, writable, name = "vault_registry")]
-    #[account(3, signer, writable, name = "admin")]
-    AdminSetStMint{
-        st_mint: Pubkey,
-        weight: Option<u128>,
-    },
+    AdminRegisterStMint{ },
 }

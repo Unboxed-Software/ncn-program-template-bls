@@ -215,7 +215,7 @@ ncn-program-bls-cli admin-create-config \
   --ncn-fee-wallet <FEE_WALLET_PUBKEY> \
   --ncn-fee-bps 100 \
   --tie-breaker-admin <ADMIN_PUBKEY> \
-  --minimum-stake-weight 1000000000 \
+  --minimum-stake 1000000000 \
   --epochs-before-stall 10 \
   --valid-slots-after-consensus 43200 \
   --epochs-after-consensus-before-close 5
@@ -546,7 +546,7 @@ echo "Setting up NCN consensus network..."
 ncn-program-bls-cli admin-create-config \
   --ncn-fee-wallet $NCN_FEE_WALLET \
   --ncn-fee-bps 100 \
-  --minimum-stake-weight 1000000000
+  --minimum-stake 1000000000
 
 # Create registries
 ncn-program-bls-cli create-vault-registry

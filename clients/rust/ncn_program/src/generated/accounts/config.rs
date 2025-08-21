@@ -31,7 +31,7 @@ pub struct Config {
     pub starting_valid_epoch: u64,
     pub fee_config: FeeConfig,
     pub bump: u8,
-    pub minimum_stake_weight: StakeWeights,
+    pub minimum_stake: StakeWeights,
 }
 
 impl Config {

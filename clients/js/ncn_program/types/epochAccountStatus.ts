@@ -17,22 +17,16 @@ import {
   type Encoder,
 } from '@solana/web3.js';
 
-export type EpochAccountStatus = { epochState: number; weightTable: number };
+export type EpochAccountStatus = { epochState: number };
 
 export type EpochAccountStatusArgs = EpochAccountStatus;
 
 export function getEpochAccountStatusEncoder(): Encoder<EpochAccountStatusArgs> {
-  return getStructEncoder([
-    ['epochState', getU8Encoder()],
-    ['weightTable', getU8Encoder()],
-  ]);
+  return getStructEncoder([['epochState', getU8Encoder()]]);
 }
 
 export function getEpochAccountStatusDecoder(): Decoder<EpochAccountStatus> {
-  return getStructDecoder([
-    ['epochState', getU8Decoder()],
-    ['weightTable', getU8Decoder()],
-  ]);
+  return getStructDecoder([['epochState', getU8Decoder()]]);
 }
 
 export function getEpochAccountStatusCodec(): Codec<

@@ -187,7 +187,7 @@ pub struct Config {
     epochs_after_consensus_before_close: PodU64, // Cleanup timing
     starting_valid_epoch: PodU64,            // First valid epoch
     fee_config: FeeConfig,                   // Fee distribution settings
-    minimum_stake_weight: StakeWeights,      // Minimum participation threshold
+    minimum_stake: StakeWeights,      // Minimum participation threshold
 }
 ```
 
@@ -216,7 +216,7 @@ pub struct EpochSnapshot {
     operators_can_vote_count: PodU64,       // Eligible voters
     total_aggregated_g1_pubkey: [u8; 32],          // Aggregated public key
     operator_snapshots: [OperatorSnapshot; 256], // Operator states
-    minimum_stake_weight: StakeWeights,     // Participation threshold
+    minimum_stake: StakeWeights,     // Participation threshold
 }
 ```
 
@@ -337,10 +337,13 @@ This section details the mathematical foundations underlying the BLS signature a
 #### **1. BN254 Elliptic Curve**
 
 The BN254 curve is defined over a finite field with the equation:
+
 ```
 y² = x³ + 3 (mod p)
 ```
+
 Where:
+
 - `p = 21888242871839275222246405745257275088696311157297823662689037894645226208583` (prime modulus)
 - G1: Points on the base curve over Fp
 - G2: Points on the twisted curve over Fp²
@@ -348,6 +351,7 @@ Where:
 #### **2. Curve Points and Generators**
 
 **G1 Generator Point:**
+
 ```rust:48:55:core/src/constants.rs
 pub const G1_GENERATOR: [u8; 64] = [
     // x coordinate: 1
@@ -360,6 +364,7 @@ pub const G1_GENERATOR: [u8; 64] = [
 ```
 
 **Curve Order (MODULUS):**
+
 ```rust:37:44:core/src/constants.rs
 pub static MODULUS: UBig = unsafe {
     UBig::from_static_words(&[
@@ -407,6 +412,7 @@ impl HashToCurve for Sha256Normalized {
 ```
 
 **Mathematical Process:**
+
 1. **Domain Separation**: `H(message || n)` where `n` is a counter (0-254)
 2. **Normalization**: Ensure hash < `NORMALIZE_MODULUS` to avoid bias
 3. **Modular Reduction**: `hash mod p` to get field element
@@ -419,15 +425,19 @@ The system implements two verification modes: single signature and aggregated si
 **Single Signature Verification:**
 
 The verification equation is:
+
 ```
 e(H(m), PK2) = e(σ, G2_GENERATOR)
 ```
+
 Which is implemented as:
+
 ```
 e(H(m), PK2) * e(σ, -G2_GENERATOR) = 1
 ```
 
 where:
+
 - `H(m)` is the hash of the message
 - `PK2` is the G2 public key
 - `σ` is the signature
@@ -470,16 +480,19 @@ pub fn verify_signature<H: HashToCurve, T: AsRef<[u8]>, S: BLSSignature>(
 The aggregated signature verification uses a sophisticated scheme to prevent rogue key attacks:
 
 **Core Equation:**
+
 ```
 e(H(m) + α·G1, APK2) = e(σ + α·APK1, G2_GENERATOR)
 ```
 
 Implemented as:
+
 ```
 e(H(m) + α·G1, APK2) * e(σ + α·APK1, -G2_GENERATOR) = 1
 ```
 
 Where:
+
 - `α = H(H(m) || σ || APK1 || APK2)` (anti-rogue key factor)
 - `APK1 = Σ(PK1_i)` (aggregated G1 public keys)
 - `APK2` = aggregated G2 public key
@@ -532,6 +545,7 @@ pub fn verify_aggregated_signature<H: HashToCurve, T: AsRef<[u8]>, S: BLSSignatu
 ```
 
 **Anti-Rogue Key Factor Computation:**
+
 ```rust:55:84:core/src/utils.rs
 pub fn compute_alpha(
     message: &[u8; 64],
@@ -590,7 +604,7 @@ for (i, operator_snapshot) in epoch_snapshot.operator_snapshots().iter().enumera
             get_epoch(operator_snapshot.last_snapshot_slot(), ncn_epoch_length)?;
         let current_epoch = get_epoch(current_slot, ncn_epoch_length)?;
         let has_minimum_stake =
-            operator_snapshot.has_minimum_stake_weight_now(current_epoch, snapshot_epoch)?;
+            operator_snapshot.has_minimum_stake_now(current_epoch, snapshot_epoch)?;
         if !has_minimum_stake {
             msg!(
                 "The operator {} does not have enough stake to vote",
@@ -674,6 +688,7 @@ if non_signers_count == 0 {
 ```
 
 **Mathematical Logic:**
+
 - If all operators sign: `APK1 = Σ(PK1_i)` for all i
 - If some don't sign: `APK1 = Σ(PK1_i) - Σ(PK1_j)` where j are non-signers
 - This is computed as: `APK1 = total_aggregated_g1_pubkey + (-aggregated_nonsigners_pubkey)`
@@ -754,7 +769,7 @@ if signed {
         get_epoch(operator_snapshot.last_snapshot_slot(), ncn_epoch_length)?;
     let current_epoch = get_epoch(current_slot, ncn_epoch_length)?;
     let has_minimum_stake =
-        operator_snapshot.has_minimum_stake_weight_now(current_epoch, snapshot_epoch)?;
+        operator_snapshot.has_minimum_stake_now(current_epoch, snapshot_epoch)?;
     if !has_minimum_stake {
         msg!(
             "The operator {} does not have enough stake to vote",
@@ -1048,7 +1063,7 @@ solana program close --buffers
 
 1. **BLS Signature Verification**: Cryptographic proof of operator consensus
 2. **Vote Counter Replay Protection**: Automatic prevention of signature replay attacks
-3. **Minimum Stake-weighted Voting**: Economic security through skin-in-the-game
+3. **Minimum Stake Voting**: Economic security through skin-in-the-game
 4. **Time-locked Operations**: Prevents hasty state changes
 5. **Role-based Access Control**: Admin separation and permissions
 6. **Account Rent Protection**: Economic incentives for proper cleanup
@@ -1092,7 +1107,7 @@ solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_
 ./target/debug/ncn-program-bls-cli admin-fund-account-payer --amount-in-sol 20
 sleep 2
 # Create and initialize the NCN program configuration with fee wallet, fee bps, consensus slots, and minimum stake weight
-./target/debug/ncn-program-bls-cli admin-create-config --ncn-fee-wallet 3ogGQ7nFX6nCa9bkkZ6hwud6VaEQCekCCmNj6ZoWh8MF --ncn-fee-bps 100 --valid-slots-after-consensus 10000 --minimum-stake-weight 100
+./target/debug/ncn-program-bls-cli admin-create-config --ncn-fee-wallet 3ogGQ7nFX6nCa9bkkZ6hwud6VaEQCekCCmNj6ZoWh8MF --ncn-fee-bps 100 --valid-slots-after-consensus 10000 --minimum-stake 100
 sleep 2
 # Initialize the vote counter for replay attack prevention
 ./target/debug/ncn-program-bls-cli create-vote-counter
@@ -1147,14 +1162,14 @@ sleep 2
 
 ## Optimization Opportunities and Development TODOs
 
-[]. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
+[x]. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
+[]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
+[]. since it is only one vault, the vault registry is not needed, consider removing it.
+[]. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
 []. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
 []. instead of having two Instructions (`ResgiterOperator` and `InitOperatorSnapshot`) they could be only one
 []. check to see if the operator change its G1 pubkey, are we changing that in the operator_snapshot account or not, if not then we should change it.
 []. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
-[]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
-[]. since it is only one vault, the vault registry is not needed, consider removing it.
-[]. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
 []. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
 []. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
 []. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params

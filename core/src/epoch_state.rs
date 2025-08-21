@@ -30,7 +30,6 @@ pub enum AccountStatus {
 #[repr(C)]
 pub struct EpochAccountStatus {
     epoch_state: u8,
-    weight_table: u8,
 }
 
 impl EpochAccountStatus {
@@ -50,26 +49,8 @@ impl EpochAccountStatus {
         Self::get_account_status(self.epoch_state)
     }
 
-    pub const fn weight_table(&self) -> Result<AccountStatus, NCNProgramError> {
-        Self::get_account_status(self.weight_table)
-    }
-
     pub fn set_epoch_state(&mut self, status: AccountStatus) {
         self.epoch_state = status as u8;
-    }
-
-    pub fn set_weight_table(&mut self, status: AccountStatus) {
-        self.weight_table = status as u8;
-    }
-
-    pub fn are_all_closed(&self) -> bool {
-        // We don't need to check epoch state since it's the account we are closing
-
-        if self.weight_table != AccountStatus::Closed as u8 {
-            return false;
-        }
-
-        true
     }
 }
 
@@ -169,9 +150,6 @@ pub struct EpochState {
     /// All of the epoch accounts status
     account_status: EpochAccountStatus,
 
-    /// Progress on weight set
-    set_weight_progress: Progress,
-
     /// Progress on Snapshotting Operators
     operator_snapshot_progress: [Progress; 256],
 
@@ -195,7 +173,6 @@ impl EpochState {
             slot_created: PodU64::from(slot_created),
             vault_count: PodU64::from(0),
             account_status: EpochAccountStatus::default(),
-            set_weight_progress: Progress::default(),
             operator_snapshot_progress: [Progress::default(); MAX_OPERATORS],
             is_closing: PodBool::from(false),
         }
@@ -264,12 +241,6 @@ impl EpochState {
             return Err(NCNProgramError::CannotCloseAccount.into());
         }
 
-        // Check all other accounts are closed
-        if !account_to_close.account_status.are_all_closed() {
-            msg!("Cannot close Epoch State until all other accounts are closed");
-            return Err(NCNProgramError::CannotCloseEpochStateAccount.into());
-        }
-
         Ok(())
     }
 
@@ -317,10 +288,6 @@ impl EpochState {
         &self.account_status
     }
 
-    pub const fn set_weight_progress(&self) -> Progress {
-        self.set_weight_progress
-    }
-
     pub const fn operator_snapshot_progress(&self, ncn_operator_index: usize) -> Progress {
         self.operator_snapshot_progress[ncn_operator_index]
     }
@@ -328,18 +295,6 @@ impl EpochState {
     // ------------ UPDATERS ------------
     pub fn update_realloc_epoch_state(&mut self) {
         self.account_status.set_epoch_state(AccountStatus::Created);
-    }
-
-    pub fn update_realloc_weight_table(&mut self, vault_count: u64, st_mint_count: u64) {
-        self.account_status.set_weight_table(AccountStatus::Created);
-
-        self.vault_count = PodU64::from(vault_count);
-        self.set_weight_progress = Progress::new(st_mint_count);
-    }
-
-    pub fn update_set_weight(&mut self, weights_set: u64, st_mint_count: u64) {
-        self.set_weight_progress.set_tally(weights_set);
-        self.set_weight_progress.set_total(st_mint_count)
     }
 
     pub fn update_snapshot_vault_operator_delegation(
@@ -368,10 +323,6 @@ impl EpochState {
 
     pub fn close_epoch_state(&mut self) {
         self.account_status.set_epoch_state(AccountStatus::Closed);
-    }
-
-    pub fn close_weight_table(&mut self) {
-        self.account_status.set_weight_table(AccountStatus::Closed);
     }
 
     // ------------ STATE ------------
@@ -404,12 +355,6 @@ impl EpochState {
             return Ok(State::Close);
         }
 
-        if self.account_status.weight_table()? == AccountStatus::DNE
-            || !self.set_weight_progress.is_complete()
-        {
-            return Ok(State::SetWeight);
-        }
-
         Ok(State::PostVoteCooldown)
     }
 
@@ -418,7 +363,6 @@ impl EpochState {
         epoch_schedule: &EpochSchedule,
         _valid_slots_after_consensus: u64,
         epochs_after_consensus_before_close: u64,
-        st_mint_count: u64,
         current_slot: u64,
     ) -> Result<State, ProgramError> {
         if self.can_close_epoch_accounts(
@@ -430,12 +374,6 @@ impl EpochState {
             return Ok(State::Close);
         }
 
-        if self.account_status.weight_table()? == AccountStatus::DNE
-            || self.set_weight_progress.tally() < st_mint_count
-        {
-            return Ok(State::SetWeight);
-        }
-
         Ok(State::PostVoteCooldown)
     }
 }
@@ -443,7 +381,6 @@ impl EpochState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum State {
-    SetWeight,
     Snapshot,
     Vote,
     PostVoteCooldown,
@@ -462,12 +399,6 @@ impl fmt::Display for EpochState {
 
        writeln!(f, "\nAccount Status:")?;
        writeln!(f, "  Epoch State:                  {:?}", self.account_status.epoch_state().unwrap())?;
-       writeln!(f, "  Weight Table:                 {:?}", self.account_status.weight_table().unwrap())?;
-       
-
-
-       writeln!(f, "\nProgress:")?;
-       writeln!(f, "  Set Weight Progress:          {}/{}", self.set_weight_progress.tally(), self.set_weight_progress.total())?;
        
        writeln!(f, "\nOperator Snapshot Progress:")?;
        for i in 0..MAX_OPERATORS {

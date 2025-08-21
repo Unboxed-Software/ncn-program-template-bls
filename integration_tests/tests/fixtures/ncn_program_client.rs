@@ -9,12 +9,12 @@ use jito_vault_core::{
 use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
-        AdminSetStMintBuilder, AdminSetWeightBuilder, CastVoteBuilder, CloseEpochAccountBuilder,
-        InitializeConfigBuilder, InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
+        CastVoteBuilder, CloseEpochAccountBuilder, InitializeConfigBuilder,
+        InitializeEpochSnapshotBuilder, InitializeEpochStateBuilder,
         InitializeOperatorSnapshotBuilder, InitializeVaultRegistryBuilder,
-        InitializeVoteCounterBuilder, InitializeWeightTableBuilder, ReallocEpochSnapshotBuilder,
-        RegisterOperatorBuilder, RegisterVaultBuilder, SetEpochWeightsBuilder,
-        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorBN128KeysBuilder,
+        InitializeVoteCounterBuilder, ReallocEpochSnapshotBuilder, RegisterOperatorBuilder,
+        RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
+        UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -30,7 +30,6 @@ use ncn_program_core::{
     ncn_operator_account::NCNOperatorAccount,
     vault_registry::VaultRegistry,
     vote_counter::VoteCounter,
-    weight_table::WeightTable,
 };
 use solana_program::{
     instruction::InstructionError, native_token::sol_to_lamports, pubkey::Pubkey,
@@ -190,22 +189,6 @@ impl NCNProgramClient {
         Ok(*EpochState::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap())
     }
 
-    /// Fetches the WeightTable account for a given NCN and epoch.
-    #[allow(dead_code)]
-    pub async fn get_weight_table(
-        &mut self,
-        ncn: Pubkey,
-        ncn_epoch: u64,
-    ) -> TestResult<WeightTable> {
-        let address = WeightTable::find_program_address(&ncn_program::id(), &ncn, ncn_epoch).0;
-
-        let raw_account = self.banks_client.get_account(address).await?.unwrap();
-
-        let account = WeightTable::try_from_slice_unchecked(raw_account.data.as_slice()).unwrap();
-
-        Ok(*account)
-    }
-
     /// Fetches the EpochSnapshot account for a given NCN and epoch.
     pub async fn get_epoch_snapshot(&mut self, ncn: Pubkey) -> TestResult<Box<EpochSnapshot>> {
         let address = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
@@ -261,7 +244,7 @@ impl NCNProgramClient {
         &mut self,
         ncn: Pubkey,
         ncn_admin: &Keypair,
-        minimum_stake_weight: Option<u128>,
+        minimum_stake: Option<u128>,
     ) -> TestResult<()> {
         // Setup Payer
         self.airdrop(&self.payer.pubkey(), 1.0).await?;
@@ -288,7 +271,7 @@ impl NCNProgramClient {
             10000,
             &ncn_fee_wallet.pubkey(),
             400,
-            minimum_stake_weight.unwrap_or(1000),
+            minimum_stake.unwrap_or(100),
         )
         .await
     }
@@ -305,7 +288,7 @@ impl NCNProgramClient {
         valid_slots_after_consensus: u64,
         ncn_fee_wallet: &Pubkey,
         ncn_fee_bps: u16,
-        minimum_stake_weight: u128,
+        minimum_stake: u128,
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
@@ -321,7 +304,7 @@ impl NCNProgramClient {
             .epochs_before_stall(epochs_before_stall)
             .epochs_after_consensus_before_close(epochs_after_consensus_before_close)
             .valid_slots_after_consensus(valid_slots_after_consensus)
-            .minimum_stake_weight(minimum_stake_weight)
+            .minimum_stake(minimum_stake)
             .ncn_fee_bps(ncn_fee_bps)
             .instruction();
 
@@ -410,128 +393,9 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Initializes and fully reallocates the weight table account for a given NCN and epoch.
-    pub async fn do_full_initialize_weight_table(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-    ) -> TestResult<()> {
-        self.do_initialize_weight_table(ncn, epoch).await?;
-        Ok(())
-    }
-
-    /// Initializes the weight table account for a given NCN and epoch.
-    pub async fn do_initialize_weight_table(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        self.initialize_weight_table(ncn, epoch).await
-    }
-
-    /// Sends a transaction to initialize the weight table account.
-    pub async fn initialize_weight_table(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        let (epoch_marker, _, _) =
-            EpochMarker::find_program_address(&ncn_program::id(), &ncn, epoch);
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let vault_registry = VaultRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-        let weight_table = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let ix = InitializeWeightTableBuilder::new()
-            .epoch_marker(epoch_marker)
-            .epoch_state(epoch_state)
-            .vault_registry(vault_registry)
-            .ncn(ncn)
-            .weight_table(weight_table)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .epoch(epoch)
-            .instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
-    /// Sets the epoch weights in the weight table based on the vault registry.
-    pub async fn do_set_epoch_weights(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        self.set_epoch_weights(ncn, epoch).await
-    }
-
-    /// Sends a transaction to set the epoch weights in the weight table.
-    pub async fn set_epoch_weights(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        let weight_table = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let vault_registry = VaultRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-
-        let ix = SetEpochWeightsBuilder::new()
-            .epoch_state(epoch_state)
-            .ncn(ncn)
-            .weight_table(weight_table)
-            .vault_registry(vault_registry)
-            .epoch(epoch)
-            .instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
-    /// Sets the weight for a specific st_mint in the weight table (admin operation).
-    pub async fn do_admin_set_weight(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-        st_mint: Pubkey,
-        weight: u128,
-    ) -> TestResult<()> {
-        self.admin_set_weight(ncn, epoch, st_mint, weight).await
-    }
-
-    /// Sends a transaction to set the weight for a specific st_mint in the weight table (admin operation).
-    pub async fn admin_set_weight(
-        &mut self,
-        ncn: Pubkey,
-        epoch: u64,
-        st_mint: Pubkey,
-        weight: u128,
-    ) -> TestResult<()> {
-        let weight_table = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
-        let ix = AdminSetWeightBuilder::new()
-            .epoch_state(epoch_state)
-            .ncn(ncn)
-            .weight_table(weight_table)
-            .weight_table_admin(self.payer.pubkey())
-            .st_mint(st_mint)
-            .weight(weight)
-            .epoch(epoch)
-            .instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
     /// Initializes and fully reallocates the vault registry account for a given NCN.
     pub async fn do_full_initialize_vault_registry(&mut self, ncn: Pubkey) -> TestResult<()> {
         self.do_initialize_vault_registry(ncn).await?;
-        // let num_reallocs = (WeightTable::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-        // self.do_realloc_vault_registry(ncn, num_reallocs).await?;
         Ok(())
     }
 
@@ -613,12 +477,11 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Registers an st_mint with a specific weight in the vault registry (admin operation).
+    /// Registers an st_mint in the vault registry (admin operation).
     pub async fn do_admin_register_st_mint(
         &mut self,
         ncn: Pubkey,
         st_mint: Pubkey,
-        weight: u128,
     ) -> TestResult<()> {
         let vault_registry = VaultRegistry::find_program_address(&ncn_program::id(), &ncn).0;
 
@@ -626,7 +489,7 @@ impl NCNProgramClient {
 
         let admin = self.payer.pubkey();
 
-        self.admin_register_st_mint(ncn, ncn_config, vault_registry, admin, st_mint, weight)
+        self.admin_register_st_mint(ncn, ncn_config, vault_registry, admin, st_mint)
             .await
     }
 
@@ -639,7 +502,6 @@ impl NCNProgramClient {
         vault_registry: Pubkey,
         admin: Pubkey,
         st_mint: Pubkey,
-        weight: u128,
     ) -> TestResult<()> {
         let ix = {
             let mut builder = AdminRegisterStMintBuilder::new();
@@ -648,59 +510,7 @@ impl NCNProgramClient {
                 .ncn(ncn)
                 .vault_registry(vault_registry)
                 .admin(admin)
-                .st_mint(st_mint)
-                .weight(weight);
-
-            builder.instruction()
-        };
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
-    /// Sets the weight for an existing st_mint in the vault registry (admin operation).
-    pub async fn do_admin_set_st_mint(
-        &mut self,
-        ncn: Pubkey,
-        st_mint: Pubkey,
-        weight: u128,
-    ) -> TestResult<()> {
-        let vault_registry = VaultRegistry::find_program_address(&ncn_program::id(), &ncn).0;
-
-        let (ncn_config, _, _) = NcnConfig::find_program_address(&ncn_program::id(), &ncn);
-
-        let admin = self.payer.pubkey();
-
-        self.admin_set_st_mint(ncn, ncn_config, vault_registry, admin, st_mint, weight)
-            .await
-    }
-
-    /// Sends a transaction to set the weight for an st_mint in the vault registry (admin operation).
-    #[allow(clippy::too_many_arguments)]
-    pub async fn admin_set_st_mint(
-        &mut self,
-        ncn: Pubkey,
-        ncn_config: Pubkey,
-        vault_registry: Pubkey,
-        admin: Pubkey,
-        st_mint: Pubkey,
-        weight: u128,
-    ) -> TestResult<()> {
-        let ix = {
-            let mut builder = AdminSetStMintBuilder::new();
-            builder
-                .config(ncn_config)
-                .ncn(ncn)
-                .vault_registry(vault_registry)
-                .admin(admin)
-                .st_mint(st_mint)
-                .weight(weight);
+                .st_mint(st_mint);
 
             builder.instruction()
         };
@@ -775,14 +585,12 @@ impl NCNProgramClient {
         num_reallocations: u64,
     ) -> TestResult<()> {
         let epoch_state = EpochState::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-        let weight_table = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
         let epoch_snapshot = EpochSnapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
         self.realloc_epoch_snapshot(
             &ncn,
             &epoch_state,
-            &weight_table,
             &epoch_snapshot,
             &config,
             epoch,
@@ -797,7 +605,6 @@ impl NCNProgramClient {
         &mut self,
         ncn: &Pubkey,
         epoch_state: &Pubkey,
-        weight_table: &Pubkey,
         epoch_snapshot: &Pubkey,
         config: &Pubkey,
         epoch: u64,
@@ -808,7 +615,6 @@ impl NCNProgramClient {
         let ix = ReallocEpochSnapshotBuilder::new()
             .epoch_state(*epoch_state)
             .ncn(*ncn)
-            .weight_table(*weight_table)
             .epoch_snapshot(*epoch_snapshot)
             .account_payer(account_payer)
             .system_program(system_program::id())
@@ -924,8 +730,6 @@ impl NCNProgramClient {
         )
         .0;
 
-        let weight_table = WeightTable::find_program_address(&ncn_program::id(), &ncn, epoch).0;
-
         let ix = SnapshotVaultOperatorDelegationBuilder::new()
             .epoch_state(epoch_state)
             .config(config_pda)
@@ -936,7 +740,6 @@ impl NCNProgramClient {
             .vault_ncn_ticket(vault_ncn_ticket)
             .ncn_vault_ticket(ncn_vault_ticket)
             .vault_operator_delegation(vault_operator_delegation)
-            .weight_table(weight_table)
             .epoch_snapshot(epoch_snapshot)
             .epoch(epoch)
             .instruction();
@@ -1085,7 +888,7 @@ impl NCNProgramClient {
         epochs_before_stall: Option<u64>,
         epochs_after_consensus_before_close: Option<u64>,
         valid_slots_after_consensus: Option<u64>,
-        minimum_stake_weight: Option<u128>,
+        minimum_stake: Option<u128>,
         ncn_root: &NcnRoot,
     ) -> TestResult<()> {
         let config_pda =
@@ -1112,8 +915,8 @@ impl NCNProgramClient {
             ix.valid_slots_after_consensus(slots);
         }
 
-        if let Some(minimum_stake_weight) = minimum_stake_weight {
-            ix.minimum_stake_weight(minimum_stake_weight);
+        if let Some(minimum_stake) = minimum_stake {
+            ix.minimum_stake(minimum_stake);
         }
 
         let blockhash = self.banks_client.get_latest_blockhash().await?;

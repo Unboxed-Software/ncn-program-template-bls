@@ -23,7 +23,6 @@ mod tests {
             vote_counter_pda, ncn_root.ncn_pubkey,
             "Vote counter PDA should be different from NCN pubkey"
         );
-        assert!(bump <= 255, "Bump should be a valid u8");
 
         // Test VoteCounter creation
         let counter = VoteCounter::new(&ncn_root.ncn_pubkey, bump);

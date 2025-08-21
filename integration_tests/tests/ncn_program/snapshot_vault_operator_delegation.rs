@@ -13,7 +13,7 @@ mod tests {
     #[tokio::test]
     async fn test_snapshot_vault_operator_delegation() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
-        let mut vault_client = fixture.vault_program_client();
+
         let mut ncn_program_client = fixture.ncn_program_client();
 
         let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
@@ -23,22 +23,10 @@ mod tests {
 
         let epoch = fixture.clock().await.epoch;
 
-        ncn_program_client
-            .do_full_initialize_weight_table(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
-        let vault = vault_client.get_vault(&vault_address).await?;
-
-        let mint = vault.supported_mint;
-        let weight = 100;
-
-        ncn_program_client
-            .do_admin_set_weight(ncn, epoch, mint, weight)
-            .await?;
 
         ncn_program_client
             .do_full_initialize_epoch_snapshot(ncn, epoch)
@@ -60,7 +48,7 @@ mod tests {
     #[tokio::test]
     async fn test_snapshot_aggregates_the_right_g1_pubkey() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
-        let mut vault_client = fixture.vault_program_client();
+
         let mut ncn_program_client = fixture.ncn_program_client();
 
         const OPERATORS: usize = 10;
@@ -72,22 +60,10 @@ mod tests {
 
         let epoch = fixture.clock().await.epoch;
 
-        ncn_program_client
-            .do_full_initialize_weight_table(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
-        let vault = vault_client.get_vault(&vault_address).await?;
-
-        let mint = vault.supported_mint;
-        let weight = 100;
-
-        ncn_program_client
-            .do_admin_set_weight(ncn, epoch, mint, weight)
-            .await?;
 
         ncn_program_client
             .do_full_initialize_epoch_snapshot(ncn, epoch)
@@ -131,7 +107,6 @@ mod tests {
     async fn test_snapshot_aggregates_the_right_g1_pubkey_if_one_is_not_active() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
         fixture.initialize_restaking_and_vault_programs().await?;
-        let mut vault_client = fixture.vault_program_client();
 
         const OPERATORS: usize = 10;
 
@@ -155,22 +130,10 @@ mod tests {
 
         let epoch = fixture.clock().await.epoch;
 
-        ncn_program_client
-            .do_full_initialize_weight_table(test_ncn.ncn_root.ncn_pubkey, epoch)
-            .await?;
-
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
-        let vault = vault_client.get_vault(&vault_address).await?;
-
-        let mint = vault.supported_mint;
-        let weight = 100;
-
-        ncn_program_client
-            .do_admin_set_weight(ncn, epoch, mint, weight)
-            .await?;
 
         let mut g1_pubkeys = Vec::new();
 
@@ -248,7 +211,7 @@ mod tests {
     #[tokio::test]
     async fn test_operator_snapshot_gets_updated_when_snapshotted() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
-        let mut vault_client = fixture.vault_program_client();
+
         let mut ncn_program_client = fixture.ncn_program_client();
 
         let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
@@ -258,8 +221,6 @@ mod tests {
         let operator = test_ncn.operators[0].operator_pubkey;
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
-        let vault = vault_client.get_vault(&vault_address).await?;
-        let mint = vault.supported_mint;
 
         {
             // Warp to new epoch
@@ -268,14 +229,6 @@ mod tests {
             println!("=== Testing Epoch: {} ===", current_epoch);
 
             // Initialize weight table for this epoch
-            ncn_program_client
-                .do_full_initialize_weight_table(ncn, current_epoch)
-                .await?;
-
-            let weight = 100; // Increase weight each epoch
-            ncn_program_client
-                .do_admin_set_weight(ncn, current_epoch, mint, weight)
-                .await?;
 
             // Initialize epoch snapshot for this epoch
             ncn_program_client
@@ -312,7 +265,7 @@ mod tests {
             );
             println!(
                 "Before snapshot - Has minimum stake weight: {}",
-                operator_snapshot_before.has_minimum_stake_weight()
+                operator_snapshot_before.has_minimum_stake()
             );
 
             // Record the current slot before snapshot
@@ -345,7 +298,7 @@ mod tests {
             );
             println!(
                 "After snapshot - Has minimum stake weight: {}",
-                operator_snapshot_after.has_minimum_stake_weight()
+                operator_snapshot_after.has_minimum_stake()
             );
 
             // Verify that last_snapshot_slot was updated
@@ -381,7 +334,7 @@ mod tests {
 
             // Verify that the operator snapshot can vote (has minimum stake weight and is active)
             assert!(
-            operator_snapshot_after.has_minimum_stake_weight()
+            operator_snapshot_after.has_minimum_stake()
                 && operator_snapshot_after.is_active(),
             "Operator snapshot should be eligible to vote (has minimum stake weight and is active)"
             );
@@ -399,63 +352,37 @@ mod tests {
             );
             println!(
                 "   • Has minimum stake: {} → {}",
-                operator_snapshot_before.has_minimum_stake_weight(),
-                operator_snapshot_after.has_minimum_stake_weight()
+                operator_snapshot_before.has_minimum_stake(),
+                operator_snapshot_after.has_minimum_stake()
             );
         }
 
         {
             // Warp to new epoch
             fixture.warp_epoch_incremental(1).await?;
+            fixture
+                .update_snapshot_test_ncn_new_epoch(&test_ncn)
+                .await?;
+
             let current_epoch = fixture.clock().await.epoch;
             println!("=== Testing Epoch: {} ===", current_epoch);
 
-            fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
-            // Initialize weight table for this epoch
-            ncn_program_client
-                .do_full_initialize_weight_table(ncn, current_epoch)
-                .await?;
-
-            let weight = 200;
-            ncn_program_client
-                .do_admin_set_weight(ncn, current_epoch, mint, weight)
-                .await?;
-
+            // operator snapshot before adding more delegation
             let operator_snapshot_before = ncn_program_client
                 .get_operator_snapshot(operator, ncn)
                 .await?;
 
-            println!(
-                "Before snapshot - Last snapshot slot: {}",
-                operator_snapshot_before.last_snapshot_slot()
-            );
-            println!(
-                "Before snapshot - Slot created: {}",
-                operator_snapshot_before.slot_created()
-            );
-            println!(
-                "Before snapshot - Stake weight: {}",
-                operator_snapshot_before.stake_weight().stake_weight()
-            );
-            println!(
-                "Before snapshot - Next epoch stake weight: {}",
-                operator_snapshot_before
-                    .next_epoch_stake_weight()
-                    .stake_weight()
-            );
-            println!(
-                "Before snapshot - Has minimum stake weight: {}",
-                operator_snapshot_before.has_minimum_stake_weight()
-            );
+            fixture.warp_slot_incremental(100).await?;
 
             // Record the current slot before snapshot
             let current_slot = fixture.clock().await.slot;
 
+            fixture.add_delegation_in_test_ncn(&test_ncn, 1000).await?;
             fixture
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
 
-            // Get operator snapshot after delegation snapshot
+            // Get operator snapshot after adding more delegation
             let epoch_snapshot_after = ncn_program_client.get_epoch_snapshot(ncn).await?;
             let operator_snapshot_after = ncn_program_client
                 .get_operator_snapshot(operator, ncn)
@@ -477,7 +404,7 @@ mod tests {
             );
             println!(
                 "After snapshot - Has minimum stake weight: {}",
-                operator_snapshot_after.has_minimum_stake_weight()
+                operator_snapshot_after.has_minimum_stake()
             );
 
             // Verify that last_snapshot_slot was updated
@@ -494,6 +421,10 @@ mod tests {
                 "Last snapshot slot should be at least the current slot in epoch {}",
                 current_epoch
             );
+
+            msg!("Last snapshot slot: {}", operator_snapshot_after);
+
+            msg!("Last snapshot slot before: {}", operator_snapshot_before);
 
             // Verify that stake weights were calculated and set
             assert!(
@@ -514,7 +445,7 @@ mod tests {
 
             // Verify that the operator snapshot can vote (has minimum stake weight and is active)
             assert!(
-            operator_snapshot_after.has_minimum_stake_weight()
+            operator_snapshot_after.has_minimum_stake()
                 && operator_snapshot_after.is_active(),
             "Operator snapshot should be eligible to vote (has minimum stake weight and is active)"
             );
@@ -532,8 +463,8 @@ mod tests {
             );
             println!(
                 "   • Has minimum stake: {} → {}",
-                operator_snapshot_before.has_minimum_stake_weight(),
-                operator_snapshot_after.has_minimum_stake_weight()
+                operator_snapshot_before.has_minimum_stake(),
+                operator_snapshot_after.has_minimum_stake()
             );
         }
 
@@ -542,8 +473,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_operator_snapshot_delegation_next_epoch_calculations() -> TestResult<()> {
+        const INITIAL_DELEGATION: u128 = 1000;
+        const MINIMUM_STAKE_WEIGHT: u128 = 10000;
+        const DELEGATION_TO_ADD: u128 = MINIMUM_STAKE_WEIGHT;
+        const DELEGATION_TO_REMOVE: u128 = MINIMUM_STAKE_WEIGHT / 2;
+        const DELEGATION_AFTER_ADDING: u128 = INITIAL_DELEGATION + DELEGATION_TO_ADD;
+        const DELEGATION_AFTER_COOLDOWN: u128 = DELEGATION_AFTER_ADDING - DELEGATION_TO_REMOVE;
+
         let mut fixture = TestBuilder::new().await;
-        let mut vault_client = fixture.vault_program_client();
+        let mut vault_client = fixture.vault_client();
 
         fixture.initialize_restaking_and_vault_programs().await?;
 
@@ -554,7 +492,7 @@ mod tests {
             .do_initialize_config(
                 test_ncn.ncn_root.ncn_pubkey,
                 &test_ncn.ncn_root.ncn_admin,
-                Some(10000),
+                Some(MINIMUM_STAKE_WEIGHT),
             )
             .await?;
 
@@ -568,11 +506,12 @@ mod tests {
         fixture
             .add_vaults_to_test_ncn(&mut test_ncn, 1, None)
             .await?;
-        fixture.add_delegation_in_test_ncn(&test_ncn, 10).await?;
+        fixture
+            .add_delegation_in_test_ncn(&test_ncn, INITIAL_DELEGATION as u64)
+            .await?;
         fixture.add_vault_registry_to_test_ncn(&test_ncn).await?;
         fixture.register_operators_to_test_ncn(&test_ncn).await?;
         fixture.add_epoch_state_for_test_ncn(&test_ncn).await?;
-        fixture.add_weights_for_test_ncn(&test_ncn).await?;
         fixture.add_epoch_snapshot_to_test_ncn(&test_ncn).await?;
         fixture
             .add_operator_snapshots_to_test_ncn(&test_ncn)
@@ -589,20 +528,25 @@ mod tests {
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
 
-            assert_eq!(operator_snapshot.stake_weight().stake_weight(), 1000);
+            assert_eq!(
+                operator_snapshot.stake_weight().stake_weight(),
+                INITIAL_DELEGATION
+            );
             assert_eq!(
                 operator_snapshot.next_epoch_stake_weight().stake_weight(),
-                1000
+                INITIAL_DELEGATION
             );
 
-            assert!(!operator_snapshot.has_minimum_stake_weight());
-            assert!(!operator_snapshot.has_minimum_stake_weight_next_epoch());
+            assert!(!operator_snapshot.has_minimum_stake());
+            assert!(!operator_snapshot.has_minimum_stake_next_epoch());
             msg!("Epoch Snapshot before more delegation: {}", epoch_snapshot);
         }
 
         {
             // adding more delegation should takes the operator to over the minimum stake weight
-            fixture.add_delegation_in_test_ncn(&test_ncn, 90).await?;
+            fixture
+                .add_delegation_in_test_ncn(&test_ncn, MINIMUM_STAKE_WEIGHT as u64)
+                .await?;
             fixture
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
@@ -611,14 +555,17 @@ mod tests {
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
 
-            assert_eq!(operator_snapshot.stake_weight().stake_weight(), 10000);
+            assert_eq!(
+                operator_snapshot.stake_weight().stake_weight(),
+                DELEGATION_AFTER_ADDING
+            );
             assert_eq!(
                 operator_snapshot.next_epoch_stake_weight().stake_weight(),
-                10000
+                DELEGATION_AFTER_ADDING
             );
             //
-            assert!(operator_snapshot.has_minimum_stake_weight());
-            assert!(operator_snapshot.has_minimum_stake_weight_next_epoch());
+            assert!(operator_snapshot.has_minimum_stake());
+            assert!(operator_snapshot.has_minimum_stake_next_epoch());
             msg!("Epoch Snapshot after delegation: {}", epoch_snapshot);
         }
 
@@ -628,7 +575,7 @@ mod tests {
                 .do_cooldown_delegation(
                     &test_ncn.vaults[0],
                     &test_ncn.operators[0].operator_pubkey,
-                    10,
+                    DELEGATION_TO_REMOVE as u64,
                 )
                 .await?;
 
@@ -640,13 +587,16 @@ mod tests {
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
 
-            assert_eq!(operator_snapshot.stake_weight().stake_weight(), 10000);
+            assert_eq!(
+                operator_snapshot.stake_weight().stake_weight(),
+                DELEGATION_AFTER_ADDING
+            );
             assert_eq!(
                 operator_snapshot.next_epoch_stake_weight().stake_weight(),
-                10000
+                DELEGATION_AFTER_ADDING
             );
-            assert!(operator_snapshot.has_minimum_stake_weight());
-            assert!(operator_snapshot.has_minimum_stake_weight_next_epoch());
+            assert!(operator_snapshot.has_minimum_stake());
+            assert!(operator_snapshot.has_minimum_stake_next_epoch());
 
             msg!(
                 "Epoch Snapshot after cooldown delegation: {}",
@@ -665,13 +615,16 @@ mod tests {
                 .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
-            assert_eq!(operator_snapshot.stake_weight().stake_weight(), 10000);
+            assert_eq!(
+                operator_snapshot.stake_weight().stake_weight(),
+                DELEGATION_AFTER_ADDING
+            );
             assert_eq!(
                 operator_snapshot.next_epoch_stake_weight().stake_weight(),
-                9000
+                DELEGATION_AFTER_COOLDOWN
             );
-            assert!(operator_snapshot.has_minimum_stake_weight());
-            assert!(!operator_snapshot.has_minimum_stake_weight_next_epoch());
+            assert!(operator_snapshot.has_minimum_stake());
+            assert!(!operator_snapshot.has_minimum_stake_next_epoch());
             msg!(
                 "Epoch Snapshot after warpping one epoch: {}",
                 epoch_snapshot
@@ -689,13 +642,16 @@ mod tests {
                 .get_epoch_snapshot(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
             let operator_snapshot = epoch_snapshot.get_operator_snapshot(0).unwrap();
-            assert_eq!(operator_snapshot.stake_weight().stake_weight(), 9000);
+            assert_eq!(
+                operator_snapshot.stake_weight().stake_weight(),
+                DELEGATION_AFTER_COOLDOWN
+            );
             assert_eq!(
                 operator_snapshot.next_epoch_stake_weight().stake_weight(),
-                9000
+                DELEGATION_AFTER_COOLDOWN
             );
-            assert!(!operator_snapshot.has_minimum_stake_weight());
-            assert!(!operator_snapshot.has_minimum_stake_weight_next_epoch());
+            assert!(!operator_snapshot.has_minimum_stake());
+            assert!(!operator_snapshot.has_minimum_stake_next_epoch());
             msg!(
                 "Epoch Snapshot after warpping two epochs: {}",
                 epoch_snapshot

@@ -13,4 +13,3 @@ export * from './epochState';
 export * from './nCNOperatorAccount';
 export * from './vaultRegistry';
 export * from './voteCounter';
-export * from './weightTable';

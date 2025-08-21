@@ -18,5 +18,4 @@ pub struct StMintEntry {
     )]
     pub st_mint: Pubkey,
     pub reserve_switchboard_feed: [u8; 32],
-    pub weight: u128,
 }

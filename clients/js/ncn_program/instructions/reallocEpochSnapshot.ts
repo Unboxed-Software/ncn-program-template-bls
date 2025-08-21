@@ -29,7 +29,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR = 10;
+export const REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR = 8;
 
 export function getReallocEpochSnapshotDiscriminatorBytes() {
   return getU8Encoder().encode(REALLOC_EPOCH_SNAPSHOT_DISCRIMINATOR);
@@ -40,7 +40,6 @@ export type ReallocEpochSnapshotInstruction<
   TAccountEpochState extends string | IAccountMeta<string> = string,
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountConfig extends string | IAccountMeta<string> = string,
-  TAccountWeightTable extends string | IAccountMeta<string> = string,
   TAccountEpochSnapshot extends string | IAccountMeta<string> = string,
   TAccountAccountPayer extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
@@ -58,9 +57,6 @@ export type ReallocEpochSnapshotInstruction<
       TAccountConfig extends string
         ? ReadonlyAccount<TAccountConfig>
         : TAccountConfig,
-      TAccountWeightTable extends string
-        ? ReadonlyAccount<TAccountWeightTable>
-        : TAccountWeightTable,
       TAccountEpochSnapshot extends string
         ? WritableAccount<TAccountEpochSnapshot>
         : TAccountEpochSnapshot,
@@ -117,7 +113,6 @@ export type ReallocEpochSnapshotInput<
   TAccountEpochState extends string = string,
   TAccountNcn extends string = string,
   TAccountConfig extends string = string,
-  TAccountWeightTable extends string = string,
   TAccountEpochSnapshot extends string = string,
   TAccountAccountPayer extends string = string,
   TAccountSystemProgram extends string = string,
@@ -125,7 +120,6 @@ export type ReallocEpochSnapshotInput<
   epochState: Address<TAccountEpochState>;
   ncn: Address<TAccountNcn>;
   config: Address<TAccountConfig>;
-  weightTable: Address<TAccountWeightTable>;
   epochSnapshot: Address<TAccountEpochSnapshot>;
   accountPayer: Address<TAccountAccountPayer>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -136,7 +130,6 @@ export function getReallocEpochSnapshotInstruction<
   TAccountEpochState extends string,
   TAccountNcn extends string,
   TAccountConfig extends string,
-  TAccountWeightTable extends string,
   TAccountEpochSnapshot extends string,
   TAccountAccountPayer extends string,
   TAccountSystemProgram extends string,
@@ -146,7 +139,6 @@ export function getReallocEpochSnapshotInstruction<
     TAccountEpochState,
     TAccountNcn,
     TAccountConfig,
-    TAccountWeightTable,
     TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
@@ -157,7 +149,6 @@ export function getReallocEpochSnapshotInstruction<
   TAccountEpochState,
   TAccountNcn,
   TAccountConfig,
-  TAccountWeightTable,
   TAccountEpochSnapshot,
   TAccountAccountPayer,
   TAccountSystemProgram
@@ -170,7 +161,6 @@ export function getReallocEpochSnapshotInstruction<
     epochState: { value: input.epochState ?? null, isWritable: true },
     ncn: { value: input.ncn ?? null, isWritable: false },
     config: { value: input.config ?? null, isWritable: false },
-    weightTable: { value: input.weightTable ?? null, isWritable: false },
     epochSnapshot: { value: input.epochSnapshot ?? null, isWritable: true },
     accountPayer: { value: input.accountPayer ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
@@ -195,7 +185,6 @@ export function getReallocEpochSnapshotInstruction<
       getAccountMeta(accounts.epochState),
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.config),
-      getAccountMeta(accounts.weightTable),
       getAccountMeta(accounts.epochSnapshot),
       getAccountMeta(accounts.accountPayer),
       getAccountMeta(accounts.systemProgram),
@@ -209,7 +198,6 @@ export function getReallocEpochSnapshotInstruction<
     TAccountEpochState,
     TAccountNcn,
     TAccountConfig,
-    TAccountWeightTable,
     TAccountEpochSnapshot,
     TAccountAccountPayer,
     TAccountSystemProgram
@@ -227,10 +215,9 @@ export type ParsedReallocEpochSnapshotInstruction<
     epochState: TAccountMetas[0];
     ncn: TAccountMetas[1];
     config: TAccountMetas[2];
-    weightTable: TAccountMetas[3];
-    epochSnapshot: TAccountMetas[4];
-    accountPayer: TAccountMetas[5];
-    systemProgram: TAccountMetas[6];
+    epochSnapshot: TAccountMetas[3];
+    accountPayer: TAccountMetas[4];
+    systemProgram: TAccountMetas[5];
   };
   data: ReallocEpochSnapshotInstructionData;
 };
@@ -243,7 +230,7 @@ export function parseReallocEpochSnapshotInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedReallocEpochSnapshotInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 7) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -259,7 +246,6 @@ export function parseReallocEpochSnapshotInstruction<
       epochState: getNextAccount(),
       ncn: getNextAccount(),
       config: getNextAccount(),
-      weightTable: getNextAccount(),
       epochSnapshot: getNextAccount(),
       accountPayer: getNextAccount(),
       systemProgram: getNextAccount(),

@@ -4,7 +4,6 @@ use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
     account_payer::AccountPayer, config::Config, epoch_snapshot::EpochSnapshot,
     epoch_state::EpochState, error::NCNProgramError, utils::get_new_size,
-    weight_table::WeightTable,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,
@@ -19,18 +18,15 @@ use solana_program::{
 /// ### Accounts:
 /// 1. `[writable]` epoch_state: The epoch state account for the target epoch
 /// 2. `[]` ncn: The NCN account
-/// 3. `[]` weight_table: Weight table for the target epoch
-/// 4. `[writable]` epoch_snapshot: The epoch snapshot account to resize and initialize
-/// 5. `[writable, signer]` account_payer: Account paying for reallocation
-/// 6. `[]` system_program: Solana System Program
+/// 3. `[writable]` epoch_snapshot: The epoch snapshot account to resize and initialize
+/// 4. `[writable, signer]` account_payer: Account paying for reallocation
+/// 5. `[]` system_program: Solana System Program
 pub fn process_realloc_epoch_snapshot(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     epoch: u64,
 ) -> ProgramResult {
-    let [epoch_state, ncn, config, weight_table, epoch_snapshot, account_payer, system_program] =
-        accounts
-    else {
+    let [epoch_state, ncn, config, epoch_snapshot, account_payer, system_program] = accounts else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -48,21 +44,6 @@ pub fn process_realloc_epoch_snapshot(
         msg!("Error: Epoch snapshot account is not at the correct PDA");
         return Err(ProgramError::InvalidAccountData);
     }
-
-    WeightTable::load(program_id, weight_table, ncn.key, epoch, false)?;
-
-    // Weight table needs to be finalized before the snapshot can be taken
-    let vault_count = {
-        let weight_table_data = weight_table.data.borrow();
-        let weight_table_account = WeightTable::try_from_slice_unchecked(&weight_table_data)?;
-
-        if !weight_table_account.finalized() {
-            msg!("Error: Weight table must be finalized before reallocating epoch snapshot");
-            return Err(NCNProgramError::WeightTableNotFinalized.into());
-        }
-
-        weight_table_account.vault_count()
-    };
 
     let epoch_snapshot_size = epoch_snapshot.data_len();
     if epoch_snapshot_size < EpochSnapshot::SIZE {
@@ -95,10 +76,10 @@ pub fn process_realloc_epoch_snapshot(
             return Err(NCNProgramError::NoOperators.into());
         }
 
-        let minimum_stake_weight = {
+        let minimum_stake = {
             let config_data = config.try_borrow_data()?;
             let config_account = Config::try_from_slice_unchecked(&config_data)?;
-            *config_account.minimum_stake_weight()
+            *config_account.minimum_stake()
         };
 
         let mut epoch_snapshot_data = epoch_snapshot.try_borrow_mut_data()?;
@@ -107,9 +88,8 @@ pub fn process_realloc_epoch_snapshot(
             EpochSnapshot::try_from_slice_unchecked_mut(&mut epoch_snapshot_data)?;
 
         msg!(
-            "Initializing epoch snapshot with operator count: {} and vault count: {}",
+            "Initializing epoch snapshot with operator count: {}",
             operator_count,
-            vault_count
         );
 
         epoch_snapshot_account.initialize(
@@ -118,7 +98,7 @@ pub fn process_realloc_epoch_snapshot(
             epoch_snapshot_bump,
             current_slot,
             operator_count,
-            minimum_stake_weight,
+            minimum_stake,
         );
     } else {
         msg!("Epoch snapshot already initialized, skipping initialization");

@@ -19,7 +19,6 @@ use crate::{
     g1_point::{G1CompressedPoint, G1Point},
     loaders::check_load,
     stake_weight::StakeWeights,
-    weight_table::WeightTable,
 };
 
 // PDA'd ["epoch_snapshot", NCN, NCN_EPOCH_SLOT]
@@ -45,7 +44,7 @@ pub struct EpochSnapshot {
     /// Array of operator snapshots
     operator_snapshots: [OperatorSnapshot; 256],
     /// Minimum stake weight required to vote
-    minimum_stake_weight: StakeWeights,
+    minimum_stake: StakeWeights,
 
     last_snapshot_slot: PodU64, // Track the last slot when the snapshot was taken
 }
@@ -64,7 +63,7 @@ impl EpochSnapshot {
         bump: u8,
         current_slot: u64,
         operator_count: u64,
-        minimum_stake_weight: StakeWeights,
+        minimum_stake: StakeWeights,
     ) -> Self {
         Self {
             ncn: *ncn,
@@ -77,7 +76,7 @@ impl EpochSnapshot {
             operators_can_vote_count: PodU64::from(0),
             total_aggregated_g1_pubkey: [0; G1_COMPRESSED_POINT_SIZE],
             operator_snapshots: [OperatorSnapshot::default(); 256],
-            minimum_stake_weight,
+            minimum_stake,
         }
     }
 
@@ -89,7 +88,7 @@ impl EpochSnapshot {
         bump: u8,
         current_slot: u64,
         operator_count: u64,
-        minimum_stake_weight: StakeWeights,
+        minimum_stake: StakeWeights,
     ) {
         // Initializes field by field to avoid overflowing stack
         self.ncn = *ncn;
@@ -103,7 +102,7 @@ impl EpochSnapshot {
         self.total_aggregated_g1_pubkey = [0; G1_COMPRESSED_POINT_SIZE];
         let default_operator_snapshot = OperatorSnapshot::default();
         self.operator_snapshots = [default_operator_snapshot; 256];
-        self.minimum_stake_weight = minimum_stake_weight;
+        self.minimum_stake = minimum_stake;
     }
 
     pub fn seeds(ncn: &Pubkey) -> Vec<Vec<u8>> {
@@ -169,8 +168,8 @@ impl EpochSnapshot {
         self.last_snapshot_slot.into()
     }
 
-    pub fn minimum_stake_weight(&self) -> &StakeWeights {
-        &self.minimum_stake_weight
+    pub fn minimum_stake(&self) -> &StakeWeights {
+        &self.minimum_stake
     }
 
     pub fn increment_operator_registration(
@@ -345,8 +344,8 @@ pub struct OperatorSnapshot {
 
     operator_index: PodU64,
 
-    has_minimum_stake_weight: PodBool,
-    has_minimum_stake_weight_next_epoch: PodBool,
+    has_minimum_stake: PodBool,
+    has_minimum_stake_next_epoch: PodBool,
 
     stake_weight: StakeWeights,
     next_epoch_stake_weight: StakeWeights,
@@ -362,8 +361,8 @@ impl Default for OperatorSnapshot {
             is_active: PodBool::from(false),
             ncn_operator_index: PodU64::from(u64::MAX),
             operator_index: PodU64::from(u64::MAX),
-            has_minimum_stake_weight: PodBool::from(false),
-            has_minimum_stake_weight_next_epoch: PodBool::from(false),
+            has_minimum_stake: PodBool::from(false),
+            has_minimum_stake_next_epoch: PodBool::from(false),
             stake_weight: StakeWeights::default(),
             next_epoch_stake_weight: StakeWeights::default(),
         }
@@ -388,8 +387,8 @@ impl OperatorSnapshot {
             ncn_operator_index: PodU64::from(ncn_operator_index),
             operator_index: PodU64::from(operator_index),
             g1_pubkey,
-            has_minimum_stake_weight: PodBool::from(false),
-            has_minimum_stake_weight_next_epoch: PodBool::from(false),
+            has_minimum_stake: PodBool::from(false),
+            has_minimum_stake_next_epoch: PodBool::from(false),
             stake_weight: StakeWeights::default(),
             next_epoch_stake_weight: StakeWeights::default(),
         })
@@ -418,8 +417,8 @@ impl OperatorSnapshot {
         self.ncn_operator_index = PodU64::from(ncn_operator_index);
         self.operator_index = PodU64::from(operator_index);
         self.g1_pubkey = g1_pubkey;
-        self.has_minimum_stake_weight = PodBool::from(false);
-        self.has_minimum_stake_weight_next_epoch = PodBool::from(false);
+        self.has_minimum_stake = PodBool::from(false);
+        self.has_minimum_stake_next_epoch = PodBool::from(false);
         self.stake_weight = StakeWeights::default();
 
         Ok(())
@@ -458,19 +457,19 @@ impl OperatorSnapshot {
         &self.operator
     }
 
-    pub fn has_minimum_stake_weight(&self) -> bool {
-        self.has_minimum_stake_weight.into()
+    pub fn has_minimum_stake(&self) -> bool {
+        self.has_minimum_stake.into()
     }
 
-    pub fn has_minimum_stake_weight_now(
+    pub fn has_minimum_stake_now(
         &self,
         current_epoch: u64,
         snapshot_epoch: u64,
     ) -> Result<bool, NCNProgramError> {
         let epoch_diff = current_epoch - snapshot_epoch;
         match epoch_diff {
-            0 => Ok(self.has_minimum_stake_weight.into()),
-            1 => Ok(self.has_minimum_stake_weight_next_epoch.into()),
+            0 => Ok(self.has_minimum_stake.into()),
+            1 => Ok(self.has_minimum_stake_next_epoch.into()),
             _ => {
                 msg!("Operator snapshot is outdated: {}", self.operator());
                 Err(NCNProgramError::OperatorSnapshotOutdated)
@@ -478,8 +477,8 @@ impl OperatorSnapshot {
         }
     }
 
-    pub fn has_minimum_stake_weight_next_epoch(&self) -> bool {
-        self.has_minimum_stake_weight_next_epoch.into()
+    pub fn has_minimum_stake_next_epoch(&self) -> bool {
+        self.has_minimum_stake_next_epoch.into()
     }
 
     pub fn stake_weight(&self) -> &StakeWeights {
@@ -490,12 +489,12 @@ impl OperatorSnapshot {
         &self.next_epoch_stake_weight
     }
 
-    pub fn set_has_minimum_stake_weight_this_epoch(&mut self, has_minimum_stake_weight: bool) {
-        self.has_minimum_stake_weight = PodBool::from(has_minimum_stake_weight);
+    pub fn set_has_minimum_stake_this_epoch(&mut self, has_minimum_stake: bool) {
+        self.has_minimum_stake = PodBool::from(has_minimum_stake);
     }
 
-    pub fn set_has_minimum_stake_weight_next_epoch(&mut self, has_minimum_stake_weight: bool) {
-        self.has_minimum_stake_weight_next_epoch = PodBool::from(has_minimum_stake_weight);
+    pub fn set_has_minimum_stake_next_epoch(&mut self, has_minimum_stake: bool) {
+        self.has_minimum_stake_next_epoch = PodBool::from(has_minimum_stake);
     }
 
     pub fn set_stake_weight(&mut self, stake_weight_so_far: &StakeWeights) {
@@ -511,17 +510,17 @@ impl OperatorSnapshot {
         current_slot: u64,
         stake_weights: &StakeWeights,
         next_epoch_stake_weights: &StakeWeights,
-        minimum_stake_weight: &StakeWeights,
+        minimum_stake: &StakeWeights,
     ) -> Result<(), NCNProgramError> {
         self.set_stake_weight(stake_weights);
         self.set_next_epoch_stake_weight(next_epoch_stake_weights);
 
-        self.set_has_minimum_stake_weight_this_epoch(
-            self.stake_weight().stake_weight() >= minimum_stake_weight.stake_weight(),
+        self.set_has_minimum_stake_this_epoch(
+            self.stake_weight().stake_weight() >= minimum_stake.stake_weight(),
         );
 
-        self.set_has_minimum_stake_weight_next_epoch(
-            self.next_epoch_stake_weight().stake_weight() >= minimum_stake_weight.stake_weight(),
+        self.set_has_minimum_stake_next_epoch(
+            self.next_epoch_stake_weight().stake_weight() >= minimum_stake.stake_weight(),
         );
 
         self.last_snapshot_slot = PodU64::from(current_slot);
@@ -530,8 +529,6 @@ impl OperatorSnapshot {
 
     pub fn calculate_stake_weights(
         vault_operator_delegation: &VaultOperatorDelegation,
-        weight_table: &WeightTable,
-        st_mint: &Pubkey,
     ) -> Result<(u128, u128), ProgramError> {
         let total_security = vault_operator_delegation
             .delegation_state
@@ -549,19 +546,10 @@ impl OperatorSnapshot {
             .checked_sub(&precies_cooling_down_amount)
             .ok_or(NCNProgramError::ArithmeticUnderflowError)?;
 
-        let precise_weight = weight_table.get_precise_weight(st_mint)?;
-
-        let precise_total_stake_weight = precise_total_security
-            .checked_mul(&precise_weight)
-            .ok_or(NCNProgramError::ArithmeticOverflow)?;
-        let precise_next_epoch_stake_weight = precise_next_epoch_securites
-            .checked_mul(&precise_weight)
-            .ok_or(NCNProgramError::ArithmeticOverflow)?;
-
-        let total_stake_weight = precise_total_stake_weight
+        let total_stake_weight = precise_total_security
             .to_imprecise()
             .ok_or(NCNProgramError::CastToImpreciseNumberError)?;
-        let next_epoch_stake_weight = precise_next_epoch_stake_weight
+        let next_epoch_stake_weight = precise_next_epoch_securites
             .to_imprecise()
             .ok_or(NCNProgramError::CastToImpreciseNumberError)?;
 
@@ -625,7 +613,7 @@ impl fmt::Display for EpochSnapshot {
        writeln!(f, "  Operators can vote:           {}", self.operators_can_vote_count())?;
        writeln!(f, "  Last Snapshot Slot:           {}", self.last_snapshot_slot())?;
        writeln!(f, "  Total Agg G1 Pubkey:          {:?}", self.total_aggregated_g1_pubkey())?;
-       writeln!(f, "  Minimum Stake Weight:         {:?}", self.minimum_stake_weight())?;
+       writeln!(f, "  Minimum Stake Weight:         {:?}", self.minimum_stake())?;
        writeln!(f, "  operators snapshots:")?;
        for operator_snapshot in self.operator_snapshots.iter() {
         if operator_snapshot.ncn_operator_index() != u64::MAX {
@@ -648,8 +636,8 @@ impl fmt::Display for OperatorSnapshot {
        writeln!(f, "  Slot Last Snapshoted:         {}", self.last_snapshot_slot())?;
        writeln!(f, "  Is Snapshoted:                {}", self.is_snapshoted())?;
        writeln!(f, "  G1 Pubkey:                    {:?}", self.g1_pubkey())?;
-       writeln!(f, "  Has Minimum Stake Weight:     {}", self.has_minimum_stake_weight())?;
-       writeln!(f, "  Has Minimum next epoch:       {}", self.has_minimum_stake_weight_next_epoch())?;
+       writeln!(f, "  Has Minimum Stake Weight:     {}", self.has_minimum_stake())?;
+       writeln!(f, "  Has Minimum next epoch:       {}", self.has_minimum_stake_next_epoch())?;
        writeln!(f, "  Stake Weight:                 {:?}", self.stake_weight())?;
        writeln!(f, "  Next Epoch Stake Weight:      {:?}", self.next_epoch_stake_weight())?;
 
@@ -675,8 +663,8 @@ mod tests {
             + size_of::<PodBool>() // is_active
             + size_of::<PodU64>() // ncn_operator_index
             + size_of::<PodU64>() // operator_index
-            + size_of::<PodBool>() // has_minimum_stake_weight
-            + size_of::<PodBool>() // has_minimum_stake_weight_next_epoch
+            + size_of::<PodBool>() // has_minimum_stake
+            + size_of::<PodBool>() // has_minimum_stake_next_epoch
             + size_of::<StakeWeights>() // stake_weight
             + size_of::<StakeWeights>(); // next_epoch_stake_weight
 
@@ -699,7 +687,7 @@ mod tests {
             + size_of::<PodU64>() // operators_can_vote_count
             + size_of::<[u8; G1_COMPRESSED_POINT_SIZE]>() // total_aggregated_g1_pubkey
             + size_of::<[OperatorSnapshot; 256]>() // operator_snapshots
-            + size_of::<StakeWeights>(); // minimum_stake_weight
+            + size_of::<StakeWeights>(); // minimum_stake
 
         assert_eq!(size_of::<EpochSnapshot>(), expected_total);
     }
@@ -725,7 +713,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count - set to 1
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         // Set operators_registered equal to operator_count to make it finalized
@@ -790,7 +778,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
         // Initial aggregated is zero
         assert_eq!(
@@ -834,7 +822,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         ));
 
         // Verify initial state - total_aggregated_g1_pubkey should be all zeros
@@ -873,7 +861,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         ));
 
         // Generate multiple random G1 pubkeys
@@ -986,7 +974,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         // Register operators in different orders
@@ -1004,7 +992,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
         // Snapshot 2: operator2 first, then operator1
         snapshot2
@@ -1030,7 +1018,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         ));
 
         // Initially should be all zeros
@@ -1058,7 +1046,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         ));
 
         // Create an operator snapshot
@@ -1102,7 +1090,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         ));
 
         // Create operator snapshots
@@ -1162,7 +1150,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         ));
 
         // Create two operator snapshots with the same index
@@ -1209,7 +1197,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             3,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         ));
 
         let g1_pubkey = G1CompressedPoint::from_random().0;
@@ -1262,7 +1250,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         epoch_snapshot.initialize(
@@ -1271,7 +1259,7 @@ mod tests {
             2,                      // bump
             200,                    // current_slot
             10,                     // operator_count
-            StakeWeights::new(100), // minimum_stake_weight
+            StakeWeights::new(100), // minimum_stake
         );
 
         assert_eq!(epoch_snapshot.ncn, ncn);
@@ -1279,7 +1267,7 @@ mod tests {
         assert_eq!(epoch_snapshot.bump, 2);
         assert_eq!(u64::from(epoch_snapshot.slot_created), 200u64);
         assert_eq!(epoch_snapshot.operator_count(), 10);
-        assert_eq!(epoch_snapshot.minimum_stake_weight().stake_weight(), 100);
+        assert_eq!(epoch_snapshot.minimum_stake().stake_weight(), 100);
     }
 
     #[test]
@@ -1307,7 +1295,7 @@ mod tests {
             3,                      // bump
             500,                    // current_slot
             15,                     // operator_count
-            StakeWeights::new(200), // minimum_stake_weight
+            StakeWeights::new(200), // minimum_stake
         );
 
         assert_eq!(epoch_snapshot.epoch(), 10);
@@ -1315,7 +1303,7 @@ mod tests {
         assert_eq!(epoch_snapshot.operators_registered(), 0);
         assert_eq!(epoch_snapshot.operators_can_vote_count(), 0);
         assert_eq!(epoch_snapshot.last_snapshot_slot(), 0);
-        assert_eq!(epoch_snapshot.minimum_stake_weight().stake_weight(), 200);
+        assert_eq!(epoch_snapshot.minimum_stake().stake_weight(), 200);
     }
 
     #[test]
@@ -1326,7 +1314,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         // First increment - should succeed
@@ -1351,7 +1339,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         // Test getting non-existent snapshot
@@ -1392,7 +1380,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         // Add an operator snapshot
@@ -1418,13 +1406,13 @@ mod tests {
 
         // Modify the snapshot
         if let Some(snapshot) = mut_snapshot {
-            snapshot.set_has_minimum_stake_weight_this_epoch(true);
-            assert!(snapshot.has_minimum_stake_weight());
+            snapshot.set_has_minimum_stake_this_epoch(true);
+            assert!(snapshot.has_minimum_stake());
         }
 
         // Verify the change persisted
         let retrieved = epoch_snapshot.get_operator_snapshot(0);
-        assert!(retrieved.unwrap().has_minimum_stake_weight());
+        assert!(retrieved.unwrap().has_minimum_stake());
     }
 
     #[test]
@@ -1435,7 +1423,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         let operator_pubkey = Pubkey::new_unique();
@@ -1471,7 +1459,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             2,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         let g1_pubkey = G1CompressedPoint::from_random().0;
@@ -1514,7 +1502,7 @@ mod tests {
         assert_eq!(snapshot.ncn_operator_index(), 5);
         assert_eq!(u64::from(snapshot.operator_index), 10u64);
         assert_eq!(snapshot.g1_pubkey(), g1_pubkey);
-        assert!(!snapshot.has_minimum_stake_weight());
+        assert!(!snapshot.has_minimum_stake());
         assert_eq!(snapshot.stake_weight().stake_weight(), 0);
     }
 
@@ -1583,7 +1571,7 @@ mod tests {
 
         // Test initial state
         assert_eq!(snapshot.stake_weight().stake_weight(), 0);
-        assert!(!snapshot.has_minimum_stake_weight());
+        assert!(!snapshot.has_minimum_stake());
 
         // Test setting stake weight
         let stake_weight = StakeWeights::new(100);
@@ -1596,8 +1584,8 @@ mod tests {
         assert_eq!(snapshot.stake_weight().stake_weight(), 150);
 
         // Test setting minimum stake weight flag
-        snapshot.set_has_minimum_stake_weight_this_epoch(true);
-        assert!(snapshot.has_minimum_stake_weight());
+        snapshot.set_has_minimum_stake_this_epoch(true);
+        assert!(snapshot.has_minimum_stake());
     }
 
     #[test]
@@ -1631,7 +1619,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         // Test with invalid G1 pubkey (all zeros except one byte)
@@ -1651,15 +1639,12 @@ mod tests {
             255,                          // bump
             u64::MAX,                     // current_slot
             MAX_OPERATORS as u64,         // operator_count
-            StakeWeights::new(u128::MAX), // minimum_stake_weight
+            StakeWeights::new(u128::MAX), // minimum_stake
         );
 
         assert_eq!(epoch_snapshot.epoch(), u64::MAX);
         assert_eq!(epoch_snapshot.operator_count(), MAX_OPERATORS as u64);
-        assert_eq!(
-            epoch_snapshot.minimum_stake_weight().stake_weight(),
-            u128::MAX
-        );
+        assert_eq!(epoch_snapshot.minimum_stake().stake_weight(), u128::MAX);
     }
 
     #[test]
@@ -1690,7 +1675,7 @@ mod tests {
             1,                    // bump
             100,                  // current_slot
             1,                    // operator_count
-            StakeWeights::new(1), // minimum_stake_weight
+            StakeWeights::new(1), // minimum_stake
         );
 
         // Set to maximum values to test overflow
@@ -1772,14 +1757,14 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             0
         );
-        assert!(!operator_snapshot.has_minimum_stake_weight());
-        assert!(!operator_snapshot.has_minimum_stake_weight_next_epoch());
+        assert!(!operator_snapshot.has_minimum_stake());
+        assert!(!operator_snapshot.has_minimum_stake_next_epoch());
         assert_eq!(operator_snapshot.last_snapshot_slot(), 0);
 
         // Create stake weights for testing
         let current_stake_weights = StakeWeights::new(1000);
         let next_epoch_stake_weights = StakeWeights::new(1200);
-        let minimum_stake_weight = StakeWeights::new(500);
+        let minimum_stake = StakeWeights::new(500);
 
         // Call snapshot_vault_operator_delegation once
         let current_slot = 150;
@@ -1787,7 +1772,7 @@ mod tests {
             current_slot,
             &current_stake_weights,
             &next_epoch_stake_weights,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
 
         // Verify the call succeeded
@@ -1799,8 +1784,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             1200
         );
-        assert!(operator_snapshot.has_minimum_stake_weight()); // 1000 >= 500
-        assert!(operator_snapshot.has_minimum_stake_weight_next_epoch()); // 1200 >= 500
+        assert!(operator_snapshot.has_minimum_stake()); // 1000 >= 500
+        assert!(operator_snapshot.has_minimum_stake_next_epoch()); // 1200 >= 500
         assert_eq!(operator_snapshot.last_snapshot_slot(), current_slot);
         assert!(operator_snapshot.is_snapshoted());
     }
@@ -1819,7 +1804,7 @@ mod tests {
         )
         .unwrap();
 
-        let minimum_stake_weight = StakeWeights::new(500);
+        let minimum_stake = StakeWeights::new(500);
 
         // First snapshot - initial stake weights
         let current_stake_weights_1 = StakeWeights::new(1000);
@@ -1830,7 +1815,7 @@ mod tests {
             current_slot_1,
             &current_stake_weights_1,
             &next_epoch_stake_weights_1,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
 
@@ -1840,8 +1825,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             1200
         );
-        assert!(operator_snapshot.has_minimum_stake_weight());
-        assert!(operator_snapshot.has_minimum_stake_weight_next_epoch());
+        assert!(operator_snapshot.has_minimum_stake());
+        assert!(operator_snapshot.has_minimum_stake_next_epoch());
         assert_eq!(operator_snapshot.last_snapshot_slot(), current_slot_1);
 
         // Second snapshot - updated stake weights (increased)
@@ -1853,7 +1838,7 @@ mod tests {
             current_slot_2,
             &current_stake_weights_2,
             &next_epoch_stake_weights_2,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
 
@@ -1863,8 +1848,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             1800
         );
-        assert!(operator_snapshot.has_minimum_stake_weight()); // 1500 >= 500
-        assert!(operator_snapshot.has_minimum_stake_weight_next_epoch()); // 1800 >= 500
+        assert!(operator_snapshot.has_minimum_stake()); // 1500 >= 500
+        assert!(operator_snapshot.has_minimum_stake_next_epoch()); // 1800 >= 500
         assert_eq!(operator_snapshot.last_snapshot_slot(), current_slot_2);
 
         // Third snapshot - decreased stake weights
@@ -1876,7 +1861,7 @@ mod tests {
             current_slot_3,
             &current_stake_weights_3,
             &next_epoch_stake_weights_3,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
 
@@ -1886,8 +1871,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             900
         );
-        assert!(operator_snapshot.has_minimum_stake_weight()); // 800 >= 500
-        assert!(operator_snapshot.has_minimum_stake_weight_next_epoch()); // 900 >= 500
+        assert!(operator_snapshot.has_minimum_stake()); // 800 >= 500
+        assert!(operator_snapshot.has_minimum_stake_next_epoch()); // 900 >= 500
         assert_eq!(operator_snapshot.last_snapshot_slot(), current_slot_3);
 
         // Fourth snapshot - stake weights below minimum
@@ -1899,7 +1884,7 @@ mod tests {
             current_slot_4,
             &current_stake_weights_4,
             &next_epoch_stake_weights_4,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
 
@@ -1909,8 +1894,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             400
         );
-        assert!(!operator_snapshot.has_minimum_stake_weight()); // 300 < 500
-        assert!(!operator_snapshot.has_minimum_stake_weight_next_epoch()); // 400 < 500
+        assert!(!operator_snapshot.has_minimum_stake()); // 300 < 500
+        assert!(!operator_snapshot.has_minimum_stake_next_epoch()); // 400 < 500
         assert_eq!(operator_snapshot.last_snapshot_slot(), current_slot_4);
     }
 
@@ -1934,13 +1919,13 @@ mod tests {
         // Try to call snapshot_vault_operator_delegation on inactive operator
         let current_stake_weights = StakeWeights::new(1000);
         let next_epoch_stake_weights = StakeWeights::new(1200);
-        let minimum_stake_weight = StakeWeights::new(500);
+        let minimum_stake = StakeWeights::new(500);
 
         let result = operator_snapshot.snapshot_vault_operator_delegation(
             150, // current_slot
             &current_stake_weights,
             &next_epoch_stake_weights,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
 
         // Should fail with OperatorSnapshotIsNotActive error
@@ -1965,7 +1950,7 @@ mod tests {
         )
         .unwrap();
 
-        let minimum_stake_weight = StakeWeights::new(1000);
+        let minimum_stake = StakeWeights::new(1000);
 
         // Test with zero stake weights
         let zero_stake_weights = StakeWeights::new(0);
@@ -1973,7 +1958,7 @@ mod tests {
             150,
             &zero_stake_weights,
             &zero_stake_weights,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
         assert_eq!(operator_snapshot.stake_weight().stake_weight(), 0);
@@ -1981,8 +1966,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             0
         );
-        assert!(!operator_snapshot.has_minimum_stake_weight()); // 0 < 1000
-        assert!(!operator_snapshot.has_minimum_stake_weight_next_epoch()); // 0 < 1000
+        assert!(!operator_snapshot.has_minimum_stake()); // 0 < 1000
+        assert!(!operator_snapshot.has_minimum_stake_next_epoch()); // 0 < 1000
 
         // Test with exactly minimum stake weight
         let exact_minimum = StakeWeights::new(1000);
@@ -1990,7 +1975,7 @@ mod tests {
             200,
             &exact_minimum,
             &exact_minimum,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
         assert_eq!(operator_snapshot.stake_weight().stake_weight(), 1000);
@@ -1998,8 +1983,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             1000
         );
-        assert!(operator_snapshot.has_minimum_stake_weight()); // 1000 >= 1000
-        assert!(operator_snapshot.has_minimum_stake_weight_next_epoch()); // 1000 >= 1000
+        assert!(operator_snapshot.has_minimum_stake()); // 1000 >= 1000
+        assert!(operator_snapshot.has_minimum_stake_next_epoch()); // 1000 >= 1000
 
         // Test with maximum stake weights
         let max_stake_weights = StakeWeights::new(u128::MAX);
@@ -2007,7 +1992,7 @@ mod tests {
             250,
             &max_stake_weights,
             &max_stake_weights,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
         assert_eq!(operator_snapshot.stake_weight().stake_weight(), u128::MAX);
@@ -2015,8 +2000,8 @@ mod tests {
             operator_snapshot.next_epoch_stake_weight().stake_weight(),
             u128::MAX
         );
-        assert!(operator_snapshot.has_minimum_stake_weight()); // u128::MAX >= 1000
-        assert!(operator_snapshot.has_minimum_stake_weight_next_epoch()); // u128::MAX >= 1000
+        assert!(operator_snapshot.has_minimum_stake()); // u128::MAX >= 1000
+        assert!(operator_snapshot.has_minimum_stake_next_epoch()); // u128::MAX >= 1000
     }
 
     #[test]
@@ -2034,7 +2019,7 @@ mod tests {
         .unwrap();
 
         let stake_weights = StakeWeights::new(1000);
-        let minimum_stake_weight = StakeWeights::new(500);
+        let minimum_stake = StakeWeights::new(500);
 
         // Initial state
         assert_eq!(operator_snapshot.last_snapshot_slot(), 0);
@@ -2045,7 +2030,7 @@ mod tests {
             150,
             &stake_weights,
             &stake_weights,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
         assert_eq!(operator_snapshot.last_snapshot_slot(), 150);
@@ -2056,7 +2041,7 @@ mod tests {
             200,
             &stake_weights,
             &stake_weights,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
         assert_eq!(operator_snapshot.last_snapshot_slot(), 200);
@@ -2066,7 +2051,7 @@ mod tests {
             175,
             &stake_weights,
             &stake_weights,
-            &minimum_stake_weight,
+            &minimum_stake,
         );
         assert!(result.is_ok());
         assert_eq!(operator_snapshot.last_snapshot_slot(), 175);

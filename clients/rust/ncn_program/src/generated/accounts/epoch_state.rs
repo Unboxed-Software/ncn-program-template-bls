@@ -25,7 +25,6 @@ pub struct EpochState {
     pub slot_created: u64,
     pub vault_count: u64,
     pub account_status: EpochAccountStatus,
-    pub set_weight_progress: Progress,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub operator_snapshot_progress: [Progress; 256],
     pub is_closing: bool,

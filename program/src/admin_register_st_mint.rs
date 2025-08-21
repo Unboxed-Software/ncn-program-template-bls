@@ -9,9 +9,6 @@ use solana_program::{
 
 /// Registers a new staked token mint in the vault registry.
 ///
-/// ### Parameters:
-/// - `weight`: Optional initial weight for the token
-///
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account
 /// 2. `[writable]` vault_registry: The vault registry to update
@@ -21,7 +18,6 @@ use solana_program::{
 pub fn process_admin_register_st_mint(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    weight: Option<u128>,
 ) -> ProgramResult {
     let [config, ncn, st_mint, vault_registry, admin] = accounts else {
         msg!("Error: Not enough account keys provided");
@@ -54,10 +50,7 @@ pub fn process_admin_register_st_mint(
     let vault_registry_account =
         VaultRegistry::try_from_slice_unchecked_mut(&mut vault_registry_data)?;
 
-    let weight = weight.unwrap_or_default();
-    msg!("Registering ST mint with weight: {}", weight);
-
-    vault_registry_account.register_st_mint(st_mint.key, weight)?;
+    vault_registry_account.register_st_mint(st_mint.key)?;
 
     Ok(())
 }

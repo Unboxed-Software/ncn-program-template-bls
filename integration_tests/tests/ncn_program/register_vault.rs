@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use jito_restaking_core::{config::Config, ncn_vault_ticket::NcnVaultTicket};
-    use ncn_program_core::constants::WEIGHT;
+
     use solana_sdk::{signature::Keypair, signer::Signer};
 
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
@@ -55,7 +55,7 @@ mod tests {
 
         // Register ST Mint
         ncn_program_client
-            .do_admin_register_st_mint(ncn_root.ncn_pubkey, st_mint, WEIGHT)
+            .do_admin_register_st_mint(ncn_root.ncn_pubkey, st_mint)
             .await?;
 
         // Register mint
@@ -146,7 +146,7 @@ mod tests {
 
         // Register ST Mint
         ncn_program_client
-            .do_admin_register_st_mint(ncn_root.ncn_pubkey, st_mint, WEIGHT)
+            .do_admin_register_st_mint(ncn_root.ncn_pubkey, st_mint)
             .await?;
 
         // Register mint first time

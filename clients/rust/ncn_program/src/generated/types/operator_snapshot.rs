@@ -24,8 +24,8 @@ pub struct OperatorSnapshot {
     pub is_active: bool,
     pub ncn_operator_index: u64,
     pub operator_index: u64,
-    pub has_minimum_stake_weight: bool,
-    pub has_minimum_stake_weight_next_epoch: bool,
+    pub has_minimum_stake: bool,
+    pub has_minimum_stake_next_epoch: bool,
     pub stake_weight: StakeWeights,
     pub next_epoch_stake_weight: StakeWeights,
 }

@@ -2,8 +2,6 @@ mod admin_initialize_config;
 mod admin_register_st_mint;
 mod admin_set_new_admin;
 mod admin_set_parameters;
-mod admin_set_st_mint;
-mod admin_set_weight;
 mod cast_vote;
 mod close_epoch_account;
 mod initialize_epoch_snapshot;
@@ -12,12 +10,10 @@ mod initialize_epoch_state;
 mod initialize_operator_snapshot;
 mod initialize_vault_registry;
 mod initialize_vote_counter;
-mod initialize_weight_table;
 mod realloc_epoch_snapshot;
 
 mod register_operator;
 mod register_vault;
-mod set_epoch_weights;
 mod snapshot_vault_operator_delegation;
 mod update_operator_bn128_keys;
 
@@ -35,17 +31,14 @@ use solana_security_txt::security_txt;
 use crate::{
     admin_initialize_config::process_admin_initialize_config,
     admin_register_st_mint::process_admin_register_st_mint,
-    admin_set_parameters::process_admin_set_parameters,
-    admin_set_st_mint::process_admin_set_st_mint, admin_set_weight::process_admin_set_weight,
-    cast_vote::process_cast_vote, close_epoch_account::process_close_epoch_account,
+    admin_set_parameters::process_admin_set_parameters, cast_vote::process_cast_vote,
+    close_epoch_account::process_close_epoch_account,
     initialize_epoch_snapshot::process_initialize_epoch_snapshot,
     initialize_operator_snapshot::process_initialize_operator_snapshot,
     initialize_vault_registry::process_initialize_vault_registry,
     initialize_vote_counter::process_initialize_vote_counter,
-    initialize_weight_table::process_initialize_weight_table,
     realloc_epoch_snapshot::process_realloc_epoch_snapshot,
     register_operator::process_register_operator, register_vault::process_register_vault,
-    set_epoch_weights::process_set_epoch_weights,
     snapshot_vault_operator_delegation::process_snapshot_vault_operator_delegation,
     update_operator_bn128_keys::process_update_operator_bn128_keys,
 };
@@ -86,7 +79,7 @@ pub fn process_instruction(
             epochs_before_stall,
             epochs_after_consensus_before_close,
             valid_slots_after_consensus,
-            minimum_stake_weight,
+            minimum_stake,
             ncn_fee_bps,
         } => {
             msg!("Instruction: InitializeConfig");
@@ -96,7 +89,7 @@ pub fn process_instruction(
                 epochs_before_stall,
                 epochs_after_consensus_before_close,
                 valid_slots_after_consensus,
-                minimum_stake_weight,
+                minimum_stake,
                 ncn_fee_bps,
             )
         }
@@ -139,14 +132,6 @@ pub fn process_instruction(
         NCNProgramInstruction::InitializeEpochState { epoch } => {
             msg!("Instruction: InitializeEpochState");
             process_initialize_epoch_state(program_id, accounts, epoch)
-        }
-        NCNProgramInstruction::InitializeWeightTable { epoch } => {
-            msg!("Instruction: InitializeWeightTable");
-            process_initialize_weight_table(program_id, accounts, epoch)
-        }
-        NCNProgramInstruction::SetEpochWeights { epoch } => {
-            msg!("Instruction: SetEpochWeights");
-            process_set_epoch_weights(program_id, accounts, epoch)
         }
         NCNProgramInstruction::InitializeEpochSnapshot { epoch } => {
             msg!("Instruction: InitializeEpochSnapshot");
@@ -199,7 +184,7 @@ pub fn process_instruction(
             epochs_before_stall,
             epochs_after_consensus_before_close,
             valid_slots_after_consensus,
-            minimum_stake_weight,
+            minimum_stake,
         } => {
             msg!("Instruction: AdminSetParameters");
             process_admin_set_parameters(
@@ -208,7 +193,7 @@ pub fn process_instruction(
                 starting_valid_epoch,
                 epochs_before_stall,
                 epochs_after_consensus_before_close,
-                minimum_stake_weight,
+                minimum_stake,
                 valid_slots_after_consensus,
             )
         }
@@ -216,21 +201,9 @@ pub fn process_instruction(
             msg!("Instruction: AdminSetNewAdmin");
             process_admin_set_new_admin(program_id, accounts, role)
         }
-        NCNProgramInstruction::AdminSetWeight {
-            st_mint,
-            weight,
-            epoch,
-        } => {
-            msg!("Instruction: AdminSetWeight");
-            process_admin_set_weight(program_id, accounts, &st_mint, epoch, weight)
-        }
-        NCNProgramInstruction::AdminRegisterStMint { weight } => {
+        NCNProgramInstruction::AdminRegisterStMint {} => {
             msg!("Instruction: AdminRegisterStMint");
-            process_admin_register_st_mint(program_id, accounts, weight)
-        }
-        NCNProgramInstruction::AdminSetStMint { st_mint, weight } => {
-            msg!("Instruction: AdminSetStMint");
-            process_admin_set_st_mint(program_id, accounts, &st_mint, weight)
+            process_admin_register_st_mint(program_id, accounts)
         }
     }
 }

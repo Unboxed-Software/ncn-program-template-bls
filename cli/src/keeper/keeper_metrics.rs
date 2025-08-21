@@ -8,7 +8,7 @@ use crate::{
         get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
         get_current_epoch_and_slot, get_epoch_snapshot, get_epoch_state, get_is_epoch_completed,
         get_ncn_program_config, get_operator, get_operator_snapshot, get_vault, get_vault_config,
-        get_vault_operator_delegation, get_vault_registry, get_weight_table,
+        get_vault_operator_delegation, get_vault_registry,
     },
     handler::CliHandler,
 };
@@ -389,7 +389,6 @@ pub async fn emit_ncn_metrics_vault_registry(handler: &CliHandler) -> Result<()>
             ("current-epoch", current_epoch, i64),
             ("current-slot", current_slot, i64),
             ("st-mint", st_mint.st_mint().to_string(), String),
-            ("weight", st_mint.weight().to_string(), String),
         );
     }
 
@@ -460,7 +459,6 @@ macro_rules! emit_epoch_datapoint {
 #[allow(clippy::large_stack_frames)]
 pub async fn emit_epoch_metrics(handler: &CliHandler, epoch: u64) -> Result<()> {
     emit_epoch_metrics_state(handler, epoch).await?;
-    emit_epoch_metrics_weight_table(handler, epoch).await?;
     emit_epoch_metrics_epoch_snapshot(handler, epoch).await?;
     emit_epoch_metrics_operator_snapshot(handler, epoch).await?;
     emit_epoch_metrics_ballot_box(handler, epoch).await?;
@@ -514,7 +512,7 @@ pub async fn emit_epoch_metrics_operator_snapshot(handler: &CliHandler, epoch: u
                     i64
                 ),
                 (
-                    "stake-weight",
+                    "stake",
                     format_stake_weight(operator_snapshot.stake_weight().stake_weight()),
                     f64
                 )
@@ -543,8 +541,8 @@ pub async fn emit_epoch_metrics_epoch_snapshot(handler: &CliHandler, epoch: u64)
             ("current-slot", current_slot, i64),
             ("keeper-epoch", epoch, i64),
             (
-                "total-stake-weight",
-                format_stake_weight(epoch_snapshot.minimum_stake_weight().stake_weight()),
+                "total-stake",
+                format_stake_weight(epoch_snapshot.minimum_stake().stake_weight()),
                 f64
             ),
             (
@@ -558,50 +556,6 @@ pub async fn emit_epoch_metrics_epoch_snapshot(handler: &CliHandler, epoch: u64)
                 i64
             ),
             ("operator-count", epoch_snapshot.operator_count(), i64)
-        );
-    }
-
-    Ok(())
-}
-
-/// Emits weight table metrics showing stake weights by token
-///
-/// The weight table determines how much influence each supported token
-/// has in the consensus process based on its total staked amount.
-pub async fn emit_epoch_metrics_weight_table(handler: &CliHandler, epoch: u64) -> Result<()> {
-    let (current_epoch, current_slot) = get_current_epoch_and_slot(handler).await?;
-    let is_current_epoch = current_epoch == epoch;
-
-    let result = get_weight_table(handler, epoch).await;
-
-    if let Ok(weight_table) = result {
-        // Emit individual weight table entries
-        for entry in weight_table.table() {
-            if entry.is_empty() {
-                continue;
-            }
-
-            emit_epoch_datapoint!(
-                "ncn-program-keeper-ee-weight-table-entry",
-                is_current_epoch,
-                ("current-epoch", current_epoch, i64),
-                ("current-slot", current_slot, i64),
-                ("keeper-epoch", epoch, i64),
-                ("st-mint", entry.st_mint().to_string(), String),
-                ("weight", format_stake_weight(entry.weight()), f64)
-            );
-        }
-
-        // Emit aggregate weight table statistics
-        emit_epoch_datapoint!(
-            "ncn-program-keeper-ee-weight-table",
-            is_current_epoch,
-            ("current-epoch", current_epoch, i64),
-            ("current-slot", current_slot, i64),
-            ("keeper-epoch", epoch, i64),
-            ("weight-count", weight_table.mint_count(), i64),
-            ("vault-count", weight_table.vault_count(), i64),
-            ("weight-count", weight_table.weight_count(), i64)
         );
     }
 
@@ -648,24 +602,12 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         };
         let epoch_schedule = handler.rpc_client().get_epoch_schedule().await?;
 
-        // Use patched state calculation if weight setting has begun
-        if state.set_weight_progress().tally() > 0 {
-            let weight_table = get_weight_table(handler, epoch).await?;
-            state.current_state_patched(
-                &epoch_schedule,
-                valid_slots_after_consensus,
-                epochs_after_consensus_before_close,
-                weight_table.st_mint_count() as u64,
-                current_slot,
-            )
-        } else {
-            state.current_state(
-                &epoch_schedule,
-                valid_slots_after_consensus,
-                epochs_after_consensus_before_close,
-                current_slot,
-            )
-        }
+        state.current_state(
+            &epoch_schedule,
+            valid_slots_after_consensus,
+            epochs_after_consensus_before_close,
+            current_slot,
+        )
     }?;
 
     // Count operator snapshot account statuses
@@ -693,16 +635,6 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         ("slot-created", state.slot_created(), i64),
         // Progress tracking for each phase
         (
-            "set-weight-progress-tally",
-            state.set_weight_progress().tally(),
-            i64
-        ),
-        (
-            "set-weight-progress-total",
-            state.set_weight_progress().total(),
-            i64
-        ),
-        (
             "epoch-snapshot-progress-tally",
             0, // epoch_snapshot_progress method not available on EpochState
             i64
@@ -719,11 +651,6 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
         (
             "epoch-state-account-status",
             state.account_status().epoch_state()?,
-            i64
-        ),
-        (
-            "weight-table-account-status",
-            state.account_status().weight_table()?,
             i64
         ),
         (
