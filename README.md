@@ -1164,13 +1164,13 @@ sleep 2
 
 [x]. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
 [x]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
+[x]. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
+[x]. CLI: crank-update-all-vaults are updating
 []. since it is only one vault, the vault registry is not needed, consider removing it.
 []. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
-[]. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
 []. instead of having two Instructions (`ResgiterOperator` and `InitOperatorSnapshot`) they could be only one
 []. check to see if the operator change its G1 pubkey, are we changing that in the operator_snapshot account or not, if not then we should change it.
 []. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
 []. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
 []. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
 []. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params
-[]. CLI: crank-update-all-vaults are updating
