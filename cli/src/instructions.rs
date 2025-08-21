@@ -48,9 +48,11 @@ use ncn_program_core::{
     ncn_operator_account::NCNOperatorAccount,
     snapshot::{OperatorSnapshot, Snapshot},
     vault_registry::VaultRegistry,
+    vote_counter::VoteCounter,
 };
 use solana_client::rpc_config::RpcSendTransactionConfig;
 
+use hex;
 use serde::Deserialize;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
@@ -711,9 +713,8 @@ pub async fn close_epoch_account(
 
 // --------------------- operator ------------------------------
 
-pub async fn operator_cast_vote(
+pub async fn cast_vote(
     handler: &CliHandler,
-    operator: &Pubkey,
     epoch: u64,
     agg_sig: [u8; 32],
     apk2: [u8; 64],
@@ -721,10 +722,6 @@ pub async fn operator_cast_vote(
     message: [u8; 32],
 ) -> Result<()> {
     let ncn = *handler.ncn()?;
-    let operator = *operator;
-
-    let (epoch_state, _, _) =
-        EpochState::find_program_address(&handler.ncn_program_id, &ncn, epoch);
 
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
@@ -733,11 +730,14 @@ pub async fn operator_cast_vote(
     let (restaking_config, _, _) =
         RestakingConfig::find_program_address(&handler.restaking_program_id);
 
+    let (vote_counter, _, _) = VoteCounter::find_program_address(&handler.ncn_program_id, &ncn);
+
     let cast_vote_ix = CastVoteBuilder::new()
         .config(config)
         .ncn(ncn)
         .snapshot(snapshot)
         .restaking_config(restaking_config)
+        .vote_counter(vote_counter)
         .aggregated_signature(agg_sig)
         .aggregated_g2(apk2)
         .operators_signature_bitmap(signers_bitmap)
@@ -750,8 +750,8 @@ pub async fn operator_cast_vote(
         "Cast Vote",
         &[
             format!("NCN: {:?}", ncn),
-            format!("Operator: {:?}", operator),
             format!("Epoch: {:?}", epoch),
+            format!("Message: {}", hex::encode(message)),
         ],
     )
     .await?;

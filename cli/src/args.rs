@@ -207,7 +207,7 @@ pub enum ProgramCommand {
         g2_pubkey: Option<String>,
         #[arg(
             long,
-            help = "BLS signature (64 bytes as hex string) - auto-generated if not provided"
+            help = "BLS signature (64 bytes as hex string) - auto-generated if not provided (deprecated, will be auto-generated)"
         )]
         signature: Option<String>,
         #[arg(
@@ -234,11 +234,48 @@ pub enum ProgramCommand {
 
     CreateBallotBox,
 
-    OperatorCastVote {
-        #[arg(long, help = "Operator address")]
-        operator: String,
-        #[arg(long, help = "weather status at solana beach")]
-        weather_status: u8,
+    /// Cast a vote using BLS multi-signature aggregation
+    CastVote {
+        #[arg(long, help = "Aggregated G1 signature (64 bytes hex)")]
+        aggregated_signature: String,
+        #[arg(long, help = "Aggregated G2 public key (128 bytes hex)")]
+        aggregated_g2: String,
+        #[arg(long, help = "Bitmap indicating which operators signed (hex string)")]
+        signers_bitmap: String,
+        #[arg(
+            long,
+            help = "Message to sign (32 bytes hex, defaults to current vote counter)"
+        )]
+        message: Option<String>,
+    },
+
+    /// Generate BLS signature for vote aggregation
+    GenerateVoteSignature {
+        #[arg(long, help = "Operator private key (32 bytes hex)")]
+        private_key: String,
+        #[arg(
+            long,
+            help = "Message to sign (32 bytes hex, defaults to current vote counter)"
+        )]
+        message: Option<String>,
+    },
+
+    /// Aggregate multiple BLS signatures for voting
+    AggregateSignatures {
+        #[arg(long, help = "Comma-separated list of signatures (64 bytes hex each)")]
+        signatures: String,
+        #[arg(
+            long,
+            help = "Comma-separated list of G1 public keys (32 bytes hex each)"
+        )]
+        g1_public_keys: String,
+        #[arg(
+            long,
+            help = "Comma-separated list of G2 public keys (64 bytes hex each)"
+        )]
+        g2_public_keys: String,
+        #[arg(long, help = "Bitmap indicating which operators signed (hex string)")]
+        signers_bitmap: String,
     },
 
     /// Getters

@@ -8,7 +8,7 @@ use crate::{
         get_current_slot, get_epoch_state, get_is_epoch_completed, get_ncn, get_ncn_operator_state,
         get_ncn_program_config, get_ncn_vault_ticket, get_operator_snapshot, get_snapshot,
         get_total_epoch_rent_cost, get_vault_ncn_ticket, get_vault_operator_delegation,
-        get_vault_registry,
+        get_vault_registry, get_vote_counter,
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
@@ -291,11 +291,25 @@ impl CliHandler {
                             hex_to_bytes::<64>(&sig)?,
                         )
                     }
-                    // No keys provided - generate or load from file
-                    (None, None, None) => {
-                        use crate::bls_keys::{generate_signature, get_or_generate_keys};
+                    // G1 and G2 pubkeys provided, generate signature
+                    (Some(g1), Some(g2), None) => {
+                        use crate::bls_keys::{generate_or_use_keys, generate_signature};
 
-                        let key_set = get_or_generate_keys(&operator, &keys_file)?;
+                        let key_set = generate_or_use_keys(
+                            &operator,
+                            &keys_file,
+                            Some(g1.as_str()),
+                            Some(g2.as_str()),
+                        )?;
+                        let signature = generate_signature(&key_set)?;
+
+                        (key_set.g1_pubkey, key_set.g2_pubkey, signature)
+                    }
+                    // No keys provided - generate random keys
+                    (None, None, None) => {
+                        use crate::bls_keys::{generate_or_use_keys, generate_signature};
+
+                        let key_set = generate_or_use_keys(&operator, &keys_file, None, None)?;
                         let signature = generate_signature(&key_set)?;
 
                         (key_set.g1_pubkey, key_set.g2_pubkey, signature)
@@ -303,7 +317,7 @@ impl CliHandler {
                     // Partial keys provided - not allowed
                     _ => {
                         return Err(anyhow!(
-                            "Either provide all BLS keys (--g1-pubkey, --g2-pubkey, --signature) or none for auto-generation"
+                            "Either provide G1 and G2 pubkeys (--g1-pubkey, --g2-pubkey) or none for auto-generation. Signature is auto-generated."
                         ));
                     }
                 };
@@ -330,12 +344,82 @@ impl CliHandler {
                 log::info!("Ballot box functionality has been removed");
                 Ok(())
             }
-            ProgramCommand::OperatorCastVote {
-                operator,
-                weather_status,
+            ProgramCommand::CastVote {
+                aggregated_signature,
+                aggregated_g2,
+                signers_bitmap,
+                message,
             } => {
-                // Voting functionality has been replaced with BLS signatures
-                log::info!("Voting functionality has been replaced with BLS signatures");
+                use crate::bls_keys::hex_to_bytes;
+                use crate::instructions::cast_vote;
+
+                let agg_sig = hex_to_bytes::<32>(&aggregated_signature)?;
+                let apk2 = hex_to_bytes::<64>(&aggregated_g2)?;
+                let bitmap_bytes = hex::decode(&signers_bitmap)
+                    .map_err(|e| anyhow!("Error parsing signers bitmap: {}", e))?;
+
+                let message_bytes = if let Some(msg) = message {
+                    hex_to_bytes::<32>(&msg)?
+                } else {
+                    // Get current vote counter as message
+                    let vote_counter = get_vote_counter(self).await?;
+                    let counter_bytes = vote_counter.count().to_le_bytes();
+                    let mut message_32 = [0u8; 32];
+                    message_32[..8].copy_from_slice(&counter_bytes);
+                    message_32
+                };
+
+                cast_vote(self, self.epoch, agg_sig, apk2, bitmap_bytes, message_bytes).await
+            }
+
+            ProgramCommand::GenerateVoteSignature {
+                private_key,
+                message,
+            } => {
+                use crate::bls_keys::{generate_signature_from_private_key, hex_to_bytes};
+
+                let priv_key_bytes = hex_to_bytes::<32>(&private_key)?;
+                let message_bytes = if let Some(msg) = message {
+                    hex_to_bytes::<32>(&msg)?
+                } else {
+                    // Get current vote counter as message
+                    let vote_counter = get_vote_counter(self).await?;
+                    let counter_bytes = vote_counter.count().to_le_bytes();
+                    let mut message_32 = [0u8; 32];
+                    message_32[..8].copy_from_slice(&counter_bytes);
+                    message_32
+                };
+
+                let signature =
+                    generate_signature_from_private_key(&priv_key_bytes, &message_bytes)?;
+                info!("Generated signature: {}", hex::encode(signature));
+                Ok(())
+            }
+
+            ProgramCommand::AggregateSignatures {
+                signatures,
+                g1_public_keys,
+                g2_public_keys,
+                signers_bitmap,
+            } => {
+                use crate::bls_keys::aggregate_signatures_and_keys;
+
+                let result = aggregate_signatures_and_keys(
+                    &signatures,
+                    &g1_public_keys,
+                    &g2_public_keys,
+                    &signers_bitmap,
+                )?;
+
+                info!(
+                    "Aggregated signature: {}",
+                    hex::encode(result.aggregated_signature)
+                );
+                info!(
+                    "Aggregated G2 public key: {}",
+                    hex::encode(result.aggregated_g2)
+                );
+                info!("Signers bitmap: {}", hex::encode(&result.signers_bitmap));
                 Ok(())
             }
 
