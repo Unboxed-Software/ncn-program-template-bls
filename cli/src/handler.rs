@@ -15,7 +15,6 @@ use crate::{
         create_snapshot, create_vault_registry, full_vault_update, register_operator,
         register_vault, snapshot_vault_operator_delegation,
     },
-    keeper::keeper_loop::startup_ncn_keeper,
 };
 use anyhow::{anyhow, Result};
 use base64::{engine::general_purpose, Engine};
@@ -171,13 +170,6 @@ impl CliHandler {
     #[allow(clippy::large_stack_frames)]
     pub async fn handle(&self, action: ProgramCommand) -> Result<()> {
         match action {
-            // Keepers
-            // Ncn Keeper
-            ProgramCommand::RunKeeper {
-                loop_timeout_ms,
-                error_timeout_ms,
-            } => startup_ncn_keeper(self, loop_timeout_ms, error_timeout_ms).await,
-
             // Cranks
             ProgramCommand::CrankRegisterVaults {} => crank_register_vaults(self).await,
 
