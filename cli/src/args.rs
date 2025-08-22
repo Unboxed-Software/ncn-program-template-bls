@@ -118,6 +118,10 @@ pub enum ProgramCommand {
     /// Crank Functions
     CrankRegisterVaults {},
     CrankSnapshot {},
+    CrankSnapshotUnupdated {
+        #[arg(long, help = "Show detailed progress information")]
+        verbose: bool,
+    },
 
     /// Admin
     AdminCreateConfig {

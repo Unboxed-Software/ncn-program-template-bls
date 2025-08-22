@@ -11,9 +11,9 @@ use crate::{
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
-        admin_set_parameters, crank_register_vaults, crank_snapshot, create_operator_snapshot,
-        create_snapshot, create_vault_registry, full_vault_update, register_operator,
-        register_vault, snapshot_vault_operator_delegation,
+        admin_set_parameters, crank_register_vaults, crank_snapshot, crank_snapshot_unupdated,
+        create_operator_snapshot, create_snapshot, create_vault_registry, full_vault_update,
+        register_operator, register_vault, snapshot_vault_operator_delegation,
     },
 };
 use anyhow::{anyhow, Result};
@@ -174,6 +174,10 @@ impl CliHandler {
             ProgramCommand::CrankRegisterVaults {} => crank_register_vaults(self).await,
 
             ProgramCommand::CrankSnapshot {} => crank_snapshot(self, self.epoch).await,
+
+            ProgramCommand::CrankSnapshotUnupdated { verbose } => {
+                crank_snapshot_unupdated(self, self.epoch, verbose).await
+            }
 
             // Admin
             ProgramCommand::AdminCreateConfig {

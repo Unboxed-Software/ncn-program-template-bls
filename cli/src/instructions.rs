@@ -3,9 +3,9 @@ use std::time::Duration;
 use crate::{
     getters::{
         get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault,
-        get_all_vaults_in_ncn, get_current_slot, get_operator_snapshot,
-        get_or_create_vault_registry, get_snapshot, get_vault, get_vault_config,
-        get_vault_registry, get_vault_update_state_tracker,
+        get_all_vaults_in_ncn, get_current_slot, get_ncn_program_config, get_operator_snapshot,
+        get_or_create_vault_registry, get_restaking_config, get_snapshot, get_vault,
+        get_vault_config, get_vault_registry, get_vault_update_state_tracker,
     },
     handler::CliHandler,
     log::boring_progress_bar,
@@ -44,6 +44,7 @@ use ncn_program_core::{
     constants::MAX_REALLOC_BYTES,
     ncn_operator_account::NCNOperatorAccount,
     snapshot::{OperatorSnapshot, Snapshot},
+    utils::get_epoch,
     vault_registry::VaultRegistry,
     vote_counter::VoteCounter,
 };
@@ -965,6 +966,115 @@ pub async fn crank_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
                 );
         }
     }
+
+    Ok(())
+}
+
+pub async fn crank_snapshot_unupdated(
+    handler: &CliHandler,
+    epoch: u64,
+    verbose: bool,
+) -> Result<()> {
+    let vault_registry = get_vault_registry(handler).await?;
+    let all_vaults: Vec<Pubkey> = vault_registry
+        .get_valid_vault_entries()
+        .iter()
+        .map(|entry| *entry.vault())
+        .collect();
+
+    if all_vaults.is_empty() {
+        info!("No vaults found in registry");
+        return Ok(());
+    }
+
+    let snapshot = get_snapshot(handler, epoch).await?;
+
+    // We'll use the first vault for snapshotting (similar to crank_snapshot)
+    let vault = &all_vaults[0];
+    let result = full_vault_update(handler, vault).await;
+    if let Err(err) = result {
+        log::error!(
+            "Failed to update the vault: {:?} with error: {:?}",
+            vault,
+            err
+        );
+    }
+
+    let mut operators_to_snapshot = Vec::new();
+    let mut already_snapshotted = Vec::new();
+
+    let config = get_restaking_config(handler).await?;
+
+    // Check which operators need snapshotting
+    for operator_snapshot in snapshot.operator_snapshots().iter() {
+        let last_snapshot_epoch = get_epoch(
+            operator_snapshot.last_snapshot_slot(),
+            config.epoch_length(),
+        )?;
+        // Check if it has been snapshotted this epoch
+        if operator_snapshot.is_active() && last_snapshot_epoch < epoch {
+            operators_to_snapshot.push(*operator_snapshot.operator());
+            if verbose {
+                info!(
+                    "Operator {} needs snapshotting",
+                    operator_snapshot.operator()
+                );
+            }
+        } else {
+            already_snapshotted.push(*operator_snapshot.operator());
+            if verbose {
+                info!(
+                    "Operator {} already snapshotted this epoch",
+                    operator_snapshot.operator()
+                );
+            }
+        }
+    }
+
+    info!(
+        "Found {} operators total: {} already snapshotted, {} need snapshotting",
+        snapshot.operator_count(),
+        already_snapshotted.len(),
+        operators_to_snapshot.len()
+    );
+
+    if operators_to_snapshot.is_empty() {
+        info!("All operators are already snapshotted for epoch {}", epoch);
+        return Ok(());
+    }
+
+    let mut successful_snapshots = 0;
+    let mut failed_snapshots = 0;
+
+    for operator in operators_to_snapshot.iter() {
+        if verbose {
+            info!("Processing operator: {}", operator);
+        }
+
+        let result = snapshot_vault_operator_delegation(handler, vault, operator, epoch).await;
+        if let Err(err) = result {
+            log::error!(
+                "Failed to snapshot vault operator delegation for vault: {:?} and operator: {:?} in epoch: {:?} with error: {:?}",
+                vault,
+                operator,
+                epoch,
+                err
+            );
+            failed_snapshots += 1;
+        } else {
+            successful_snapshots += 1;
+            if verbose {
+                info!("Successfully snapshotted operator: {}", operator);
+            }
+        }
+    }
+
+    info!(
+        "Snapshot operation completed: {} successful, {} failed out of {} operators that needed snapshotting",
+        successful_snapshots,
+        failed_snapshots,
+        operators_to_snapshot.len()
+    );
 
     Ok(())
 }
