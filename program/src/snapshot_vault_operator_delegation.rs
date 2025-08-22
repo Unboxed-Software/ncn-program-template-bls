@@ -108,9 +108,8 @@ pub fn process_snapshot_vault_operator_delegation(
             NCNProgramError::OperatorIsNotInSnapshot
         })?;
 
-    let mut cloned_operator_snapshot = operator_snapshot.clone();
+    let mut cloned_operator_snapshot = operator_snapshot;
 
-    if !cloned_operator_snapshot.is_active() {}
 
     // Check if operator has valid BN128 G1 pubkey and determine active status
     let is_active = {

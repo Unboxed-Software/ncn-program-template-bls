@@ -433,8 +433,7 @@ impl OperatorSnapshot {
     }
 
     pub fn have_valid_bn128_g1_pubkey(&self) -> bool {
-        G1CompressedPoint::try_from(self.g1_pubkey).is_ok()
-            && self.g1_pubkey != G1CompressedPoint::default().0
+        self.g1_pubkey != [0u8; 32]
     }
 
     pub const fn operator(&self) -> &Pubkey {

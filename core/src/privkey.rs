@@ -80,7 +80,7 @@ mod test {
         let message = b"sample";
         let privkey = PrivKey::from_random();
         let signature = privkey
-            .sign::<Sha256Normalized, &[u8; 6]>(&message)
+            .sign::<Sha256Normalized, &[u8; 6]>(message)
             .expect("Failed to sign");
         let pubkey = G2Point::try_from(&privkey).expect("Invalid private key");
         println!("Sig: {:?}\n, Pub: {:?}", &signature.0, &pubkey.0);

@@ -180,7 +180,7 @@ impl KeeperState {
         for operator_snapshot in snapshot.operator_snapshots() {
             if operator_snapshot.operator() == operator {
                 // Check if the operator's last snapshot was in the previous epoch
-                let last_snapshot_slot = operator_snapshot.last_snapshot_slot();
+                let _last_snapshot_slot = operator_snapshot.last_snapshot_slot();
                 // Get epoch length from restaking config
                 let restaking_config = crate::getters::get_restaking_config(handler).await?;
                 let last_snapshot_epoch = ncn_program_core::utils::get_epoch(

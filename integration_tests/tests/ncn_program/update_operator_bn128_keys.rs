@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
     use crate::fixtures::{
-        ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,
+        test_builder::TestBuilder, TestResult,
     };
     use ncn_program_core::{
         error::NCNProgramError, g1_point::G1CompressedPoint, g2_point::G2CompressedPoint,
         privkey::PrivKey, schemes::Sha256Normalized,
     };
-    use solana_program::program_error::ProgramError;
+    
     use solana_sdk::signature::Keypair;
 
     #[tokio::test]

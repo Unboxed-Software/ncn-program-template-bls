@@ -86,7 +86,7 @@ pub async fn admin_create_config(
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
 
     let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    println!("Account Payer: {}", account_payer.to_string());
+    println!("Account Payer: {}", account_payer);
 
     let tie_breaker_admin = tie_breaker_admin.unwrap_or_else(|| keypair.pubkey());
 

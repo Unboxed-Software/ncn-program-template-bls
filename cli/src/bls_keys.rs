@@ -31,6 +31,12 @@ pub struct BlsKeyStorage {
     pub operators: std::collections::HashMap<String, BlsKeySet>,
 }
 
+impl Default for BlsKeyStorage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BlsKeyStorage {
     pub fn new() -> Self {
         Self {

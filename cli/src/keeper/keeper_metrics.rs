@@ -470,7 +470,7 @@ pub async fn emit_epoch_metrics(handler: &CliHandler, epoch: u64) -> Result<()> 
 /// emits detailed metrics about individual votes, ballot tallies, and the
 /// overall voting state for the epoch.
 #[allow(clippy::large_stack_frames)]
-pub async fn emit_epoch_metrics_ballot_box(handler: &CliHandler, epoch: u64) -> Result<()> {
+pub async fn emit_epoch_metrics_ballot_box(_handler: &CliHandler, _epoch: u64) -> Result<()> {
     // Ballot box functionality has been removed
     log::info!("Ballot box metrics not available - functionality has been removed");
     Ok(())
@@ -588,5 +588,5 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
     // Handle active epochs with detailed state information
     // TODO: Implement epoch state retrieval for snapshot-focused keeper
     // For now, return early since we're focusing on snapshot operations
-    return Ok(());
+    Ok(())
 }

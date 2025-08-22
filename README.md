@@ -7,7 +7,7 @@
   - [System Components Hierarchy](#system-components-hierarchy)
   - [📁 Directory Structure Deep Dive](#-directory-structure-deep-dive)
 - [🔧 Core Components Deep Dive](#-core-components-deep-dive)
-  - [1. Program Instructions (22 Total)](#1-program-instructions-22-total)
+  - [1. Program Instructions (16 Total)](#1-program-instructions-16-total)
   - [2. Account Types (9 Primary Accounts)](#2-account-types-9-primary-accounts)
   - [3. Vote Counter System](#3-vote-counter-system)
   - [4. BLS Cryptography Implementation](#4-bls-cryptography-implementation)
@@ -27,7 +27,7 @@
   - [Keeper Service](#keeper-service-run-keeper)
   - [Operator Service](#operator-service)
 - [🧪 Testing Infrastructure](#-testing-infrastructure)
-  - [Integration Tests (15+ Test Modules)](#integration-tests-15-test-modules)
+  - [Integration Tests (16+ Test Modules)](#integration-tests-16-test-modules)
   - [Test Fixtures](#test-fixtures)
 - [🏗️ Local Test Validator](#️-local-test-validator)
   - [Overview](#overview)
@@ -55,6 +55,20 @@ This program serves as a template for building decentralized consensus networks 
 
 - **BLS signature aggregation**: Efficient cryptographic proof of consensus
 - **Economic incentives**: Fee distribution and slashing mechanisms
+
+### 📊 Current Project Status
+
+**Version**: 0.0.1  
+**Last Updated**: August 2024
+
+#### **Recent Major Changes**
+
+- ✅ Simplified instruction set from 22 to 16 instructions
+- ✅ Removed weight table system (single vault optimization)
+- ✅ Enhanced BLS signature aggregation with anti-rogue key protection
+- ✅ Improved CLI with multi-signature aggregation support
+- ✅ Added comprehensive fuzz testing for consensus scenarios
+- ✅ Streamlined snapshot system architecture
 
 ## 🏛️ Architecture Overview
 
@@ -93,10 +107,10 @@ This program serves as a template for building decentralized consensus networks 
 ncn-program-template-bls/
 ├── 📋 Program Core
 │   ├── program/                    # Main Solana program entry point
-│   │   ├── src/lib.rs             # 22 instruction handlers (initialize→vote→close)
+│   │   ├── src/lib.rs             # 16 instruction handlers (initialize→vote→close)
 │   │   └── src/*.rs               # Individual instruction implementations
 │   └── core/                      # Shared core functionality
-│       ├── src/lib.rs             # 24 core modules (crypto, accounts, utils)
+│       ├── src/lib.rs             # 20+ core modules (crypto, accounts, utils)
 │       ├── schemes/               # BLS signature schemes (SHA256, normalized)
 │       ├── g1_point.rs           # G1 elliptic curve operations
 │       ├── g2_point.rs           # G2 elliptic curve operations
@@ -117,7 +131,7 @@ ncn-program-template-bls/
 ├── 🧪 Testing Infrastructure
 │   └── integration_tests/
 │       ├── tests/fixtures/       # Test fixtures and programs
-│       ├── tests/ncn_program/    # 15+ comprehensive test modules
+│       ├── tests/ncn_program/    # 16+ comprehensive test modules
 │       └── src/main.rs          # Test harness entry point
 │
 ├── ⚙️ Configuration & Scripts
@@ -125,7 +139,7 @@ ncn-program-template-bls/
 │   ├── scripts/generate-clients.js  # Client generation automation
 │   ├── format.sh               # Code formatting and testing pipeline
 │   ├── generate_client.sh      # Quick client regeneration
-│   └── idl/ncn_program.json    # Interface definition (2307 lines)
+│   └── idl/ncn_program.json    # Interface definition (1746 lines)
 │
 └── 📚 Documentation
     ├── README.md               # This comprehensive guide
@@ -135,44 +149,30 @@ ncn-program-template-bls/
 
 ## 🔧 Core Components Deep Dive
 
-### 1. Program Instructions (22 Total)
+### 1. Program Instructions (16 Total)
 
 #### **Global Setup Instructions**
 
 - `InitializeConfig`: Creates program configuration with consensus parameters
 - `InitializeVaultRegistry`: Sets up vault tracking system
 - `RegisterVault`: Adds vaults to the registry (permissionless after handshake)
-- `InitializeOperatorRegistry`: Creates operator tracking system
 - `RegisterOperator`: Adds operators with BLS public keys
 - `UpdateOperatorBN128Keys`: Updates operator cryptographic keys
-- `ReallocOperatorRegistry`: Expands operator storage capacity
+- `InitializeVoteCounter`: Creates vote counter for replay attack prevention
 - `InitializeSnapshot`: Creates immutable epoch state snapshot
 - `ReallocSnapshot`: Expands snapshot storage
-- `InitializeVoteCounter`: Creates vote counter for replay attack prevention
 - `InitializeOperatorSnapshot`: Captures individual operator state
-
-#### **Epoch Management Instructions**
-
-- `InitializeEpochState`: Creates new epoch with voting parameters
-- `InitializeWeightTable`: Sets up stake weight calculations
-- `SetEpochWeights`: Finalizes voting weights for the epoch
-- `SnapshotVaultOperatorDelegation`: Records delegation relationships
 
 #### **Consensus Voting Instructions**
 
 - `CastVote`: Submits BLS aggregated signatures for consensus (uses counter for message)
+- `SnapshotVaultOperatorDelegation`: Records delegation relationships
 
 #### **Administrative Instructions**
 
 - `AdminSetParameters`: Updates consensus parameters
 - `AdminSetNewAdmin`: Changes administrative roles
-- `AdminSetWeight`: Manually adjusts stake weights
 - `AdminRegisterStMint`: Adds supported stake token mints
-- `AdminSetStMint`: Updates stake token configurations
-
-#### **Cleanup Instructions**
-
-- `CloseEpochAccount`: Reclaims rent from finalized accounts
 
 ### 2. Account Types (9 Primary Accounts)
 
@@ -191,20 +191,6 @@ pub struct Config {
 }
 ```
 
-#### **EpochState** - Per-epoch consensus tracking
-
-```rust
-pub struct EpochState {
-    ncn: Pubkey,                             // NCN reference
-    epoch: PodU64,                           // Epoch number
-    vault_count: PodU64,                     // Number of participating vaults
-    account_status: EpochAccountStatus,      // State machine status
-    set_weight_progress: Progress,           // Weight setting progress
-    operator_snapshot_progress: [Progress; 256], // Per-operator progress
-    is_closing: PodBool,                     // Cleanup flag
-}
-```
-
 #### **Snapshot** - mutable epoch state
 
 ```rust
@@ -220,19 +206,6 @@ pub struct Snapshot {
 }
 ```
 
-#### **OperatorRegistry** - Operator management
-
-```rust
-pub struct NCNOperatorAccount {
-    ncn: Pubkey,                             // NCN reference
-    operator_pubkey: Pubkey,                 // Operator identifier
-    g1_pubkey: [u8; 32],                    // BLS G1 public key
-    g2_pubkey: [u8; 64],                    // BLS G2 public key
-    operator_index: PodU64,                  // Registry index
-    slot_registered: PodU64,                 // Registration timestamp
-}
-```
-
 #### **VaultRegistry** - Vault and token management
 
 ```rust
@@ -240,17 +213,6 @@ pub struct VaultRegistry {
     ncn: Pubkey,                             // NCN reference
     st_mint_list: [StMintEntry; 1],         // Supported stake tokens
     vault_list: [VaultEntry; 1],            // Registered vaults
-}
-```
-
-#### **WeightTable** - Stake weight calculations
-
-```rust
-pub struct WeightTable {
-    ncn: Pubkey,                             // NCN reference
-    epoch: PodU64,                           // Target epoch
-    vault_count: PodU64,                     // Number of vaults
-    table: [WeightEntry; 1],                // Weight entries per vault
 }
 ```
 
@@ -846,21 +808,32 @@ The vote counter provides automatic replay attack protection:
    - `admin-create-config`: Initialize program parameters
    - `admin-register-st-mint`: Add supported tokens
    - `admin-set-parameters`: Update consensus settings
+   - `admin-set-new-admin`: Change administrative roles
+   - `admin-fund-account-payer`: Fund account payer
 
 2. **Crank Functions**: State maintenance
 
    - `crank-register-vaults`: Register pending vaults
-   - `crank-close-epoch-accounts`: Cleanup finalized epochs
+   - `crank-snapshot`: Snapshot operations
+   - `crank-snapshot-unupdated`: Snapshot unupdated operations
 
 3. **Instructions**: Core program interactions
 
-   - `create-epoch-state`: Start new epoch
-   - `cast-vote`: Submit consensus votes
+   - `create-vault-registry`: Create vault registry
+   - `create-vote-counter`: Initialize vote counter
+   - `register-vault`: Register vaults
+   - `register-operator`: Register operators with BLS keys
+   - `create-snapshot`: Create snapshot
+   - `create-operator-snapshot`: Create operator snapshot
    - `snapshot-vault-operator-delegation`: Capture delegations
+   - `cast-vote`: Submit consensus votes with BLS aggregation
+   - `generate-vote-signature`: Generate BLS signatures
+   - `aggregate-signatures`: Aggregate multiple BLS signatures
 
 4. **Getters**: State queries
    - Query any on-chain account state
    - Inspect epoch progress and voting status
+   - Get operator stakes and vault information
 
 ### Keeper Service (`run-keeper`)
 
@@ -889,18 +862,30 @@ Manages operator-specific functionality:
 
 ## 🧪 Testing Infrastructure
 
-### Integration Tests (15+ Test Modules)
+### Integration Tests (16+ Test Modules)
 
 #### **Core Test Coverage**
 
 - `simulation_test.rs`: Complete end-to-end consensus workflow
+- `fuzz_simulation_tests.rs`: Fuzz testing for consensus scenarios
 - `initialize_config.rs`: Configuration testing
 - `register_operator.rs`: Operator registration flows
+- `update_operator_bn128_keys.rs`: BLS key update testing
 - `cast_vote.rs`: Voting mechanism and vote counter testing
   - `test_cast_vote_counter_advancement`: Verifies counter increments correctly
   - `test_cast_vote_duplicate_signature_fails`: Tests replay attack prevention
   - `test_cast_vote_sequential_voting_with_counter_tracking`: Multi-round counter validation
   - `test_cast_vote_wrong_counter_message_fails`: Invalid counter value rejection
+- `snapshot_vault_operator_delegation.rs`: Delegation snapshot testing
+- `initialize_operator_snapshot.rs`: Operator snapshot testing
+- `initialize_vote_counter.rs`: Vote counter initialization testing
+- `initialize_vault_registry.rs`: Vault registry testing
+- `register_vault.rs`: Vault registration testing
+- `set_new_admin.rs`: Admin role management testing
+- `admin_set_parameters.rs`: Parameter management testing
+- `initialize_snapshot.rs`: Snapshot initialization testing
+- `restaking_variations.rs`: Restaking integration testing
+- `meta_tests.rs`: Meta-level testing utilities
 
 #### **Test Builder Pattern**
 
@@ -985,6 +970,17 @@ For detailed setup instructions and troubleshooting, see the [local-test-validat
 
 ## 🔧 Development Workflow
 
+### Workspace Structure
+
+The project uses a Cargo workspace with the following members:
+
+- `program/` - Main Solana program
+- `core/` - Shared core functionality
+- `cli/` - Command-line interface
+- `clients/rust/ncn_program/` - Auto-generated Rust client
+- `integration_tests/` - Comprehensive test suite
+- `shank_cli/` - IDL generation tool
+
 ### Building the Project
 
 ```bash
@@ -997,6 +993,13 @@ cargo build-sbf --manifest-path program/Cargo.toml
 # Install CLI tools
 cargo install --path ./cli --bin ncn-program-bls-cli --locked
 ```
+
+### Key Dependencies
+
+- **Solana**: Custom Jito fork with BN254 support
+- **BLS Cryptography**: BN254 curve operations via `solana-bn254`
+- **Jito Integration**: Restaking and vault program integration
+- **Code Generation**: Kinobi + Exo Tech renderers for client generation
 
 ### Code Generation Pipeline
 
@@ -1013,6 +1016,12 @@ yarn generate-clients
 # 4. Rebuild with new clients
 cargo b
 ```
+
+The code generation pipeline uses:
+
+- **Kinobi**: For IDL parsing and transformation
+- **Exo Tech Renderers**: For generating Rust and JavaScript clients
+- **Custom Transformers**: Convert PodU64/PodU128 to native types and add discriminators
 
 ## 🚀 Deployment Guide
 
@@ -1081,91 +1090,154 @@ solana program close --buffers
 
 ## The command that you need to run to get started
 
-- Build the program and the cli:
+### 1. Build the Program and CLI
 
 ```bash
+# Build the Solana program
 cargo build-sbf
+
+# Build the CLI tool
+cargo build --bin ncn-program-bls-cli
 ```
 
-- Deploy the program:
+### 2. Deploy the Program
 
 ```bash
+# Deploy to local test validator or mainnet
 solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_program.so
 ```
 
-- build and Configure the CLI: refer to the [cli/getting_started.md](cli/getting_started.md) file for more details
-
-- Configure the NCN program:
+### 3. Configure the NCN Program
 
 ```bash
 # Fund the payer account with 20 SOL for transaction fees
 ./target/debug/ncn-program-bls-cli admin-fund-account-payer --amount-in-sol 20
 sleep 2
-# Create and initialize the NCN program configuration with fee wallet, fee bps, consensus slots, and minimum stake weight
-./target/debug/ncn-program-bls-cli admin-create-config --ncn-fee-wallet 3ogGQ7nFX6nCa9bkkZ6hwud6VaEQCekCCmNj6ZoWh8MF --ncn-fee-bps 100 --valid-slots-after-consensus 10000 --minimum-stake 100
+
+# Create and initialize the NCN program configuration
+./target/debug/ncn-program-bls-cli admin-create-config \
+  --ncn-fee-wallet 3ogGQ7nFX6nCa9bkkZ6hwud6VaEQCekCCmNj6ZoWh8MF \
+  --ncn-fee-bps 100 \
+  --valid-slots-after-consensus 10000 \
+  --minimum-stake 100
 sleep 2
+
 # Initialize the vote counter for replay attack prevention
 ./target/debug/ncn-program-bls-cli create-vote-counter
 sleep 2
+
 # Create the vault registry to track supported stake vaults
 ./target/debug/ncn-program-bls-cli create-vault-registry
 sleep 2
+
 # Register vaults that are pending approval and add them to the registry
 ./target/debug/ncn-program-bls-cli crank-register-vaults
-sleep 2
+
 # Register a supported stake token mint and set its weight
 ./target/debug/ncn-program-bls-cli admin-register-st-mint --weight 10
-sleep 2
-# Create the operator registry to track BLS operators
-./target/debug/ncn-program-bls-cli create-operator-registry
 ```
 
-- Register all the Operators: Repeat the command for all operators
+### 4. Register Operators
 
 ```bash
-./target/debug/ncn-program-bls-cli register-operator --operator <Operator Pubkey> --keypair-path <operator-admin-keypair>
-sleep 2
+# Register operators with BLS keypairs (repeat for all operators)
+./target/debug/ncn-program-bls-cli register-operator \
+  --operator <Operator Pubkey> \
+  --keypair-path <operator-admin-keypair>
 ```
 
-- init the snapshot account:
+### 5. Initialize Snapshot System
 
 ```bash
+# Create the snapshot account
+./target/debug/ncn-program-bls-cli create-snapshot
 
-./target/debug/ncn-program-bls-cli create-epoch-state
-sleep 2
-./target/debug/ncn-program-bls-cli create-weight-table
-sleep 2
-./target/debug/ncn-program-bls-cli set-epoch-weights
-sleep 2
-./target/debug/ncn-program-bls-cli create-epoch-snapshot
-```
-
-- init the operator_snapshot for each operator:
-
-```bash
+# Initialize operator snapshots for each operator
 ./target/debug/ncn-program-bls-cli create-operator-snapshot --operator <Operator Pubkey>
 ```
 
-- Snapshot the vault-operator delegations: and to do so, you will need to make sure that the vault are up to date first:
+### 6. Snapshot Vault-Operator Delegations
 
 ```bash
+# Update vault information first
 ./target/debug/ncn-program-bls-cli full-update-vault
-sleep 2
+
+# Snapshot the vault-operator delegations
 ./target/debug/ncn-program-bls-cli snapshot-vault-operator-delegation --operator <Operator Pubkey>
+
+# Or you can snapshot all of them at once using
+./target/debug/ncn-program-bls-cli crank-snapshot
+```
+
+### 7. Create the vote counter
+
+```bash
+# Create the vote counter
+./target/debug/ncn-program-bls-cli create-vote-counter
+```
+
+### 8. Generate a signature
+
+```bash
+# Generate signature using current vote counter as message
+ncn-program-bls-cli generate-vote-signature \
+  --private-key <32_BYTE_HEX_PRIVATE_KEY>
+
+# Generate signature for specific message
+ncn-program-bls-cli generate-vote-signature \
+  --private-key <32_BYTE_HEX_PRIVATE_KEY> \
+  --message <32_BYTE_HEX_MESSAGE>
+```
+
+### 9. Aggregate the signatures
+
+```bash
+ncn-program-bls-cli aggregate-signatures \
+  --signatures <COMMA_SEPARATED_64_BYTE_HEX_SIGNATURES> \
+  --g1-public-keys <COMMA_SEPARATED_32_BYTE_HEX_G1_KEYS> \
+  --g2-public-keys <COMMA_SEPARATED_64_BYTE_HEX_G2_KEYS> \
+  --signers-bitmap <HEX_BITMAP>
+```
+
+### 10. Cast Vote
+
+Submit an aggregated vote to the NCN program.
+
+```bash
+ncn-program-bls-cli cast-vote \
+  --aggregated-signature <32_BYTE_HEX_AGGREGATED_SIGNATURE> \
+  --aggregated-g2 <64_BYTE_HEX_AGGREGATED_G2_KEY> \
+  --signers-bitmap <HEX_BITMAP> \
+  [--message <32_BYTE_HEX_MESSAGE>]
 ```
 
 ## Optimization Opportunities and Development TODOs
 
-[x]. Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
-[x]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
-[x]. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
-[x]. CLI: crank-update-all-vaults are updating
-[x]. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
-[x]. check the epoch_state logic, espically the tally of operator_snapshot, and check what will happen if you snapshot the same operator more than once.
-[]. since it is only one vault, the vault registry is not needed, consider removing it.
-[]. instead of having two Instructions (`ResgiterOperator` and `InitOperatorSnapshot`) they could be only one
-[]. check to see if the operator change its G1 pubkey, are we changing that in the operator_snapshot account or not, if not then we should change it.
-[]. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
-[x]. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
-[x]. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
-[x]. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params
+### Completed Optimizations ✅
+
+- [x] Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
+- [x] Remove weight table since it is only one vault, no need to init and set weights every epoch.
+- [x] Uncouple epoch_snapshot account from epoch_state account and weight_table account.
+- [x] Remove epoch_state dependency for operator snapshots, merge with epoch_snapshot account.
+- [x] Check epoch_state logic, especially the tally of operator_snapshot, and check what will happen if you snapshot the same operator more than once.
+- [x] Remove epoch_state, epoch_marker, and weight_table accounts
+- [x] CLI: crank-update-all-vaults Removed
+- [x] CLI: update-vault fixed to work and update only one vault.
+- [x] CLI: run-keeper rewritten to support rolling over snapshot, and simple logic
+- [x] CLI: Vote command re-written to support multi-sig aggregation.
+- [x] CLI: sign message command, you provide a bn-128 privkey, and a message and it will sign it, if you don't provide a message it will sign the current vote counter value.
+- [x] CLI: aggregate signatures command, you provide multiple signatures, g1 pubkeys, g2 pubkeys and a bitmap of who signed and it will aggregate them into one signature and one aggregated g2 pubkey.
+- [x] CLI: Register operator now generates random G1, G2 pubkeys and BN128 privkey
+- [x] CLI: Register operator can take g1 and g2 pubkeys as input if you want to provide your own.
+- [x] CLI: add crankSnapshotUnupdated command: only snapshot operators that haven't been snapshotted yet for the current epoch.
+- [x] CLI: rename epoch_snapshot to snapshot
+- [x] CLI: rename epoch_snapshot to snapshot
+- [x] CLI: more fixes and tweaks.
+- [x] docs update and code cleanup and more
+
+### Remaining Optimizations 🔄
+
+- [ ] Check to see if we are changing the snapshot if the operator changes it's g1 pubkey using upadte_bn128 keys ix.
+- [ ] Registering an operator now is being done using two pairing equations, it could all be done by only one by merging the two equations.
+- [ ] Since it is only one vault, the vault registry is not needed, consider removing it.
+- [ ] Instead of having two Instructions (`RegisterOperator` and `InitOperatorSnapshot`) they could be only one

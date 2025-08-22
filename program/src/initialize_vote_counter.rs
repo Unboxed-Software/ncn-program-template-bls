@@ -1,7 +1,6 @@
 use jito_bytemuck::{AccountDeserialize, Discriminator};
 use jito_jsm_core::loader::load_system_program;
 use jito_restaking_core::ncn::Ncn;
-use jito_restaking_program;
 use ncn_program_core::{account_payer::AccountPayer, config::Config, vote_counter::VoteCounter};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
