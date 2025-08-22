@@ -868,12 +868,8 @@ The keeper automates epoch management through state transitions:
 
 #### **Keeper States**
 
-1. **SetWeight**: Establish stake weights for epoch
-2. **Snapshot**: Capture operator and vault states
-3. **Vote**: Monitor and process consensus votes
-4. **PostVoteCooldown**: Wait period after consensus
-5. **Distribute**: Reward distribution to stakeholders
-6. **Close**: Account cleanup and rent reclamation
+1. **Snapshot**: Capture operator and vault states
+1. **Vote**: Monitor and process consensus votes
 
 #### **Keeper Configuration**
 
@@ -905,7 +901,6 @@ Manages operator-specific functionality:
   - `test_cast_vote_duplicate_signature_fails`: Tests replay attack prevention
   - `test_cast_vote_sequential_voting_with_counter_tracking`: Multi-round counter validation
   - `test_cast_vote_wrong_counter_message_fails`: Invalid counter value rejection
-- `epoch_state.rs`: Epoch lifecycle management
 
 #### **Test Builder Pattern**
 
@@ -1133,7 +1128,6 @@ sleep 2
 ```
 
 - init the snapshot account:
-  Notice that for now you will need to init the epoch_state and the weight table before initing the snapshot, but this should change later
 
 ```bash
 
@@ -1166,11 +1160,12 @@ sleep 2
 [x]. Remove weight table since it is only one vault, no need to init and set weights every epoch.
 [x]. You should only init the epoch_snapshot account once, but to do that the first time you will need to init the epoch_state and the weight_table first, So consider uncoupling the epoch_snapshot account from the epoch_state account and the weight_table account.
 [x]. CLI: crank-update-all-vaults are updating
-[]. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
+[x]. you can't update the operator snapshots when a new epoch comes before creating the epoch state account first, consider removing it or merging it with the epoch_snapshot account.
+[x]. check the epoch_state logic, espically the tally of operator_snapshot, and check what will happen if you snapshot the same operator more than once.
 []. since it is only one vault, the vault registry is not needed, consider removing it.
 []. instead of having two Instructions (`ResgiterOperator` and `InitOperatorSnapshot`) they could be only one
 []. check to see if the operator change its G1 pubkey, are we changing that in the operator_snapshot account or not, if not then we should change it.
 []. registering an operators now is being done using two pairing equations, it could all be done by only one by merging the two equations.
-[]. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
+[x]. CLI: run-keeper command is not going to work well, it need to change a bit, it will try to init an epoch_snapshot every epoch, but it should not, epoch_snapshot account init should happen only once at the start of the NCN
 [x]. CLI: Vote command need to be re-written in a way that supports multi-sig aggregation.
 [x]. CLI: registering and operator now will give random G1, G2 pubkeys and a random BN128 privkey, it will log these keys to a file, but you might want to consider giving the operator the options to pass them as params
