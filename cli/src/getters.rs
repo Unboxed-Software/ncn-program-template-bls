@@ -173,6 +173,47 @@ pub async fn get_snapshot(handler: &CliHandler, _epoch: u64) -> Result<Snapshot>
     Ok(*account)
 }
 
+pub async fn get_or_create_snapshot(handler: &CliHandler, epoch: u64) -> Result<Snapshot> {
+    let (address, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, handler.ncn()?);
+
+    // First, try to get the account.
+    match get_account(handler, &address).await? {
+        Some(account) => {
+            info!("Snapshot account found at {}", address);
+            let snapshot = Snapshot::try_from_slice_unchecked(account.data.as_slice())?;
+            Ok(*snapshot)
+        }
+        None => {
+            info!(
+                "Snapshot account not found at {}. \
+                A creation step via CliHandler method is needed before re-fetching.",
+                address
+            );
+
+            // Import the create_snapshot function from instructions module
+            use crate::instructions::create_snapshot;
+            create_snapshot(handler, epoch).await?;
+
+            // Attempt to fetch the account again after the conceptual creation call.
+            match get_account(handler, &address).await? {
+                Some(account_after_attempt) => {
+                    info!(
+                        "Snapshot account successfully fetched from {} after conceptual creation attempt.",
+                        address
+                    );
+                    let snapshot = Snapshot::try_from_slice_unchecked(account_after_attempt.data.as_slice())?;
+                    Ok(*snapshot)
+                }
+                None => Err(anyhow::anyhow!(
+                    "Failed to get Snapshot account at {} even after conceptual creation attempt. \
+                    Ensure the CliHandler method for creation is implemented and was successful, or initialize the account manually.",
+                    address
+                )),
+            }
+        }
+    }
+}
+
 pub async fn get_operator_snapshot(
     handler: &CliHandler,
     operator: &Pubkey,
@@ -613,6 +654,48 @@ pub async fn get_vote_counter(handler: &CliHandler) -> Result<VoteCounter> {
     let vote_counter = VoteCounter::try_from_slice_unchecked(&account.data)?;
 
     Ok(*vote_counter)
+}
+
+pub async fn get_or_create_vote_counter(handler: &CliHandler) -> Result<VoteCounter> {
+    let (address, _, _) =
+        VoteCounter::find_program_address(&handler.ncn_program_id, handler.ncn()?);
+
+    // First, try to get the account.
+    match get_account(handler, &address).await? {
+        Some(account) => {
+            info!("VoteCounter account found at {}", address);
+            let vote_counter = VoteCounter::try_from_slice_unchecked(&account.data)?;
+            Ok(*vote_counter)
+        }
+        None => {
+            info!(
+                "VoteCounter account not found at {}. \
+                A creation step via CliHandler method is needed before re-fetching.",
+                address
+            );
+
+            // Import the create_vote_counter function from instructions module
+            use crate::instructions::create_vote_counter;
+            create_vote_counter(handler).await?;
+
+            // Attempt to fetch the account again after the conceptual creation call.
+            match get_account(handler, &address).await? {
+                Some(account_after_attempt) => {
+                    info!(
+                        "VoteCounter account successfully fetched from {} after conceptual creation attempt.",
+                        address
+                    );
+                    let vote_counter = VoteCounter::try_from_slice_unchecked(&account_after_attempt.data)?;
+                    Ok(*vote_counter)
+                }
+                None => Err(anyhow::anyhow!(
+                    "Failed to get VoteCounter account at {} even after conceptual creation attempt. \
+                    Ensure the CliHandler method for creation is implemented and was successful, or initialize the account manually.",
+                    address
+                )),
+            }
+        }
+    }
 }
 
 pub struct NcnTickets {

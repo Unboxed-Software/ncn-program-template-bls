@@ -1,34 +1,32 @@
 use std::time::Duration;
 
 use crate::{
-    getters::get_guaranteed_epoch_and_slot,
+    getters::{get_guaranteed_epoch_and_slot, get_or_create_vote_counter},
     handler::CliHandler,
     instructions::{
-        crank_close_epoch_accounts, crank_post_vote_cooldown, crank_register_vaults,
-        crank_snapshot, create_epoch_state,
+        crank_snapshot_unupdated, create_snapshot, create_vote_counter, get_or_create_snapshot,
     },
     keeper::{
-        keeper_metrics::{emit_epoch_metrics, emit_error, emit_heartbeat, emit_ncn_metrics},
+        keeper_metrics::{emit_error, emit_heartbeat},
         keeper_state::KeeperState,
     },
 };
 use anyhow::Result;
 use log::info;
-use ncn_program_core::epoch_state::State;
 use solana_metrics::set_host_id;
 use std::process::Command;
 use tokio::time::sleep;
 
 /// Main entry point for the NCN (Network Coordinated Node) keeper
 ///
-/// The keeper is responsible for progressing epoch states through their lifecycle:
-/// 1. Snapshot - Take snapshots of operator and vault states
-/// 2. Vote - Operators vote on the epoch's outcome
-/// 3. PostVoteCooldown - Wait period after voting
-/// 5. Close - Close and finalize the epoch
+/// The keeper is responsible for managing snapshot operations:
+/// 1. Ensuring snapshot and vote counter accounts exist
+/// 2. Fetching snapshot state from on-chain
+/// 3. Determining which operators need snapshotting
+/// 4. Taking snapshots for operators that need updates
 ///
-/// The keeper runs in a continuous loop, handling multiple epochs and automatically
-/// progressing to new epochs when the current one is complete or stalled.
+/// The keeper runs in a continuous loop, monitoring the snapshot state and
+/// taking snapshots when operators are due for updates.
 ///
 /// # Arguments
 /// * `handler` - CLI handler containing RPC client and configuration
@@ -40,12 +38,8 @@ pub async fn startup_ncn_keeper(
     error_timeout_ms: u64,
 ) -> Result<()> {
     let mut state: KeeperState = KeeperState::default();
-    let mut epoch_stall = false;
     let mut current_keeper_epoch = handler.epoch;
     let mut tick = 0;
-
-    let mut start_of_loop;
-    let mut end_of_loop;
 
     // Set up metrics host identification
     let hostname_cmd = Command::new("hostname")
@@ -58,87 +52,66 @@ pub async fn startup_ncn_keeper(
 
     set_host_id(format!("ncn-program-keeper_{}", hostname));
 
+    // PHASE 0: INITIALIZATION
+    // Ensure required accounts exist before starting the main loop
+    info!("\n\n0. Initializing required accounts\n");
+
+    // Create snapshot account if it doesn't exist
+    let result = get_or_create_snapshot(handler, current_keeper_epoch).await;
+    if check_and_timeout_error(
+        "Create Snapshot".to_string(),
+        &result,
+        error_timeout_ms,
+        current_keeper_epoch,
+    )
+    .await
+    {
+        return Err(anyhow::anyhow!("Failed to create snapshot account"));
+    }
+
+    // Create vote counter if it doesn't exist
+    let result = get_or_create_vote_counter(handler).await;
+    if check_and_timeout_error(
+        "Create Vote Counter".to_string(),
+        &result,
+        error_timeout_ms,
+        current_keeper_epoch,
+    )
+    .await
+    {
+        return Err(anyhow::anyhow!("Failed to create vote counter"));
+    }
+
+    info!("Required accounts initialized successfully");
+
     loop {
-        // PHASE 0.1: EPOCH PROGRESSION LOGIC
-        // This will progress the epoch automatically based on various conditions:
-        // - If a new epoch has started on the blockchain, move to it
-        // - If the current epoch has stalled, move to the next epoch
-        // - If there is still work to be done on the current epoch, stay on it
+        // PHASE 1: EPOCH PROGRESSION LOGIC
+        // Update the epoch if needed
         {
             info!(
-                "\n\n0.1. Progress Epoch If Needed - {}\n",
+                "\n\n1. Check Epoch Progression - {}\n",
                 current_keeper_epoch
             );
-            let starting_epoch = handler.epoch;
-            let keeper_epoch = current_keeper_epoch;
-
             let (current_epoch, _) = get_guaranteed_epoch_and_slot(handler).await;
-            let result = progress_epoch(
-                state.is_epoch_completed,
-                current_epoch,
-                starting_epoch,
-                keeper_epoch,
-                epoch_stall,
-            )
-            .await;
 
-            if current_keeper_epoch != result {
+            if current_epoch != current_keeper_epoch {
                 info!(
                     "\n\nPROGRESS EPOCH: {} -> {}\n\n",
-                    current_keeper_epoch, result
+                    current_keeper_epoch, current_epoch
                 );
+                current_keeper_epoch = current_epoch;
             }
-
-            current_keeper_epoch = result;
-            epoch_stall = false;
-            start_of_loop = current_keeper_epoch == handler.epoch;
-            end_of_loop = current_keeper_epoch == current_epoch;
         }
 
-        // PHASE 0.2: NCN METRICS EMISSION
-        // Emit comprehensive metrics about the NCN state including:
-        // - Validator information and status
-        // - Current epoch information
-        // - Ticket states and delegation information
-        info!("\n\n0.2. Emit NCN Metrics - {}\n", current_keeper_epoch);
-        let result = emit_ncn_metrics(handler, start_of_loop).await;
-
-        check_and_timeout_error(
-            "Emit NCN Metrics".to_string(),
-            &result,
-            error_timeout_ms,
-            state.epoch,
-        )
-        .await;
-
-        // PHASE 0.3: VAULT REGISTRATION
-        // Register any outstanding vaults with the Global Vault Registry
-        // This is a prerequisite for other operations and can be done at any time
-        info!("\n\n0.3. Register Vaults - {}\n", current_keeper_epoch);
-        let result = crank_register_vaults(handler).await;
-
-        if check_and_timeout_error(
-            "Register Vaults".to_string(),
-            &result,
-            error_timeout_ms,
-            state.epoch,
-        )
-        .await
-        {
-            continue;
-        }
-
-        // PHASE 0.4: KEEPER STATE AND EPOCH STATE UPDATE
-        // Fetch and update the keeper's internal state for the current epoch
-        // This includes the EpochState account and derived information
-        // We also update our local understanding of the epoch's progress
+        // PHASE 2: KEEPER STATE UPDATE
+        // Fetch and update the keeper's internal state for snapshot management
         {
             info!(
-                "\n\n0.4. Fetch and Update State - {}\n",
+                "\n\n2. Fetch and Update Snapshot State - {}\n",
                 current_keeper_epoch
             );
 
-            // If the epoch has changed, fetch the new epoch state
+            // If the epoch has changed, fetch the new state
             if state.epoch != current_keeper_epoch {
                 let result = state.fetch(handler, current_keeper_epoch).await;
 
@@ -146,182 +119,75 @@ pub async fn startup_ncn_keeper(
                     "Update Keeper State".to_string(),
                     &result,
                     error_timeout_ms,
-                    state.epoch,
+                    current_keeper_epoch,
                 )
                 .await
                 {
                     continue;
                 }
             } else {
-                // Otherwise, just update the existing epoch state
-                let result = state.update_epoch_state(handler).await;
+                // Otherwise, just update the existing snapshot state
+                let result = state.update_state(handler).await;
 
                 if check_and_timeout_error(
-                    "Update Epoch State".to_string(),
+                    "Update Snapshot State".to_string(),
                     &result,
                     error_timeout_ms,
-                    state.epoch,
+                    current_keeper_epoch,
                 )
                 .await
                 {
                     continue;
                 }
             }
+
+            info!(
+                "Snapshot state updated - should_snapshot: {}, operators_to_snapshot: {}",
+                state.get_should_snapshot(),
+                state.get_operators_to_snapshot().len()
+            );
         }
 
-        // PHASE 2: EPOCH STATE CREATION OR COMPLETION CHECK
-        // If there's no epoch state account, create it
-        // If the epoch is completed, move to the next iteration
-        info!(
-            "\n\n2. Create or Complete State - {}\n",
-            current_keeper_epoch
-        );
-
-        // If the epoch is marked as complete, move to next iteration
-        if state.is_epoch_completed {
-            info!("Epoch {} is complete", state.epoch);
-            continue;
-        }
-
-        // If no epoch state account exists, create it and retry
-        if state.epoch_state.is_none() {
-            let result = create_epoch_state(handler, state.epoch).await;
-
-            check_and_timeout_error(
-                "Create Epoch State".to_string(),
-                &result,
-                error_timeout_ms,
-                state.epoch,
-            )
-            .await;
-
-            // Continue to next iteration regardless of success/failure
-            // to allow the state to be refetched
-            continue;
-        }
-
-        // PHASE 3: STATE-SPECIFIC OPERATIONS
-        // Execute the appropriate operations based on the current epoch state
-        // Each state has specific tasks that need to be completed before progression
-        let current_state = state.current_state().expect("cannot get current state");
-        info!(
-            "\n\n3. Crank State [{:?}] - {}\n",
-            current_state, current_keeper_epoch
-        );
-
-        let result = match current_state {
-            // Snapshot: Capture operator and vault state snapshots
-            State::Snapshot => crank_snapshot(handler, state.epoch).await,
-            // Vote: No need to do anything here
-            State::Vote => {
-                info!("No explicit handling for voting phase. System will wait and re-evaluate.");
-                Ok(())
-            }
-            // PostVoteCooldown: Wait period after voting completes, this step will only log the
-            // consensus result
-            State::PostVoteCooldown => crank_post_vote_cooldown(handler, state.epoch).await,
-
-            // Close: Finalize and close the epoch's accounts
-            State::Close => crank_close_epoch_accounts(handler, state.epoch).await,
-        };
-
-        if check_and_timeout_error(
-            format!("Crank State: {:?}", current_state),
-            &result,
-            error_timeout_ms,
-            state.epoch,
-        )
-        .await
+        // PHASE 3: SNAPSHOT OPERATIONS
+        // Check if snapshotting is needed and execute if required
         {
-            continue;
-        }
+            info!(
+                "\n\n3. Check and Execute Snapshots - {}\n",
+                current_keeper_epoch
+            );
 
-        // PHASE 4: EPOCH METRICS EMISSION
-        // Emit detailed metrics about the current epoch's state and progress
-        info!("\n\n4. Emit Epoch Metrics - {}\n", current_keeper_epoch);
-        let result = emit_epoch_metrics(handler, state.epoch).await;
+            if state.get_should_snapshot() {
+                info!(
+                    "Snapshotting needed for {} operators",
+                    state.get_operators_to_snapshot().len()
+                );
 
-        check_and_timeout_error(
-            "Emit Epoch Metrics".to_string(),
-            &result,
-            error_timeout_ms,
-            state.epoch,
-        )
-        .await;
+                let result = crank_snapshot_unupdated(handler, current_keeper_epoch, true).await;
 
-        // PHASE 5: STALL DETECTION
-        // Detect if the epoch has stalled and should be progressed
-        {
-            info!("\n\n5. Detect Stall - {}\n", current_keeper_epoch);
+                if check_and_timeout_error(
+                    "Crank Snapshot".to_string(),
+                    &result,
+                    error_timeout_ms,
+                    current_keeper_epoch,
+                )
+                .await
+                {
+                    continue;
+                }
 
-            let result = state.detect_stall(handler).await;
-
-            if check_and_timeout_error(
-                "Detect Stall".to_string(),
-                &result,
-                error_timeout_ms,
-                state.epoch,
-            )
-            .await
-            {
-                continue;
-            }
-
-            epoch_stall = result.unwrap();
-
-            if epoch_stall {
-                info!("\n\nSTALL DETECTED FOR {}\n\n", current_keeper_epoch);
+                info!("Snapshot operations completed successfully");
+            } else {
+                info!("No snapshotting needed - all operators are up to date");
             }
         }
 
         // MAIN LOOP TIMEOUT
-        // If we've reached the end of processing and detected a stall,
-        // wait before the next iteration and emit a heartbeat
-        if end_of_loop && epoch_stall {
-            info!("\n\n -- Timeout -- {}\n", current_keeper_epoch);
-
-            timeout_keeper(loop_timeout_ms).await;
-            emit_heartbeat(tick).await;
-            tick += 1;
-        }
+        // Wait before the next iteration and emit a heartbeat
+        info!("\n\n -- Loop Timeout -- {}\n", current_keeper_epoch);
+        timeout_keeper(loop_timeout_ms).await;
+        emit_heartbeat(tick).await;
+        tick += 1;
     }
-}
-
-/// Determines the next epoch to process based on current conditions
-///
-/// This function implements the epoch progression logic:
-/// - If the current epoch is completed or stalled, move to the next epoch
-/// - If we've reached the blockchain's current epoch, reset to the starting epoch
-/// - Otherwise, stay on the current keeper epoch
-///
-/// # Arguments
-/// * `is_epoch_completed` - Whether the current epoch is marked as completed
-/// * `current_epoch` - The current epoch according to the blockchain
-/// * `starting_epoch` - The initial epoch the keeper was configured for
-/// * `keeper_epoch` - The epoch the keeper is currently processing
-/// * `epoch_stall` - Whether the current epoch has stalled
-///
-/// # Returns
-/// The epoch number the keeper should process next
-async fn progress_epoch(
-    is_epoch_completed: bool,
-    current_epoch: u64,
-    starting_epoch: u64,
-    keeper_epoch: u64,
-    epoch_stall: bool,
-) -> u64 {
-    if is_epoch_completed || epoch_stall {
-        // If we've caught up to the current blockchain epoch, reset to starting epoch
-        if keeper_epoch == current_epoch {
-            return starting_epoch;
-        }
-
-        // Otherwise, increment to the next epoch
-        return keeper_epoch + 1;
-    }
-
-    // No progression needed, stay on current epoch
-    keeper_epoch
 }
 
 /// Handles errors consistently across the keeper loop

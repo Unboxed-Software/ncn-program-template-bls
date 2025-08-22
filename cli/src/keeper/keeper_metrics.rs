@@ -6,9 +6,9 @@ use solana_sdk::{clock::DEFAULT_SLOTS_PER_EPOCH, native_token::lamports_to_sol};
 use crate::{
     getters::{
         get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
-        get_current_epoch_and_slot, get_epoch_state, get_is_epoch_completed,
-        get_ncn_program_config, get_operator, get_operator_snapshot, get_snapshot, get_vault,
-        get_vault_config, get_vault_operator_delegation, get_vault_registry,
+        get_current_epoch_and_slot, get_ncn_program_config, get_operator, get_operator_snapshot,
+        get_snapshot, get_vault, get_vault_config, get_vault_operator_delegation,
+        get_vault_registry,
     },
     handler::CliHandler,
 };
@@ -566,7 +566,8 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
     let (current_epoch, current_slot) = get_current_epoch_and_slot(handler).await?;
     let is_current_epoch = current_epoch == epoch;
 
-    let is_epoch_completed = get_is_epoch_completed(handler, epoch).await?;
+    // TODO: Implement epoch completion check for snapshot-focused keeper
+    let is_epoch_completed = false;
 
     // Handle completed epochs with simplified metrics
     if is_epoch_completed {
@@ -585,89 +586,7 @@ pub async fn emit_epoch_metrics_state(handler: &CliHandler, epoch: u64) -> Resul
     }
 
     // Handle active epochs with detailed state information
-    let state = get_epoch_state(handler, epoch).await?;
-    let current_state = {
-        let (valid_slots_after_consensus, epochs_after_consensus_before_close) = {
-            let config = get_ncn_program_config(handler).await?;
-            (
-                config.valid_slots_after_consensus(),
-                config.epochs_after_consensus_before_close(),
-            )
-        };
-        let epoch_schedule = handler.rpc_client().get_epoch_schedule().await?;
-
-        state.current_state(
-            &epoch_schedule,
-            valid_slots_after_consensus,
-            epochs_after_consensus_before_close,
-            current_slot,
-        )
-    }?;
-
-    // Count operator snapshot account statuses
-    // Note: operator_snapshot method not available in this version
-    // For now, we'll set all to 0
-    let operator_snapshot_dne = 0;
-    let operator_snapshot_open = 0;
-    let operator_snapshot_closed = 0;
-
-    emit_epoch_datapoint!(
-        "ncn-program-keeper-ee-state",
-        is_current_epoch,
-        ("current-epoch", current_epoch, i64),
-        ("current-slot", current_slot, i64),
-        ("keeper-epoch", epoch, i64),
-        ("is-complete", false, bool),
-        (
-            "current-state-string",
-            format!("{:?}", current_state),
-            String
-        ),
-        ("current-state", current_state as u8, i64),
-        ("operator-count", 0, i64), // operator_count method not available on EpochState
-        ("slot-created", state.slot_created(), i64),
-        // Progress tracking for each phase
-        (
-            "epoch-snapshot-progress-tally",
-            0, // snapshot_progress method not available on EpochState
-            i64
-        ),
-        (
-            "epoch-snapshot-progress-total",
-            0, // snapshot_progress method not available on EpochState
-            i64
-        ),
-        // Voting phase has been removed - replaced with BLS signatures
-        ("voting-progress-tally", 0, i64),
-        ("voting-progress-total", 0, i64),
-        // Account status tracking
-        (
-            "epoch-state-account-status",
-            state.account_status().epoch_state()?,
-            i64
-        ),
-        (
-            "epoch-snapshot-account-status",
-            0, // snapshot method not available on EpochAccountStatus
-            i64
-        ),
-        (
-            "ballot-box-account-status",
-            0, // ballot_box functionality removed
-            i64
-        ),
-        ("operator-snapshot-account-dne", operator_snapshot_dne, i64),
-        (
-            "operator-snapshot-account-open",
-            operator_snapshot_open,
-            i64
-        ),
-        (
-            "operator-snapshot-account-closed",
-            operator_snapshot_closed,
-            i64
-        )
-    );
-
-    Ok(())
+    // TODO: Implement epoch state retrieval for snapshot-focused keeper
+    // For now, return early since we're focusing on snapshot operations
+    return Ok(());
 }
