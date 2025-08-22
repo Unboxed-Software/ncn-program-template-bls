@@ -175,6 +175,8 @@ pub enum ProgramCommand {
     /// Instructions
     CreateVaultRegistry,
 
+    CreateVoteCounter {},
+
     RegisterVault {},
 
     RegisterOperator {
@@ -214,8 +216,6 @@ pub enum ProgramCommand {
         #[arg(long, help = "Operator address")]
         operator: String,
     },
-
-    CreateBallotBox,
 
     /// Cast a vote using BLS multi-signature aggregation
     CastVote {
@@ -279,22 +279,21 @@ pub enum ProgramCommand {
     GetNCNProgramConfig,
     GetVaultRegistry,
 
+    GetVoteCounter {},
+
     GetSnapshot,
     GetOperatorSnapshot {
         #[arg(long, env = "OPERATOR", help = "Operator Account Address")]
         operator: String,
     },
-    GetBallotBox,
     GetAccountPayer,
     GetTotalEpochRentCost,
-    GetConsensusResult,
 
     GetOperatorStakes,
     GetVaultStakes,
     GetVaultOperatorStakes,
 
-    // GetAllOptedInValidators,
-    FullUpdateVault {},
+    FullUpdateVault,
 }
 
 #[rustfmt::skip]

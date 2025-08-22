@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::{
     getters::{
         get_account, get_all_operators_in_ncn, get_all_sorted_operators_for_vault,
-        get_all_vaults_in_ncn, get_current_slot, get_ncn_program_config, get_operator_snapshot,
+        get_all_vaults_in_ncn, get_current_slot, get_operator_snapshot,
         get_or_create_vault_registry, get_restaking_config, get_snapshot, get_vault,
         get_vault_config, get_vault_registry, get_vault_update_state_tracker,
     },
@@ -33,8 +33,8 @@ use ncn_program_client::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
         CastVoteBuilder, InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
         InitializeOperatorSnapshotBuilder, InitializeSnapshotBuilder,
-        InitializeVaultRegistryBuilder, ReallocSnapshotBuilder, RegisterOperatorBuilder,
-        RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
+        InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, ReallocSnapshotBuilder,
+        RegisterOperatorBuilder, RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -290,6 +290,42 @@ pub async fn admin_fund_account_payer(handler: &CliHandler, amount: f64) -> Resu
 // --------------------- NCN Program ------------------------------
 
 // ----------------------- Keeper ---------------------------------
+
+pub async fn create_vote_counter(handler: &CliHandler) -> Result<()> {
+    let ncn = *handler.ncn()?;
+
+    let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
+
+    let (vote_counter, _, _) = VoteCounter::find_program_address(&handler.ncn_program_id, &ncn);
+
+    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
+
+    let vote_counter_account = get_account(handler, &vote_counter).await?;
+
+    // Skip if vote counter already exists
+    if vote_counter_account.is_none() {
+        let initialize_vote_counter_ix = InitializeVoteCounterBuilder::new()
+            .config(config)
+            .vote_counter(vote_counter)
+            .ncn(ncn)
+            .account_payer(account_payer)
+            .system_program(system_program::id())
+            .instruction();
+
+        send_and_log_transaction(
+            handler,
+            &[initialize_vote_counter_ix],
+            &[],
+            "Created Vote Counter",
+            &[format!("NCN: {:?}", ncn)],
+        )
+        .await?;
+    } else {
+        info!("Vote counter already exists for NCN: {:?}", ncn);
+    }
+
+    Ok(())
+}
 
 pub async fn create_vault_registry(handler: &CliHandler) -> Result<()> {
     let ncn = *handler.ncn()?;

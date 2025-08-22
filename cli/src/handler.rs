@@ -12,14 +12,14 @@ use crate::{
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
         admin_set_parameters, crank_register_vaults, crank_snapshot, crank_snapshot_unupdated,
-        create_operator_snapshot, create_snapshot, create_vault_registry, full_vault_update,
-        register_operator, register_vault, snapshot_vault_operator_delegation,
+        create_operator_snapshot, create_snapshot, create_vault_registry, create_vote_counter,
+        full_vault_update, register_operator, register_vault, snapshot_vault_operator_delegation,
     },
 };
 use anyhow::{anyhow, Result};
 use base64::{engine::general_purpose, Engine};
 use log::info;
-use ncn_program_core::account_payer::AccountPayer;
+use ncn_program_core::{account_payer::AccountPayer, g1_point::G1Point};
 use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use solana_client::{
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
@@ -260,6 +260,8 @@ impl CliHandler {
             // Instructions
             ProgramCommand::CreateVaultRegistry {} => create_vault_registry(self).await,
 
+            ProgramCommand::CreateVoteCounter {} => create_vote_counter(self).await,
+
             ProgramCommand::RegisterVault {} => register_vault(self, self.vault()).await,
 
             ProgramCommand::RegisterOperator {
@@ -329,11 +331,6 @@ impl CliHandler {
                 snapshot_vault_operator_delegation(self, self.vault(), &operator, self.epoch).await
             }
 
-            ProgramCommand::CreateBallotBox {} => {
-                // Ballot box functionality has been removed
-                log::info!("Ballot box functionality has been removed");
-                Ok(())
-            }
             ProgramCommand::CastVote {
                 aggregated_signature,
                 aggregated_g2,
@@ -477,6 +474,12 @@ impl CliHandler {
                 Ok(())
             }
 
+            ProgramCommand::GetVoteCounter {} => {
+                let vote_counter = get_vote_counter(self).await?;
+                info!("Vote Counter: {:?}", vote_counter);
+                Ok(())
+            }
+
             ProgramCommand::GetSnapshot {} => {
                 let snapshot = get_snapshot(self, self.epoch).await?;
                 info!("{}", snapshot);
@@ -487,11 +490,6 @@ impl CliHandler {
                     .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
                 let operator_snapshot = get_operator_snapshot(self, &operator, self.epoch).await?;
                 info!("{}", operator_snapshot);
-                Ok(())
-            }
-            ProgramCommand::GetBallotBox {} => {
-                // Ballot box functionality has been removed
-                log::info!("Ballot box functionality has been removed");
                 Ok(())
             }
             ProgramCommand::GetAccountPayer {} => {
@@ -511,11 +509,6 @@ impl CliHandler {
                     "\n\n--- Total Epoch Rent Cost ---\nCost: {}\n",
                     lamports_to_sol(total_epoch_rent_cost)
                 );
-                Ok(())
-            }
-            ProgramCommand::GetConsensusResult {} => {
-                // Consensus result functionality has been removed
-                log::info!("Consensus result functionality has been removed");
                 Ok(())
             }
 

@@ -1,7 +1,9 @@
 use anyhow::{anyhow, Result};
 use chrono::Utc;
 use ncn_program_core::{
-    g1_point::G1CompressedPoint, g2_point::G2CompressedPoint, privkey::PrivKey,
+    g1_point::{G1CompressedPoint, G1Point},
+    g2_point::{G2CompressedPoint, G2Point},
+    privkey::PrivKey,
     schemes::Sha256Normalized,
 };
 use serde::{Deserialize, Serialize};
@@ -250,7 +252,7 @@ pub fn aggregate_signatures_and_keys(
     let bitmap_bytes =
         hex::decode(signers_bitmap).map_err(|e| anyhow!("Error parsing signers bitmap: {}", e))?;
 
-    // Parse signatures
+    // Parse signatures into G1Point
     let mut signatures_vec = Vec::new();
     for sig_hex in signature_list {
         let sig_bytes = hex::decode(sig_hex.trim())
@@ -264,11 +266,11 @@ pub fn aggregate_signatures_and_keys(
         }
         let mut sig_array = [0u8; 64];
         sig_array.copy_from_slice(&sig_bytes);
-        signatures_vec.push(sig_array);
+        let g1_point = G1Point::from(sig_array);
+        signatures_vec.push(g1_point);
     }
 
-    // Parse G1 public keys
-    let mut g1_keys_vec = Vec::new();
+    // Parse G1 public keys (not needed for aggregation, but kept for validation)
     for g1_hex in g1_list {
         let g1_bytes = hex::decode(g1_hex.trim())
             .map_err(|e| anyhow!("Error parsing G1 key '{}': {}", g1_hex, e))?;
@@ -279,13 +281,10 @@ pub fn aggregate_signatures_and_keys(
                 g1_hex
             ));
         }
-        let mut g1_array = [0u8; 32];
-        g1_array.copy_from_slice(&g1_bytes);
-        g1_keys_vec.push(g1_array);
     }
 
-    // Parse G2 public keys
-    let mut g2_keys_vec = Vec::new();
+    // Parse G2 public keys into G2Point
+    let mut g2_points_vec = Vec::new();
     for g2_hex in g2_list {
         let g2_bytes = hex::decode(g2_hex.trim())
             .map_err(|e| anyhow!("Error parsing G2 key '{}': {}", g2_hex, e))?;
@@ -298,28 +297,34 @@ pub fn aggregate_signatures_and_keys(
         }
         let mut g2_array = [0u8; 64];
         g2_array.copy_from_slice(&g2_bytes);
-        g2_keys_vec.push(g2_array);
+        let g2_compressed = G2CompressedPoint::from(g2_array);
+        let g2_point = G2Point::try_from(g2_compressed)
+            .map_err(|e| anyhow!("Failed to decompress G2 point: {:?}", e))?;
+        g2_points_vec.push(g2_point);
     }
 
-    // Aggregate signatures (simple addition for now - in production you'd want proper BLS aggregation)
-    let mut aggregated_signature = [0u8; 32];
-    for sig in signatures_vec {
-        for i in 0..32 {
-            aggregated_signature[i] = aggregated_signature[i].wrapping_add(sig[i]);
-        }
-    }
+    // Aggregate signatures using proper G1Point addition
+    let aggregated_signature = signatures_vec
+        .into_iter()
+        .reduce(|acc, sig| acc + sig)
+        .ok_or_else(|| anyhow!("No signatures to aggregate"))?;
 
-    // Aggregate G2 public keys (simple addition for now - in production you'd want proper BLS aggregation)
-    let mut aggregated_g2 = [0u8; 64];
-    for g2_key in g2_keys_vec {
-        for i in 0..64 {
-            aggregated_g2[i] = aggregated_g2[i].wrapping_add(g2_key[i]);
-        }
-    }
+    // Aggregate G2 public keys using proper G2Point addition
+    let aggregated_g2_point = g2_points_vec
+        .into_iter()
+        .reduce(|acc, g2| acc + g2)
+        .ok_or_else(|| anyhow!("No G2 public keys to aggregate"))?;
+
+    // Convert back to compressed formats
+    let aggregated_signature_compressed = G1CompressedPoint::try_from(aggregated_signature)
+        .map_err(|e| anyhow!("Failed to compress aggregated signature: {:?}", e))?;
+
+    let aggregated_g2_compressed = G2CompressedPoint::try_from(&aggregated_g2_point)
+        .map_err(|e| anyhow!("Failed to compress aggregated G2 point: {:?}", e))?;
 
     Ok(AggregationResult {
-        aggregated_signature,
-        aggregated_g2,
+        aggregated_signature: aggregated_signature_compressed.0,
+        aggregated_g2: aggregated_g2_compressed.0,
         signers_bitmap: bitmap_bytes,
     })
 }
