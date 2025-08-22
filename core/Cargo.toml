@@ -12,17 +12,17 @@ readme = { workspace = true }
 [dependencies]
 borsh = { workspace = true }
 bytemuck = { workspace = true }
+dashu = { workspace = true }
 jito-bytemuck = { workspace = true }
 jito-restaking-core = { workspace = true }
 jito-vault-core = { workspace = true }
+num = { workspace = true }
 shank = { workspace = true }
+solana-bn254 = { workspace = true }
+solana-nostd-sha256 = { workspace = true }
 solana-program = { workspace = true }
 spl-math = { workspace = true }
 thiserror = { workspace = true }
-solana-bn254 = { workspace = true }
-num = { workspace = true }
-dashu = { workspace = true }
-solana-nostd-sha256 = { workspace = true }
 
 # For client-side BN254 operations
 [target.'cfg(not(target_os = "solana"))'.dependencies]
