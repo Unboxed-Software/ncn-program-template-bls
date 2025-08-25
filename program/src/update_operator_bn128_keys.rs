@@ -136,12 +136,7 @@ pub fn process_update_operator_bn128_keys(
     let mut snapshot_data = snapshot.try_borrow_mut_data()?;
     let snapshot_account = Snapshot::try_from_slice_unchecked_mut(&mut snapshot_data)?;
 
-    // Find the operator snapshot by operator pubkey and update it
-    if let Some(operator_snapshot) = snapshot_account.find_mut_operator_snapshot(operator.key) {
-        operator_snapshot.update_g1_pubkey(&g1_pubkey);
-    } else {
-        msg!("Operator snapshot not found for operator: {}", operator.key);
-    }
+    snapshot_account.update_g1_operator_pubkey(&g1_pubkey, operator.key)?;
 
     msg!(
         "Operator BLS keys updated successfully for operator {}",

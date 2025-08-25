@@ -1742,6 +1742,21 @@
       "code": 8802,
       "name": "OperatorNcnConnectionNotActive",
       "msg": "Operator <> NCN connection is not active"
+    },
+    {
+      "code": 8803,
+      "name": "NCNOperatorAccountDosentExist",
+      "msg": "NCN Operator Account Doesn't exist"
+    },
+    {
+      "code": 8804,
+      "name": "NoOperatorsRegistered",
+      "msg": "No operators registered"
+    },
+    {
+      "code": 8805,
+      "name": "InvalidOperatorCount",
+      "msg": "Invalid operator count"
     }
   ],
   "metadata": {

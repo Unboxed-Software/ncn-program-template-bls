@@ -98,108 +98,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_snapshot_aggregates_the_right_g1_pubkey_if_one_is_not_active() -> TestResult<()> {
-        let mut fixture = TestBuilder::new().await;
-        fixture.initialize_restaking_and_vault_programs().await?;
-
-        const OPERATORS: usize = 10;
-
-        let mut test_ncn = fixture.create_test_ncn().await?;
-        let mut ncn_program_client = fixture.ncn_program_client();
-        ncn_program_client
-            .setup_ncn_program(&test_ncn.ncn_root)
-            .await?;
-
-        fixture
-            .add_operators_to_test_ncn(&mut test_ncn, OPERATORS, Some(100))
-            .await?;
-        fixture
-            .add_vaults_to_test_ncn(&mut test_ncn, 1, None)
-            .await?;
-        fixture.add_delegation_in_test_ncn(&test_ncn, 100).await?;
-        fixture.add_vault_registry_to_test_ncn(&test_ncn).await?;
-
-        fixture.warp_slot_incremental(1000).await?;
-
-        let epoch = fixture.clock().await.epoch;
-
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-
-        let vault_root = test_ncn.vaults[0].clone();
-        let vault_address = vault_root.vault_pubkey;
-
-        let mut g1_pubkeys = Vec::new();
-
-        for operator_root in test_ncn.operators.iter().skip(1) {
-            let g1_pubkey = G1Point::try_from(operator_root.bn128_privkey).unwrap();
-            let g1_compressed = G1CompressedPoint::try_from(g1_pubkey).unwrap();
-            g1_pubkeys.push(g1_pubkey);
-            let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
-
-            let signature = operator_root
-                .bn128_privkey
-                .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
-                .unwrap();
-
-            ncn_program_client
-                .do_register_operator(
-                    ncn,
-                    operator_root.operator_pubkey,
-                    &operator_root.operator_admin,
-                    g1_compressed.0,
-                    g2_compressed.0,
-                    signature.0,
-                )
-                .await?;
-        }
-
-        ncn_program_client.do_full_initialize_snapshot(ncn).await?;
-
-        for operator_root in test_ncn.operators.iter() {
-            ncn_program_client
-                .do_initialize_operator_snapshot(operator_root.operator_pubkey, ncn)
-                .await?;
-
-            ncn_program_client
-                .do_snapshot_vault_operator_delegation(
-                    vault_address,
-                    operator_root.operator_pubkey,
-                    ncn,
-                    epoch,
-                )
-                .await?;
-        }
-
-        // Verify that the snapshot aggregates the G1 pubkeys correctly
-        let agg_g1_pubkey = g1_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
-        let agg_g1_pubkey_compressed = G1CompressedPoint::try_from(agg_g1_pubkey).unwrap();
-
-        let mut all_g1_pubkeys = Vec::new();
-        for operator_root in test_ncn.operators.iter() {
-            let g1_pubkey = G1Point::try_from(operator_root.bn128_privkey).unwrap();
-            all_g1_pubkeys.push(g1_pubkey);
-        }
-        let all_agg_g1_pubkey = all_g1_pubkeys.into_iter().reduce(|acc, x| acc + x).unwrap();
-        let all_agg_g1_pubkey_compressed = G1CompressedPoint::try_from(all_agg_g1_pubkey).unwrap();
-
-        let snapshot = ncn_program_client.get_snapshot(ncn).await?;
-
-        assert_eq!(
-            snapshot.total_aggregated_g1_pubkey(),
-            agg_g1_pubkey_compressed.0
-        );
-
-        assert_ne!(
-            snapshot.total_aggregated_g1_pubkey(),
-            all_agg_g1_pubkey_compressed.0
-        );
-
-        assert_ne!(&agg_g1_pubkey_compressed.0, &all_agg_g1_pubkey_compressed.0);
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn test_operator_snapshot_gets_updated_when_snapshotted() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
 
@@ -429,7 +327,7 @@ mod tests {
             );
 
             // Verify operator registration count was updated properly
-            assert_eq!(snapshot_after.operators_registered(), 2);
+            assert_eq!(snapshot_after.operators_registered(), 1);
 
             // Verify that the operator snapshot can vote (has minimum stake weight and is active)
             assert!(

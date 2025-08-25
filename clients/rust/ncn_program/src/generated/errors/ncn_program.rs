@@ -346,6 +346,9 @@ pub enum NcnProgramError {
     /// 8802 - Operator <> NCN connection is not active
     #[error("Operator <> NCN connection is not active")]
     OperatorNcnConnectionNotActive = 0x2262,
+    /// 8803 - NCN Operator Account Doesn't exist
+    #[error("NCN Operator Account Doesn't exist")]
+    NCNOperatorAccountDosentExist = 0x2263,
 }
 
 impl solana_program::program_error::PrintProgramError for NcnProgramError {

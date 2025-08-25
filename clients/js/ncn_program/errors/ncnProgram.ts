@@ -238,6 +238,8 @@ export const NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY = 0x2260; // 88
 export const NCN_PROGRAM_ERROR__QUORUM_NOT_MET = 0x2261; // 8801
 /** OperatorNcnConnectionNotActive: Operator <> NCN connection is not active */
 export const NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE = 0x2262; // 8802
+/** NCNOperatorAccountDosentExist: NCN Operator Account Doesn't exist */
+export const NCN_PROGRAM_ERROR__N_C_N_OPERATOR_ACCOUNT_DOSENT_EXIST = 0x2263; // 8803
 
 export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -308,6 +310,7 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__MINT_IN_TABLE
   | typeof NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE
   | typeof NCN_PROGRAM_ERROR__MODULO_OVERFLOW
+  | typeof NCN_PROGRAM_ERROR__N_C_N_OPERATOR_ACCOUNT_DOSENT_EXIST
   | typeof NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE
   | typeof NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR
   | typeof NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE
@@ -424,6 +427,7 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__MINT_IN_TABLE]: `Mint is already in the table`,
     [NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE]: `Missing required signature`,
     [NCN_PROGRAM_ERROR__MODULO_OVERFLOW]: `Modulo Overflow`,
+    [NCN_PROGRAM_ERROR__N_C_N_OPERATOR_ACCOUNT_DOSENT_EXIST]: `NCN Operator Account Doesn't exist`,
     [NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE]: `NCN Operator Opt In Inactive`,
     [NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR]: `New precise number error`,
     [NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE]: `There are no mints in the table`,
