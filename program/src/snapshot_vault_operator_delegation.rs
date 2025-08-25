@@ -77,12 +77,11 @@ pub fn process_snapshot_vault_operator_delegation(
             false,
         )?;
     }
+    Snapshot::load(program_id, snapshot, ncn.key, true)?;
 
     let current_slot = Clock::get()?.slot;
 
     let (_, ncn_epoch_length) = load_ncn_epoch(restaking_config, current_slot, None)?;
-
-    Snapshot::load(program_id, snapshot, ncn.key, true)?;
 
     // check vault is up to date
     let vault_needs_update = {
@@ -168,8 +167,7 @@ pub fn process_snapshot_vault_operator_delegation(
     // Increment vault operator delegation and check if finalized
     let this_epoch_stake_weight = StakeWeights::snapshot(total_stake_weight)?;
     let next_epoch_stake_weight = StakeWeights::snapshot(next_epoch_stake_weight)?;
-    let (_ncn_operator_index, is_snapshoted) = {
-        let is_snapshoted = cloned_operator_snapshot.is_snapshoted();
+    let _ncn_operator_index = {
         cloned_operator_snapshot.snapshot_vault_operator_delegation(
             current_slot,
             &this_epoch_stake_weight,
@@ -177,15 +175,8 @@ pub fn process_snapshot_vault_operator_delegation(
             snapshot_account.minimum_stake(),
         )?;
 
-        let ncn_operator_index = cloned_operator_snapshot.ncn_operator_index();
-
-        (ncn_operator_index, is_snapshoted)
+        cloned_operator_snapshot.ncn_operator_index()
     };
-
-    // If operator is finalized, increment operator registration
-    if !is_snapshoted {
-        snapshot_account.increment_operator_registration(current_slot)?;
-    }
 
     snapshot_account.update_operator_snapshot(
         cloned_operator_snapshot.ncn_operator_index() as usize,

@@ -3,6 +3,7 @@ use jito_jsm_core::loader::load_system_program;
 use jito_restaking_core::{ncn::Ncn, ncn_operator_state::NcnOperatorState, operator::Operator};
 use ncn_program_core::{
     account_payer::AccountPayer,
+    constants::MAX_OPERATORS,
     error::NCNProgramError,
     g1_point::G1CompressedPoint,
     loaders::load_ncn_epoch,
@@ -54,21 +55,16 @@ pub fn process_initialize_operator_snapshot(
 
     // Check if operator index is valid
     let ncn_operator_index = {
-        let snapshot_data = snapshot.data.borrow();
-        let snapshot = Snapshot::try_from_slice_unchecked(&snapshot_data)?;
-
         let ncn_operator_state_data = ncn_operator_state.data.borrow();
         let ncn_operator_state =
             NcnOperatorState::try_from_slice_unchecked(&ncn_operator_state_data)?;
 
-        let operator_count = snapshot.operator_count();
         let operator_index = ncn_operator_state.index();
 
-        if operator_index >= operator_count {
+        if operator_index >= MAX_OPERATORS as u64 {
             msg!(
-                "Error: Operator index is out of bounds. Index: {}, Count: {}",
+                "Error: Operator index is out of bounds. Index: {},",
                 operator_index,
-                operator_count
             );
             return Err(NCNProgramError::OperatorIsNotInSnapshot.into());
         }
@@ -113,7 +109,7 @@ pub fn process_initialize_operator_snapshot(
     msg!("Operator index: {}", operator_index);
 
     // Try to get the G1 pubkey from the ncn operator account PDA
-    let g1_pubkey: Option<[u8; 32]> = {
+    let g1_pubkey: [u8; 32] = {
         // First check if the ncn operator account account exists by verifying it's the correct PDA
         let (expected_ncn_operator_account_pda, _, _) =
             NCNOperatorAccount::find_program_address(program_id, ncn.key, operator.key);
@@ -131,19 +127,22 @@ pub fn process_initialize_operator_snapshot(
                     let ncn_operator_account_data = ncn_operator_account.try_borrow_data()?;
                     let ncn_operator_account_account =
                         NCNOperatorAccount::try_from_slice_unchecked(&ncn_operator_account_data)?;
-                    Some(*ncn_operator_account_account.g1_pubkey())
+                    *ncn_operator_account_account.g1_pubkey()
                 }
                 Err(_) => {
-                    msg!("NCN Operator Account PDA exists but failed to load properly");
-                    None
+                    msg!("NCN Operator Account failed to load properly");
+                    return Err(NCNProgramError::NCNOperatorAccountDosentExist.into());
                 }
             }
         } else {
-            msg!("NCN Operator Account PDA does not exist for this operator");
-            None
+            msg!(
+                "Error: Invalid NCN Operator Account PDA. Expected: {}, got: {}",
+                expected_ncn_operator_account_pda,
+                ncn_operator_account.key
+            );
+            return Err(ProgramError::InvalidSeeds);
         }
     };
-    msg!("G1 pubkey: {:?}", g1_pubkey);
 
     // Create operator snapshot and add it to the snapshot
     let operator_snapshot = OperatorSnapshot::new(
@@ -152,7 +151,7 @@ pub fn process_initialize_operator_snapshot(
         is_active,
         ncn_operator_index,
         operator_index,
-        g1_pubkey.unwrap_or(G1CompressedPoint::default().0),
+        g1_pubkey,
     )?;
 
     let mut snapshot_data = snapshot.try_borrow_mut_data()?;
@@ -161,14 +160,10 @@ pub fn process_initialize_operator_snapshot(
     // Add the operator snapshot to the snapshot
     snapshot_account.add_operator_snapshot(operator_snapshot)?;
 
-    if is_active && g1_pubkey.is_some() {
-        snapshot_account.register_operator_g1_pubkey(&g1_pubkey.unwrap())?;
-    }
+    snapshot_account.register_operator_g1_pubkey(&g1_pubkey)?;
 
-    if !is_active {
-        // Increment operator registration for an inactive operator
-        snapshot_account.increment_operator_registration(current_slot)?;
-    }
+    // Increment operator registration for an inactive operator
+    snapshot_account.increment_operator_registration(current_slot)?;
 
     Ok(())
 }

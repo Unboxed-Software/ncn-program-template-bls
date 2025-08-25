@@ -230,6 +230,12 @@ pub enum NCNProgramError {
     QuorumNotMet,
     #[error("Operator <> NCN connection is not active")]
     OperatorNcnConnectionNotActive,
+    #[error("NCN Operator Account Doesn't exist")]
+    NCNOperatorAccountDosentExist,
+    #[error("No operators registered")]
+    NoOperatorsRegistered,
+    #[error("Invalid operator count")]
+    InvalidOperatorCount,
 }
 
 impl<T> DecodeError<T> for NCNProgramError {

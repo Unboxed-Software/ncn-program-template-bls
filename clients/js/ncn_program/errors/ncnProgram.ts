@@ -238,6 +238,12 @@ export const NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY = 0x2260; // 88
 export const NCN_PROGRAM_ERROR__QUORUM_NOT_MET = 0x2261; // 8801
 /** OperatorNcnConnectionNotActive: Operator <> NCN connection is not active */
 export const NCN_PROGRAM_ERROR__OPERATOR_NCN_CONNECTION_NOT_ACTIVE = 0x2262; // 8802
+/** NCNOperatorAccountDosentExist: NCN Operator Account Doesn't exist */
+export const NCN_PROGRAM_ERROR__N_C_N_OPERATOR_ACCOUNT_DOSENT_EXIST = 0x2263; // 8803
+/** NoOperatorsRegistered: No operators registered */
+export const NCN_PROGRAM_ERROR__NO_OPERATORS_REGISTERED = 0x2264; // 8804
+/** InvalidOperatorCount: Invalid operator count */
+export const NCN_PROGRAM_ERROR__INVALID_OPERATOR_COUNT = 0x2265; // 8805
 
 export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__ACCOUNT_ALREADY_INITIALIZED
@@ -301,6 +307,7 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__INVALID_MINT_FOR_WEIGHT_TABLE
   | typeof NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP
   | typeof NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET
+  | typeof NCN_PROGRAM_ERROR__INVALID_OPERATOR_COUNT
   | typeof NCN_PROGRAM_ERROR__INVALID_OPERATOR_VOTER
   | typeof NCN_PROGRAM_ERROR__INVALID_SLOTS_AFTER_CONSENSUS
   | typeof NCN_PROGRAM_ERROR__MARKER_EXISTS
@@ -308,11 +315,13 @@ export type NcnProgramError =
   | typeof NCN_PROGRAM_ERROR__MINT_IN_TABLE
   | typeof NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE
   | typeof NCN_PROGRAM_ERROR__MODULO_OVERFLOW
+  | typeof NCN_PROGRAM_ERROR__N_C_N_OPERATOR_ACCOUNT_DOSENT_EXIST
   | typeof NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE
   | typeof NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR
   | typeof NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE
   | typeof NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY
   | typeof NCN_PROGRAM_ERROR__NO_OPERATORS
+  | typeof NCN_PROGRAM_ERROR__NO_OPERATORS_REGISTERED
   | typeof NCN_PROGRAM_ERROR__NO_VALID_BALLOTS
   | typeof NCN_PROGRAM_ERROR__NO_VAULTS_IN_REGISTRY
   | typeof NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED
@@ -417,6 +426,7 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__INVALID_MINT_FOR_WEIGHT_TABLE]: `Invalid mint for weight table`,
     [NCN_PROGRAM_ERROR__INVALID_NCN_FEE_GROUP]: `Not a valid NCN fee group`,
     [NCN_PROGRAM_ERROR__INVALID_N_C_N_FEE_WALLET]: `Invalid NCN Fee wallet`,
+    [NCN_PROGRAM_ERROR__INVALID_OPERATOR_COUNT]: `Invalid operator count`,
     [NCN_PROGRAM_ERROR__INVALID_OPERATOR_VOTER]: `Operator voter needs to sign its vote`,
     [NCN_PROGRAM_ERROR__INVALID_SLOTS_AFTER_CONSENSUS]: `Invalid slots after consensus`,
     [NCN_PROGRAM_ERROR__MARKER_EXISTS]: `Marker exists`,
@@ -424,11 +434,13 @@ if (process.env.NODE_ENV !== 'production') {
     [NCN_PROGRAM_ERROR__MINT_IN_TABLE]: `Mint is already in the table`,
     [NCN_PROGRAM_ERROR__MISSING_REQUIRED_SIGNATURE]: `Missing required signature`,
     [NCN_PROGRAM_ERROR__MODULO_OVERFLOW]: `Modulo Overflow`,
+    [NCN_PROGRAM_ERROR__N_C_N_OPERATOR_ACCOUNT_DOSENT_EXIST]: `NCN Operator Account Doesn't exist`,
     [NCN_PROGRAM_ERROR__N_C_N_OPERATOR_OPT_IN_INACTIVE]: `NCN Operator Opt In Inactive`,
     [NCN_PROGRAM_ERROR__NEW_PRECISE_NUMBER_ERROR]: `New precise number error`,
     [NCN_PROGRAM_ERROR__NO_MINTS_IN_TABLE]: `There are no mints in the table`,
     [NCN_PROGRAM_ERROR__NO_NON_SIGNERS_AGGREGATED_PUBKEY]: `No non signers aggregated pubkey`,
     [NCN_PROGRAM_ERROR__NO_OPERATORS]: `No operators in ncn`,
+    [NCN_PROGRAM_ERROR__NO_OPERATORS_REGISTERED]: `No operators registered`,
     [NCN_PROGRAM_ERROR__NO_VALID_BALLOTS]: `No valid Ballot`,
     [NCN_PROGRAM_ERROR__NO_VAULTS_IN_REGISTRY]: `There are no vaults in the registry`,
     [NCN_PROGRAM_ERROR__OPERATOR_ALREADY_VOTED]: `Operator Already Voted`,

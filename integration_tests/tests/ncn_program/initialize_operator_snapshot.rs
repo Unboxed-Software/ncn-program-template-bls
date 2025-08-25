@@ -60,9 +60,8 @@ mod tests {
         fixture
             .add_operators_to_test_ncn(&mut test_ncn, 1, None)
             .await?;
+        fixture.warp_epoch_incremental(2).await?;
 
-        let clock = fixture.clock().await;
-        let epoch = clock.epoch;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         // Last added operator
         let operator = test_ncn.operators[1].operator_pubkey;
@@ -72,7 +71,7 @@ mod tests {
             .do_initialize_operator_snapshot(operator, ncn)
             .await;
 
-        assert_ncn_program_error(result, NCNProgramError::OperatorIsNotInSnapshot, None);
+        assert_ncn_program_error(result, NCNProgramError::NCNOperatorAccountDosentExist, None);
 
         Ok(())
     }

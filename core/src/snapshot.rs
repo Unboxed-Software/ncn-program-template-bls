@@ -171,12 +171,6 @@ impl Snapshot {
                 .checked_add(1)
                 .ok_or(NCNProgramError::ArithmeticOverflow)?,
         );
-        msg!("Operators registered: {}", self.operators_registered());
-
-        msg!(
-            "Operators can vote count: {}",
-            self.operators_can_vote_count()
-        );
 
         self.last_snapshot_slot = PodU64::from(current_slot);
 
@@ -186,15 +180,15 @@ impl Snapshot {
     /// Adds a G1 pubkey to the total aggregated pubkey
     pub fn add_g1_pubkey_to_total_agg(
         &mut self,
-        pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
+        g1_pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<(), NCNProgramError> {
-        alt_bn128_g1_decompress(pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
+        alt_bn128_g1_decompress(g1_pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
         if self.total_aggregated_g1_pubkey == [0u8; G1_COMPRESSED_POINT_SIZE] {
-            self.total_aggregated_g1_pubkey = *pubkey;
+            self.total_aggregated_g1_pubkey = *g1_pubkey;
         } else {
             let total_aggregated_g1_pubkey_point =
                 G1Point::try_from(&G1CompressedPoint(self.total_aggregated_g1_pubkey))?;
-            let pk_point = G1Point::try_from(&G1CompressedPoint(*pubkey))?;
+            let pk_point = G1Point::try_from(&G1CompressedPoint(*g1_pubkey))?;
             let new_point = total_aggregated_g1_pubkey_point + pk_point;
             let compressed = G1CompressedPoint::try_from(new_point)?;
             self.total_aggregated_g1_pubkey = compressed.0;
@@ -205,12 +199,12 @@ impl Snapshot {
     /// Subtracts a G1 pubkey from the total aggregated pubkey
     pub fn subtract_g1_pubkey_from_total_agg(
         &mut self,
-        pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
+        g1_pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<(), NCNProgramError> {
-        alt_bn128_g1_decompress(pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
+        alt_bn128_g1_decompress(g1_pubkey).map_err(|_| NCNProgramError::InvalidG1Pubkey)?;
         let total_aggregated_g1_pubkey_point =
             G1Point::try_from(&G1CompressedPoint(self.total_aggregated_g1_pubkey))?;
-        let pk_point = G1Point::try_from(&G1CompressedPoint(*pubkey))?;
+        let pk_point = G1Point::try_from(&G1CompressedPoint(*g1_pubkey))?;
         let new_point = total_aggregated_g1_pubkey_point + pk_point.negate();
         let compressed = G1CompressedPoint::try_from(new_point)?;
         self.total_aggregated_g1_pubkey = compressed.0;
@@ -222,6 +216,55 @@ impl Snapshot {
         operator_g1_pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
     ) -> Result<(), NCNProgramError> {
         self.add_g1_pubkey_to_total_agg(operator_g1_pubkey)
+    }
+
+    pub fn update_g1_operator_pubkey(
+        &mut self,
+        operator_g1_pubkey: &[u8; G1_COMPRESSED_POINT_SIZE],
+        operator: &Pubkey,
+    ) -> Result<(), NCNProgramError> {
+        // First, get the old G1 pubkey if the operator exists
+        let operator_count = self.operator_count();
+
+        match operator_count {
+            0 => {
+                msg!("No operators registered in snapshot");
+                return Err(NCNProgramError::NoOperatorsRegistered);
+            }
+            1 => {
+                self.total_aggregated_g1_pubkey = *operator_g1_pubkey;
+                // Now update the operator's pubkey
+                if let Some(operator_snapshot) = self.find_mut_operator_snapshot(operator) {
+                    operator_snapshot.update_g1_pubkey(&operator_g1_pubkey);
+                }
+            }
+            count if count < MAX_OPERATORS as u64 => {
+                let old_g1_pubkey = self
+                    .find_operator_snapshot(operator)
+                    .map(|operator_snapshot| operator_snapshot.g1_pubkey());
+
+                if let Some(old_pubkey) = old_g1_pubkey {
+                    // Subtract the old pubkey from the total aggregated pubkey
+                    self.subtract_g1_pubkey_from_total_agg(&old_pubkey)?;
+
+                    // Now update the operator's pubkey
+                    if let Some(operator_snapshot) = self.find_mut_operator_snapshot(operator) {
+                        operator_snapshot.update_g1_pubkey(&operator_g1_pubkey);
+                    }
+
+                    // Add the new pubkey to the total aggregated pubkey
+                    self.add_g1_pubkey_to_total_agg(operator_g1_pubkey)?;
+                } else {
+                    msg!("Operator snapshot not found for operator: {}", operator);
+                }
+            }
+            _ => {
+                msg!("Operator count is not valid: {}", operator_count);
+                return Err(NCNProgramError::InvalidOperatorCount);
+            }
+        }
+
+        Ok(())
     }
 
     pub fn operator_snapshots(&self) -> &[OperatorSnapshot] {
