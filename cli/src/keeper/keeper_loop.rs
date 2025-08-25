@@ -3,9 +3,7 @@ use std::time::Duration;
 use crate::{
     getters::{get_guaranteed_epoch_and_slot, get_or_create_vote_counter},
     handler::CliHandler,
-    instructions::{
-        crank_snapshot_unupdated, get_or_create_snapshot,
-    },
+    instructions::{crank_snapshot_unupdated, get_or_create_snapshot},
     keeper::{
         keeper_metrics::{emit_error, emit_heartbeat},
         keeper_state::KeeperState,

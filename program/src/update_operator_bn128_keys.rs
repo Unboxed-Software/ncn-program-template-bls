@@ -8,6 +8,7 @@ use ncn_program_core::{
     g2_point::{G2CompressedPoint, G2Point},
     ncn_operator_account::NCNOperatorAccount,
     schemes::sha256_normalized::Sha256Normalized,
+    snapshot::{OperatorSnapshot, Snapshot},
 };
 use solana_program::{
     account_info::AccountInfo,
@@ -31,6 +32,7 @@ use solana_program::{
 /// 3. `[]` ncn: The NCN account
 /// 4. `[]` operator: The operator to update
 /// 5. `[signer]` operator_admin: The operator admin that must sign
+/// 6. `[writable]` snapshot: The snapshot account
 pub fn process_update_operator_bn128_keys(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -38,7 +40,7 @@ pub fn process_update_operator_bn128_keys(
     g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
     signature: [u8; 64],
 ) -> ProgramResult {
-    let [config, ncn_operator_account, ncn, operator, operator_admin] = accounts else {
+    let [config, ncn_operator_account, ncn, operator, operator_admin, snapshot] = accounts else {
         msg!("Error: Not enough account keys provided");
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -53,6 +55,7 @@ pub fn process_update_operator_bn128_keys(
     )?;
     Ncn::load(&jito_restaking_program::id(), ncn, false)?;
     Operator::load(&jito_restaking_program::id(), operator, false)?;
+    Snapshot::load(program_id, snapshot, ncn.key, true)?;
 
     // Verify that the operator_admin is authorized to update this operator
     {
@@ -128,6 +131,17 @@ pub fn process_update_operator_bn128_keys(
 
     // Update the operator's keys
     ncn_operator_account_account.update_keys(&g1_pubkey, &g2_pubkey, slot)?;
+
+    // update the key in the snapshot as well
+    let mut snapshot_data = snapshot.try_borrow_mut_data()?;
+    let snapshot_account = Snapshot::try_from_slice_unchecked_mut(&mut snapshot_data)?;
+
+    // Find the operator snapshot by operator pubkey and update it
+    if let Some(operator_snapshot) = snapshot_account.find_mut_operator_snapshot(operator.key) {
+        operator_snapshot.update_g1_pubkey(&g1_pubkey);
+    } else {
+        msg!("Operator snapshot not found for operator: {}", operator.key);
+    }
 
     msg!(
         "Operator BLS keys updated successfully for operator {}",

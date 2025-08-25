@@ -472,12 +472,12 @@ impl NCNProgramClient {
     }
 
     /// Initializes the snapshot account for a given NCN and epoch.
-    pub async fn do_initialize_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        self.initialize_snapshot(ncn, epoch).await
+    pub async fn do_initialize_snapshot(&mut self, ncn: Pubkey) -> TestResult<()> {
+        self.initialize_snapshot(ncn).await
     }
 
     /// Sends a transaction to initialize the snapshot account.
-    pub async fn initialize_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
+    pub async fn initialize_snapshot(&mut self, ncn: Pubkey) -> TestResult<()> {
         let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
@@ -500,10 +500,10 @@ impl NCNProgramClient {
     }
 
     /// Initializes and fully reallocates the snapshot account for a given NCN and epoch.
-    pub async fn do_full_initialize_snapshot(&mut self, ncn: Pubkey, epoch: u64) -> TestResult<()> {
-        self.do_initialize_snapshot(ncn, epoch).await?;
+    pub async fn do_full_initialize_snapshot(&mut self, ncn: Pubkey) -> TestResult<()> {
+        self.do_initialize_snapshot(ncn).await?;
         let num_reallocs = (Snapshot::SIZE as f64 / MAX_REALLOC_BYTES as f64).ceil() as u64 - 1;
-        self.do_realloc_snapshot(ncn, epoch, num_reallocs).await?;
+        self.do_realloc_snapshot(ncn, num_reallocs).await?;
         Ok(())
     }
 
@@ -511,13 +511,12 @@ impl NCNProgramClient {
     pub async fn do_realloc_snapshot(
         &mut self,
         ncn: Pubkey,
-        epoch: u64,
         num_reallocations: u64,
     ) -> TestResult<()> {
         let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
 
-        self.realloc_snapshot(&ncn, &snapshot, &config, epoch, num_reallocations)
+        self.realloc_snapshot(&ncn, &snapshot, &config, num_reallocations)
             .await
     }
 
@@ -528,7 +527,6 @@ impl NCNProgramClient {
         ncn: &Pubkey,
         snapshot: &Pubkey,
         config: &Pubkey,
-        epoch: u64,
         num_reallocations: u64,
     ) -> TestResult<()> {
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), ncn);
@@ -864,10 +862,12 @@ impl NCNProgramClient {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
         let ncn_operator_account =
             NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
+        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         self.update_operator_bn128_keys(
             config,
             ncn_operator_account,
+            snapshot,
             ncn,
             operator_pubkey,
             operator_admin,
@@ -884,6 +884,7 @@ impl NCNProgramClient {
         &mut self,
         config: Pubkey,
         ncn_operator_account: Pubkey,
+        snapshot: Pubkey,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
@@ -894,6 +895,7 @@ impl NCNProgramClient {
         let ix = UpdateOperatorBN128KeysBuilder::new()
             .config(config)
             .ncn_operator_account(ncn_operator_account)
+            .snapshot(snapshot)
             .ncn(ncn)
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())

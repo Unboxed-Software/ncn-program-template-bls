@@ -1,13 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use crate::fixtures::{
-        test_builder::TestBuilder, TestResult,
-    };
+    use crate::fixtures::{test_builder::TestBuilder, TestResult};
     use ncn_program_core::{
         error::NCNProgramError, g1_point::G1CompressedPoint, g2_point::G2CompressedPoint,
         privkey::PrivKey, schemes::Sha256Normalized,
     };
-    
+
     use solana_sdk::signature::Keypair;
 
     #[tokio::test]
@@ -51,6 +49,9 @@ mod tests {
             .bn128_privkey
             .sign::<Sha256Normalized, &[u8; 32]>(&initial_g1_compressed.0)
             .unwrap();
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
 
         // Register operator first
         ncn_program_client
@@ -131,6 +132,10 @@ mod tests {
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
 
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
+
         // Generate BLS keypair for update
         let new_private_key = PrivKey::from_random();
         let new_g1_compressed = G1CompressedPoint::try_from(new_private_key).unwrap();
@@ -206,6 +211,10 @@ mod tests {
                 initial_g2_compressed.0,
                 initial_signature.0,
             )
+            .await?;
+
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
             .await?;
 
         // Generate mismatched keypair for update
@@ -290,6 +299,10 @@ mod tests {
                 initial_g2_compressed.0,
                 initial_signature.0,
             )
+            .await?;
+
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
             .await?;
 
         // Generate new keypair but use wrong signature
@@ -377,6 +390,10 @@ mod tests {
             )
             .await?;
 
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
+
         // Generate new keypair for update
         let new_private_key = PrivKey::from_random();
         let new_g1_compressed = G1CompressedPoint::try_from(new_private_key).unwrap();
@@ -456,6 +473,10 @@ mod tests {
                 initial_g2_compressed.0,
                 initial_signature.0,
             )
+            .await?;
+
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
             .await?;
 
         // First update
@@ -573,6 +594,10 @@ mod tests {
             )
             .await?;
 
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
+
         // Get initial timestamp
         let initial_entry = ncn_program_client
             .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
@@ -603,6 +628,171 @@ mod tests {
         assert_eq!(updated_entry.g2_pubkey(), &g2_compressed.0);
         // Timestamp should be greater than or equal to initial timestamp
         assert!(updated_entry.slot_registered() >= initial_timestamp);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_operator_bn128_keys_updates_snapshot_g1_key() -> TestResult<()> {
+        let mut fixture = TestBuilder::new().await;
+
+        // Create a complete test NCN setup with 1 operator
+        let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
+        let ncn_root = &test_ncn.ncn_root;
+        let operator_root = &test_ncn.operators[0];
+
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        // Get the initial BLS keys from the operator that was already registered
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+            .await?;
+
+        let initial_g1_compressed = *ncn_operator_account.g1_pubkey();
+
+        // Initialize snapshot first
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
+
+        // Initialize operator snapshot to ensure it exists in the snapshot
+        ncn_program_client
+            .do_initialize_operator_snapshot(operator_root.operator_pubkey, ncn_root.ncn_pubkey)
+            .await?;
+
+        // Get initial snapshot state
+        let initial_snapshot = ncn_program_client.get_snapshot(ncn_root.ncn_pubkey).await?;
+        let initial_operator_snapshot = initial_snapshot
+            .find_operator_snapshot(&operator_root.operator_pubkey)
+            .expect("Operator snapshot should exist after initialization");
+
+        // Verify initial G1 key in snapshot
+        assert_eq!(initial_operator_snapshot.g1_pubkey(), initial_g1_compressed);
+
+        // Generate new BLS keypair for update
+        let new_private_key = PrivKey::from_random();
+        let new_g1_compressed = G1CompressedPoint::try_from(new_private_key).unwrap();
+        let new_g2_compressed = G2CompressedPoint::try_from(&new_private_key).unwrap();
+
+        let new_signature = new_private_key
+            .sign::<Sha256Normalized, &[u8; 32]>(&new_g1_compressed.0)
+            .unwrap();
+
+        // Update operator BLS keys
+        ncn_program_client
+            .do_update_operator_bn128_keys(
+                ncn_root.ncn_pubkey,
+                operator_root.operator_pubkey,
+                &operator_root.operator_admin,
+                new_g1_compressed.0,
+                new_g2_compressed.0,
+                new_signature.0,
+            )
+            .await?;
+
+        // Verify NCN operator account was updated
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+            .await?;
+
+        assert_eq!(ncn_operator_account.g1_pubkey(), &new_g1_compressed.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &new_g2_compressed.0);
+
+        // Verify snapshot was also updated
+        let updated_snapshot = ncn_program_client.get_snapshot(ncn_root.ncn_pubkey).await?;
+        let updated_operator_snapshot = updated_snapshot
+            .find_operator_snapshot(&operator_root.operator_pubkey)
+            .expect("Operator snapshot should still exist after update");
+
+        // Verify G1 key in snapshot was updated
+        assert_eq!(updated_operator_snapshot.g1_pubkey(), new_g1_compressed.0);
+        assert_ne!(updated_operator_snapshot.g1_pubkey(), initial_g1_compressed);
+
+        // Verify other snapshot fields remain unchanged
+        assert_eq!(
+            updated_operator_snapshot.operator(),
+            initial_operator_snapshot.operator()
+        );
+        assert_eq!(
+            updated_operator_snapshot.ncn_operator_index(),
+            initial_operator_snapshot.ncn_operator_index()
+        );
+        assert_eq!(
+            updated_operator_snapshot.is_active(),
+            initial_operator_snapshot.is_active()
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_operator_bn128_keys_no_operator_snapshot_does_not_fail() -> TestResult<()>
+    {
+        let mut fixture = TestBuilder::new().await;
+
+        // Create a complete test NCN setup with 1 operator
+        let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
+        let ncn_root = &test_ncn.ncn_root;
+        let operator_root = &test_ncn.operators[0];
+
+        let mut ncn_program_client = fixture.ncn_program_client();
+
+        // Get the initial BLS keys from the operator that was already registered
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+            .await?;
+
+        // Initialize snapshot first
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
+
+        // Verify operator snapshot does NOT exist initially
+        let initial_snapshot = ncn_program_client.get_snapshot(ncn_root.ncn_pubkey).await?;
+        let initial_operator_snapshot =
+            initial_snapshot.find_operator_snapshot(&operator_root.operator_pubkey);
+        assert!(
+            initial_operator_snapshot.is_none(),
+            "Operator snapshot should not exist initially"
+        );
+
+        // Generate new BLS keypair for update
+        let new_private_key = PrivKey::from_random();
+        let new_g1_compressed = G1CompressedPoint::try_from(new_private_key).unwrap();
+        let new_g2_compressed = G2CompressedPoint::try_from(&new_private_key).unwrap();
+
+        let new_signature = new_private_key
+            .sign::<Sha256Normalized, &[u8; 32]>(&new_g1_compressed.0)
+            .unwrap();
+
+        // Update operator BLS keys - this should succeed even without operator snapshot
+        ncn_program_client
+            .do_update_operator_bn128_keys(
+                ncn_root.ncn_pubkey,
+                operator_root.operator_pubkey,
+                &operator_root.operator_admin,
+                new_g1_compressed.0,
+                new_g2_compressed.0,
+                new_signature.0,
+            )
+            .await?;
+
+        // Verify NCN operator account was updated successfully
+        let ncn_operator_account = ncn_program_client
+            .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
+            .await?;
+
+        assert_eq!(ncn_operator_account.g1_pubkey(), &new_g1_compressed.0);
+        assert_eq!(ncn_operator_account.g2_pubkey(), &new_g2_compressed.0);
+
+        // Verify snapshot still doesn't have operator snapshot (operation should not create it)
+        let updated_snapshot = ncn_program_client.get_snapshot(ncn_root.ncn_pubkey).await?;
+        let updated_operator_snapshot =
+            updated_snapshot.find_operator_snapshot(&operator_root.operator_pubkey);
+        assert!(
+            updated_operator_snapshot.is_none(),
+            "Operator snapshot should still not exist after update"
+        );
 
         Ok(())
     }

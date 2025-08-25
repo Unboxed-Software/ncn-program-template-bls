@@ -81,6 +81,7 @@ pub enum NCNProgramInstruction {
     #[account(2, name = "ncn")]
     #[account(3, name = "operator")]
     #[account(4, signer, name = "operator_admin")]
+    #[account(5, writable, name = "snapshot")]
     UpdateOperatorBN128Keys {
         /// New G1 public key (compressed, 32 bytes)
         g1_pubkey: [u8; 32],

@@ -248,6 +248,11 @@
           "name": "operatorAdmin",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "snapshot",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": [

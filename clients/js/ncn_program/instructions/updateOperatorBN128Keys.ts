@@ -48,6 +48,7 @@ export type UpdateOperatorBN128KeysInstruction<
   TAccountNcn extends string | IAccountMeta<string> = string,
   TAccountOperator extends string | IAccountMeta<string> = string,
   TAccountOperatorAdmin extends string | IAccountMeta<string> = string,
+  TAccountSnapshot extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -67,6 +68,9 @@ export type UpdateOperatorBN128KeysInstruction<
         ? ReadonlySignerAccount<TAccountOperatorAdmin> &
             IAccountSignerMeta<TAccountOperatorAdmin>
         : TAccountOperatorAdmin,
+      TAccountSnapshot extends string
+        ? WritableAccount<TAccountSnapshot>
+        : TAccountSnapshot,
       ...TRemainingAccounts,
     ]
   >;
@@ -124,12 +128,14 @@ export type UpdateOperatorBN128KeysInput<
   TAccountNcn extends string = string,
   TAccountOperator extends string = string,
   TAccountOperatorAdmin extends string = string,
+  TAccountSnapshot extends string = string,
 > = {
   config: Address<TAccountConfig>;
   ncnOperatorAccount: Address<TAccountNcnOperatorAccount>;
   ncn: Address<TAccountNcn>;
   operator: Address<TAccountOperator>;
   operatorAdmin: TransactionSigner<TAccountOperatorAdmin>;
+  snapshot: Address<TAccountSnapshot>;
   g1Pubkey: UpdateOperatorBN128KeysInstructionDataArgs['g1Pubkey'];
   g2Pubkey: UpdateOperatorBN128KeysInstructionDataArgs['g2Pubkey'];
   signature: UpdateOperatorBN128KeysInstructionDataArgs['signature'];
@@ -141,6 +147,7 @@ export function getUpdateOperatorBN128KeysInstruction<
   TAccountNcn extends string,
   TAccountOperator extends string,
   TAccountOperatorAdmin extends string,
+  TAccountSnapshot extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
   input: UpdateOperatorBN128KeysInput<
@@ -148,7 +155,8 @@ export function getUpdateOperatorBN128KeysInstruction<
     TAccountNcnOperatorAccount,
     TAccountNcn,
     TAccountOperator,
-    TAccountOperatorAdmin
+    TAccountOperatorAdmin,
+    TAccountSnapshot
   >,
   config?: { programAddress?: TProgramAddress }
 ): UpdateOperatorBN128KeysInstruction<
@@ -157,7 +165,8 @@ export function getUpdateOperatorBN128KeysInstruction<
   TAccountNcnOperatorAccount,
   TAccountNcn,
   TAccountOperator,
-  TAccountOperatorAdmin
+  TAccountOperatorAdmin,
+  TAccountSnapshot
 > {
   // Program address.
   const programAddress = config?.programAddress ?? NCN_PROGRAM_PROGRAM_ADDRESS;
@@ -172,6 +181,7 @@ export function getUpdateOperatorBN128KeysInstruction<
     ncn: { value: input.ncn ?? null, isWritable: false },
     operator: { value: input.operator ?? null, isWritable: false },
     operatorAdmin: { value: input.operatorAdmin ?? null, isWritable: false },
+    snapshot: { value: input.snapshot ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -189,6 +199,7 @@ export function getUpdateOperatorBN128KeysInstruction<
       getAccountMeta(accounts.ncn),
       getAccountMeta(accounts.operator),
       getAccountMeta(accounts.operatorAdmin),
+      getAccountMeta(accounts.snapshot),
     ],
     programAddress,
     data: getUpdateOperatorBN128KeysInstructionDataEncoder().encode(
@@ -200,7 +211,8 @@ export function getUpdateOperatorBN128KeysInstruction<
     TAccountNcnOperatorAccount,
     TAccountNcn,
     TAccountOperator,
-    TAccountOperatorAdmin
+    TAccountOperatorAdmin,
+    TAccountSnapshot
   >;
 
   return instruction;
@@ -217,6 +229,7 @@ export type ParsedUpdateOperatorBN128KeysInstruction<
     ncn: TAccountMetas[2];
     operator: TAccountMetas[3];
     operatorAdmin: TAccountMetas[4];
+    snapshot: TAccountMetas[5];
   };
   data: UpdateOperatorBN128KeysInstructionData;
 };
@@ -229,7 +242,7 @@ export function parseUpdateOperatorBN128KeysInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedUpdateOperatorBN128KeysInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -247,6 +260,7 @@ export function parseUpdateOperatorBN128KeysInstruction<
       ncn: getNextAccount(),
       operator: getNextAccount(),
       operatorAdmin: getNextAccount(),
+      snapshot: getNextAccount(),
     },
     data: getUpdateOperatorBN128KeysInstructionDataDecoder().decode(
       instruction.data

@@ -451,11 +451,8 @@ impl TestBuilder {
     pub async fn add_snapshot_to_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         let mut ncn_program_client = self.ncn_program_client();
 
-        let clock = self.clock().await;
-        let epoch = clock.epoch;
-
         ncn_program_client
-            .do_full_initialize_snapshot(test_ncn.ncn_root.ncn_pubkey, epoch)
+            .do_full_initialize_snapshot(test_ncn.ncn_root.ncn_pubkey)
             .await?;
 
         Ok(())

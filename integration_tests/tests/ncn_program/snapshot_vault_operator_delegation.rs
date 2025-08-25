@@ -27,9 +27,7 @@ mod tests {
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
 
-        ncn_program_client
-            .do_full_initialize_snapshot(ncn, epoch)
-            .await?;
+        ncn_program_client.do_full_initialize_snapshot(ncn).await?;
 
         let operator = test_ncn.operators[0].operator_pubkey;
 
@@ -63,9 +61,7 @@ mod tests {
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
 
-        ncn_program_client
-            .do_full_initialize_snapshot(ncn, epoch)
-            .await?;
+        ncn_program_client.do_full_initialize_snapshot(ncn).await?;
 
         for operator_root in test_ncn.operators.iter() {
             ncn_program_client
@@ -157,9 +153,7 @@ mod tests {
                 .await?;
         }
 
-        ncn_program_client
-            .do_full_initialize_snapshot(ncn, epoch)
-            .await?;
+        ncn_program_client.do_full_initialize_snapshot(ncn).await?;
 
         for operator_root in test_ncn.operators.iter() {
             ncn_program_client
@@ -227,9 +221,7 @@ mod tests {
             // Initialize weight table for this epoch
 
             // Initialize snapshot for this epoch
-            ncn_program_client
-                .do_full_initialize_snapshot(ncn, current_epoch)
-                .await?;
+            ncn_program_client.do_full_initialize_snapshot(ncn).await?;
 
             // Initialize operator snapshot for this epoch
             ncn_program_client

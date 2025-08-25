@@ -110,7 +110,6 @@ pub fn process_snapshot_vault_operator_delegation(
 
     let mut cloned_operator_snapshot = operator_snapshot;
 
-
     // Check if operator has valid BN128 G1 pubkey and determine active status
     let is_active = {
         if !cloned_operator_snapshot.have_valid_bn128_g1_pubkey() {

@@ -19,6 +19,8 @@ pub struct UpdateOperatorBN128Keys {
     pub operator: solana_program::pubkey::Pubkey,
 
     pub operator_admin: solana_program::pubkey::Pubkey,
+
+    pub snapshot: solana_program::pubkey::Pubkey,
 }
 
 impl UpdateOperatorBN128Keys {
@@ -34,7 +36,7 @@ impl UpdateOperatorBN128Keys {
         args: UpdateOperatorBN128KeysInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.config,
             false,
@@ -53,6 +55,10 @@ impl UpdateOperatorBN128Keys {
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.operator_admin,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.snapshot,
+            false,
         ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = UpdateOperatorBN128KeysInstructionData::new()
@@ -103,6 +109,7 @@ pub struct UpdateOperatorBN128KeysInstructionArgs {
 ///   2. `[]` ncn
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
+///   5. `[writable]` snapshot
 #[derive(Clone, Debug, Default)]
 pub struct UpdateOperatorBN128KeysBuilder {
     config: Option<solana_program::pubkey::Pubkey>,
@@ -110,6 +117,7 @@ pub struct UpdateOperatorBN128KeysBuilder {
     ncn: Option<solana_program::pubkey::Pubkey>,
     operator: Option<solana_program::pubkey::Pubkey>,
     operator_admin: Option<solana_program::pubkey::Pubkey>,
+    snapshot: Option<solana_program::pubkey::Pubkey>,
     g1_pubkey: Option<[u8; 32]>,
     g2_pubkey: Option<[u8; 64]>,
     signature: Option<[u8; 64]>,
@@ -146,6 +154,11 @@ impl UpdateOperatorBN128KeysBuilder {
     #[inline(always)]
     pub fn operator_admin(&mut self, operator_admin: solana_program::pubkey::Pubkey) -> &mut Self {
         self.operator_admin = Some(operator_admin);
+        self
+    }
+    #[inline(always)]
+    pub fn snapshot(&mut self, snapshot: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.snapshot = Some(snapshot);
         self
     }
     #[inline(always)]
@@ -191,6 +204,7 @@ impl UpdateOperatorBN128KeysBuilder {
             ncn: self.ncn.expect("ncn is not set"),
             operator: self.operator.expect("operator is not set"),
             operator_admin: self.operator_admin.expect("operator_admin is not set"),
+            snapshot: self.snapshot.expect("snapshot is not set"),
         };
         let args = UpdateOperatorBN128KeysInstructionArgs {
             g1_pubkey: self.g1_pubkey.clone().expect("g1_pubkey is not set"),
@@ -213,6 +227,8 @@ pub struct UpdateOperatorBN128KeysCpiAccounts<'a, 'b> {
     pub operator: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub snapshot: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `update_operator_b_n128_keys` CPI instruction.
@@ -229,6 +245,8 @@ pub struct UpdateOperatorBN128KeysCpi<'a, 'b> {
     pub operator: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub snapshot: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: UpdateOperatorBN128KeysInstructionArgs,
 }
@@ -246,6 +264,7 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpi<'a, 'b> {
             ncn: accounts.ncn,
             operator: accounts.operator,
             operator_admin: accounts.operator_admin,
+            snapshot: accounts.snapshot,
             __args: args,
         }
     }
@@ -282,7 +301,7 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
             false,
@@ -303,6 +322,10 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpi<'a, 'b> {
             *self.operator_admin.key,
             true,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.snapshot.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -321,13 +344,14 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.config.clone());
         account_infos.push(self.ncn_operator_account.clone());
         account_infos.push(self.ncn.clone());
         account_infos.push(self.operator.clone());
         account_infos.push(self.operator_admin.clone());
+        account_infos.push(self.snapshot.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -349,6 +373,7 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpi<'a, 'b> {
 ///   2. `[]` ncn
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
+///   5. `[writable]` snapshot
 #[derive(Clone, Debug)]
 pub struct UpdateOperatorBN128KeysCpiBuilder<'a, 'b> {
     instruction: Box<UpdateOperatorBN128KeysCpiBuilderInstruction<'a, 'b>>,
@@ -363,6 +388,7 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpiBuilder<'a, 'b> {
             ncn: None,
             operator: None,
             operator_admin: None,
+            snapshot: None,
             g1_pubkey: None,
             g2_pubkey: None,
             signature: None,
@@ -405,6 +431,14 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpiBuilder<'a, 'b> {
         operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.operator_admin = Some(operator_admin);
+        self
+    }
+    #[inline(always)]
+    pub fn snapshot(
+        &mut self,
+        snapshot: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.snapshot = Some(snapshot);
         self
     }
     #[inline(always)]
@@ -498,6 +532,8 @@ impl<'a, 'b> UpdateOperatorBN128KeysCpiBuilder<'a, 'b> {
                 .instruction
                 .operator_admin
                 .expect("operator_admin is not set"),
+
+            snapshot: self.instruction.snapshot.expect("snapshot is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -515,6 +551,7 @@ struct UpdateOperatorBN128KeysCpiBuilderInstruction<'a, 'b> {
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    snapshot: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     g1_pubkey: Option<[u8; 32]>,
     g2_pubkey: Option<[u8; 64]>,
     signature: Option<[u8; 64]>,

@@ -6,9 +6,8 @@ use crate::{
     getters::{
         get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
         get_ncn, get_ncn_operator_state, get_ncn_program_config, get_ncn_vault_ticket,
-        get_operator_snapshot, get_snapshot,
-        get_total_epoch_rent_cost, get_vault_ncn_ticket, get_vault_operator_delegation,
-        get_vault_registry, get_vote_counter,
+        get_operator_snapshot, get_snapshot, get_total_epoch_rent_cost, get_vault_ncn_ticket,
+        get_vault_operator_delegation, get_vault_registry, get_vote_counter,
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,

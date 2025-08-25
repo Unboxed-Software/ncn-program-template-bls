@@ -538,6 +538,10 @@ impl OperatorSnapshot {
 
         Ok((total_stake_weight, next_epoch_stake_weight))
     }
+
+    pub fn update_g1_pubkey(&mut self, g1_pubkey: &[u8; G1_COMPRESSED_POINT_SIZE]) {
+        self.g1_pubkey = *g1_pubkey;
+    }
 }
 
 #[derive(Debug, Clone, Copy, Zeroable, Pod, ShankType)]
