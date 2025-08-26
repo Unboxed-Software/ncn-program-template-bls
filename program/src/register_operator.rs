@@ -119,13 +119,11 @@ pub fn process_register_operator(
 
     // Verify BLS signature: signature should be G1 pubkey signed by G2 private key
     {
-        // Convert the provided keys to points
-        let g2_compressed = G2CompressedPoint::from(g2_pubkey);
         let signature = G1Point::from(signature);
-
-        // Convert to uncompressed points for verification
+        let g2_compressed = G2CompressedPoint::from(g2_pubkey);
         let g2_point = G2Point::try_from(g2_compressed)
             .map_err(|_| NCNProgramError::G2PointDecompressionError)?;
+
         g2_point
             .verify_operator_registeration(signature, g1_pubkey)
             .map_err(|_| NCNProgramError::BLSVerificationError)?;

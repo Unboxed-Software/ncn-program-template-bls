@@ -54,7 +54,6 @@
 This program serves as a template for building decentralized consensus networks where multiple operators can collectively agree on shared state through:
 
 - **BLS signature aggregation**: Efficient cryptographic proof of consensus
-- **Economic incentives**: Fee distribution and slashing mechanisms
 
 ### 📊 Current Project Status
 
