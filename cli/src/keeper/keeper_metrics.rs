@@ -548,8 +548,7 @@ pub async fn emit_epoch_metrics_snapshot(handler: &CliHandler, epoch: u64) -> Re
                 snapshot.operators_can_vote_count(),
                 i64
             ),
-            ("operators-registered", snapshot.operators_registered(), i64),
-            ("operator-count", snapshot.operator_count(), i64)
+            ("operators-registered", snapshot.operators_registered(), i64)
         );
     }
 

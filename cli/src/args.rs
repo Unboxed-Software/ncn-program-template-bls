@@ -225,11 +225,6 @@ pub enum ProgramCommand {
 
     CreateSnapshot,
 
-    CreateOperatorSnapshot {
-        #[arg(long, help = "Operator address")]
-        operator: String,
-    },
-
     SnapshotVaultOperatorDelegation {
         #[arg(long, help = "Operator address")]
         operator: String,

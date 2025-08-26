@@ -7,13 +7,13 @@ use jito_restaking_core::{ncn::Ncn, ncn_operator_state::NcnOperatorState, operat
 use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config,
-    constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE},
+    constants::{G1_COMPRESSED_POINT_SIZE, G2_COMPRESSED_POINT_SIZE, MAX_OPERATORS},
     error::NCNProgramError,
-    g1_point::{G1CompressedPoint, G1Point},
+    g1_point::G1Point,
     g2_point::{G2CompressedPoint, G2Point},
     loaders::load_ncn_epoch,
     ncn_operator_account::NCNOperatorAccount,
-    schemes::sha256_normalized::Sha256Normalized,
+    snapshot::{OperatorSnapshot, Snapshot},
 };
 use solana_program::{
     account_info::AccountInfo,
@@ -38,9 +38,10 @@ use solana_program::{
 /// 4. `[]` operator: The operator to register
 /// 5. `[signer]` operator_admin: The operator admin that must sign
 /// 6. `[]` ncn_operator_state: The connection between NCN and operator
-/// 7. `[]` restaking_config: Restaking configuration account
-/// 8. `[writable, signer]` account_payer: Account paying for the initialization
-/// 9. `[]` system_program: Solana System Program
+/// 7. `[writable]` snapshot: Snapshot account containing operator snapshots
+/// 8. `[]` restaking_config: Restaking configuration account
+/// 9. `[writable, signer]` account_payer: Account paying for the initialization
+/// 10. `[]` system_program: Solana System Program
 pub fn process_register_operator(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -48,7 +49,7 @@ pub fn process_register_operator(
     g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
     signature: [u8; 64],
 ) -> ProgramResult {
-    let [config, ncn_operator_account, ncn, operator, operator_admin, ncn_operator_state, restaking_config, account_payer, system_program] =
+    let [config, ncn_operator_account, ncn, operator, operator_admin, ncn_operator_state, snapshot, restaking_config, account_payer, system_program] =
         accounts
     else {
         msg!("Error: Not enough account keys provided");
@@ -61,6 +62,7 @@ pub fn process_register_operator(
     Operator::load(&jito_restaking_program::id(), operator, false)?;
     AccountPayer::load(program_id, account_payer, ncn.key, true)?;
     load_system_program(system_program)?;
+    Snapshot::load(program_id, snapshot, ncn.key, true)?;
     NcnOperatorState::load(
         &jito_restaking_program::id(),
         ncn_operator_state,
@@ -88,6 +90,7 @@ pub fn process_register_operator(
     let current_slot = Clock::get()?.slot;
     let (_, ncn_epoch_length) = load_ncn_epoch(restaking_config, current_slot, None)?;
 
+    // Check if the operator <> NCN connection is active
     let is_active = {
         let ncn_operator_state_data = ncn_operator_state.data.borrow();
         let ncn_operator_state_account =
@@ -162,6 +165,25 @@ pub fn process_register_operator(
         operator_account.index()
     };
 
+    // Check if operator index is valid
+    let ncn_operator_index = {
+        let ncn_operator_state_data = ncn_operator_state.data.borrow();
+        let ncn_operator_state =
+            NcnOperatorState::try_from_slice_unchecked(&ncn_operator_state_data)?;
+
+        let ncn_operator_index = ncn_operator_state.index();
+
+        if ncn_operator_index >= MAX_OPERATORS as u64 {
+            msg!(
+                "Error: Operator index is out of bounds. Index: {},",
+                ncn_operator_index,
+            );
+            return Err(NCNProgramError::OperatorIsNotInSnapshot.into());
+        }
+
+        ncn_operator_index
+    };
+
     // Initialize the ncn operator account account
     let mut ncn_operator_account_data = ncn_operator_account.try_borrow_mut_data()?;
     ncn_operator_account_data[0] = NCNOperatorAccount::DISCRIMINATOR;
@@ -173,14 +195,32 @@ pub fn process_register_operator(
         operator.key,
         &g1_pubkey,
         &g2_pubkey,
-        operator_index,
+        ncn_operator_index,
         slot,
         ncn_operator_account_bump,
     );
 
+    // Create operator snapshot and add it to the snapshot
+    let operator_snapshot = OperatorSnapshot::new(
+        operator.key,
+        current_slot,
+        is_active,
+        ncn_operator_index,
+        operator_index,
+        g1_pubkey,
+    )?;
+
+    let mut snapshot_data = snapshot.try_borrow_mut_data()?;
+    let snapshot_account = Snapshot::try_from_slice_unchecked_mut(&mut snapshot_data)?;
+
+    // Add the operator snapshot to the snapshot
+    snapshot_account.add_operator_snapshot(operator_snapshot, slot)?;
+
+    snapshot_account.register_operator_g1_pubkey(&g1_pubkey)?;
+
     msg!(
         "Operator registered successfully with index {}",
-        operator_index
+        ncn_operator_index
     );
 
     Ok(())

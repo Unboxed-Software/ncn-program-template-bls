@@ -172,6 +172,9 @@ mod tests {
                 .do_full_initialize_vault_registry(test_ncn.ncn_root.ncn_pubkey)
                 .await?;
 
+            // 5.d. Take the snapshot - records the current state for this epoch
+            fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
+
             // 4.d. Register all the Supported Token (ST) mints in the NCN program
             // This assigns weights to each mint for voting power calculations
             let mint = mint_keypair;
@@ -222,28 +225,9 @@ mod tests {
             }
         }
 
-        // 6. Prepare the epoch consensus cycle
-        // In a real system, these steps would run each epoch to prepare for voting on weather status
+        // Snapshot operators and vaults
+        // In a real system, this step would run each epoch to keep the snapshot updated
         {
-            // 5.b. Initialize the weight table - prepares the table that will track voting weights
-            let clock = fixture.clock().await;
-            let epoch = clock.epoch;
-
-            // 5.d. Take the snapshot - records the current state for this epoch
-            fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
-
-            for operator_root in test_ncn.operators.iter() {
-                let operator = operator_root.operator_pubkey;
-
-                ncn_program_client
-                    .initialize_operator_snapshot(operator, ncn_pubkey)
-                    .await?;
-            }
-
-            let snapshot = ncn_program_client.get_snapshot(ncn_pubkey).await?;
-            msg!("Snapshot: {}", snapshot);
-
-            // 5.f. Take a snapshot for each vault and its delegation - records delegations
             fixture
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;

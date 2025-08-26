@@ -10,10 +10,6 @@ mod tests {
 
         let test_ncn = fixture.create_initial_test_ncn(1, None).await?;
 
-        ncn_program_client
-            .do_full_initialize_snapshot(test_ncn.ncn_root.ncn_pubkey)
-            .await?;
-
         Ok(())
     }
 }

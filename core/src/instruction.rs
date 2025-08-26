@@ -63,9 +63,10 @@ pub enum NCNProgramInstruction {
     #[account(3, name = "operator")]
     #[account(4, signer, name = "operator_admin")]
     #[account(5, name = "ncn_operator_state")]
-    #[account(6, name = "restaking_config")]
-    #[account(7, writable, name = "account_payer")]
-    #[account(8, name = "system_program")]
+    #[account(6, writable, name = "snapshot")]
+    #[account(7, name = "restaking_config")]
+    #[account(8, writable, name = "account_payer")]
+    #[account(9, name = "system_program")]
     RegisterOperator {
         /// G1 public key (compressed, 32 bytes)
         g1_pubkey: [u8; 32],
@@ -122,17 +123,6 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "system_program")]
     ReallocSnapshot {},
 
-    /// Initializes the Operator Snapshot within the snapshot
-    #[account(0, name = "restaking_config")]
-    #[account(1, name = "ncn")]
-    #[account(2, name = "operator")]
-    #[account(3, name = "ncn_operator_state")]
-    #[account(4, name = "ncn_operator_account")]
-    #[account(5, writable, name = "snapshot")]
-    #[account(6, writable, name = "account_payer")]
-    #[account(7, name = "system_program")]
-    InitializeOperatorSnapshot{},
-    
     /// Snapshots the vault operator delegation
     #[account(0, name = "config")]
     #[account(1, name = "restaking_config")]
@@ -141,8 +131,9 @@ pub enum NCNProgramInstruction {
     #[account(4, name = "vault")]
     #[account(5, name = "vault_ncn_ticket")]
     #[account(6, name = "ncn_vault_ticket")]
-    #[account(7, name = "vault_operator_delegation")]
-    #[account(8, writable, name = "snapshot")]
+    #[account(7, name = "ncn_operator_state")]
+    #[account(8, name = "vault_operator_delegation")]
+    #[account(9, writable, name = "snapshot")]
     SnapshotVaultOperatorDelegation{},
 
     // ---------------------------------------------------- //

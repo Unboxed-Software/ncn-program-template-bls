@@ -27,7 +27,7 @@ pub struct NCNOperatorAccount {
     /// The G2 pubkey in compressed format (64 bytes)
     pub g2_pubkey: [u8; 64],
     /// The index of the operator in respect to the NCN account
-    pub operator_index: PodU64,
+    pub ncn_operator_index: PodU64,
     /// The slot the operator was registered
     pub slot_registered: PodU64,
     /// The bump seed for the PDA
@@ -52,7 +52,7 @@ impl NCNOperatorAccount {
         operator_pubkey: &Pubkey,
         g1_pubkey: &[u8; 32],
         g2_pubkey: &[u8; 64],
-        operator_index: u64,
+        ncn_operator_index: u64,
         slot_registered: u64,
         bump: u8,
     ) -> Self {
@@ -61,7 +61,7 @@ impl NCNOperatorAccount {
             operator_pubkey: *operator_pubkey,
             g1_pubkey: *g1_pubkey,
             g2_pubkey: *g2_pubkey,
-            operator_index: PodU64::from(operator_index),
+            ncn_operator_index: PodU64::from(ncn_operator_index),
             slot_registered: PodU64::from(slot_registered),
             bump,
             reserved: [0; 199],
@@ -74,7 +74,7 @@ impl NCNOperatorAccount {
         operator_pubkey: &Pubkey,
         g1_pubkey: &[u8; 32],
         g2_pubkey: &[u8; 64],
-        operator_index: u64,
+        ncn_operator_index: u64,
         slot_registered: u64,
         bump: u8,
     ) {
@@ -82,7 +82,7 @@ impl NCNOperatorAccount {
         self.operator_pubkey = *operator_pubkey;
         self.g1_pubkey = *g1_pubkey;
         self.g2_pubkey = *g2_pubkey;
-        self.operator_index = PodU64::from(operator_index);
+        self.ncn_operator_index = PodU64::from(ncn_operator_index);
         self.slot_registered = PodU64::from(slot_registered);
         self.bump = bump;
         self.reserved = [0; 199];
@@ -140,8 +140,8 @@ impl NCNOperatorAccount {
         &self.g2_pubkey
     }
 
-    pub fn operator_index(&self) -> u64 {
-        self.operator_index.into()
+    pub fn ncn_operator_index(&self) -> u64 {
+        self.ncn_operator_index.into()
     }
 
     pub fn slot_registered(&self) -> u64 {
@@ -184,7 +184,7 @@ impl NCNOperatorAccount {
             &self.operator_pubkey,
             new_g1_pubkey,
             new_g2_pubkey,
-            self.operator_index(),
+            self.ncn_operator_index(),
             current_slot,
             self.bump,
         );
@@ -229,7 +229,7 @@ impl fmt::Display for NCNOperatorAccount {
         writeln!(
             f,
             "  Index:                        {}",
-            self.operator_index()
+            self.ncn_operator_index()
         )?;
         writeln!(
             f,
@@ -256,7 +256,7 @@ mod tests {
             + size_of::<Pubkey>() // operator_pubkey
             + 32 // g1_pubkey
             + 64 // g2_pubkey
-            + size_of::<PodU64>() // operator_index
+            + size_of::<PodU64>() // ncn_operator_index
             + size_of::<PodU64>() // slot_registered
             + 1 // bump
             + 199; // reserved
@@ -289,7 +289,7 @@ mod tests {
         assert_eq!(ncn_operator_account.operator_pubkey(), &operator);
         assert_eq!(ncn_operator_account.g1_pubkey(), &g1_compressed.0);
         assert_eq!(ncn_operator_account.g2_pubkey(), &g2_compressed.0);
-        assert_eq!(ncn_operator_account.operator_index(), 0);
+        assert_eq!(ncn_operator_account.ncn_operator_index(), 0);
         assert_eq!(ncn_operator_account.slot_registered(), 100);
         assert_eq!(ncn_operator_account.bump, 255);
     }

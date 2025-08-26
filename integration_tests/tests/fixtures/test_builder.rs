@@ -441,6 +441,11 @@ impl TestBuilder {
         self.add_delegation_in_test_ncn(&test_ncn, 100).await?;
         self.add_vault_registry_to_test_ncn(&test_ncn).await?;
 
+        // Initialize snapshot for this epoch
+        ncn_program_client
+            .do_full_initialize_snapshot(test_ncn.ncn_root.ncn_pubkey)
+            .await?;
+
         self.register_operators_to_test_ncn(&test_ncn).await?;
 
         Ok(test_ncn)
@@ -454,27 +459,6 @@ impl TestBuilder {
         ncn_program_client
             .do_full_initialize_snapshot(test_ncn.ncn_root.ncn_pubkey)
             .await?;
-
-        Ok(())
-    }
-
-    /// Initializes OperatorSnapshot accounts for all operators in the TestNcn for the current epoch.
-    // 8. Create all operator snapshots
-    pub async fn add_operator_snapshots_to_test_ncn(
-        &mut self,
-        test_ncn: &TestNcn,
-    ) -> TestResult<()> {
-        let mut ncn_program_client = self.ncn_program_client();
-
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-
-        for operator_root in test_ncn.operators.iter() {
-            let operator = operator_root.operator_pubkey;
-
-            ncn_program_client
-                .initialize_operator_snapshot(operator, ncn)
-                .await?;
-        }
 
         Ok(())
     }
@@ -578,7 +562,7 @@ impl TestBuilder {
                 }
 
                 ncn_program_client
-                    .do_snapshot_vault_operator_delegation(vault, operator, ncn, epoch)
+                    .do_snapshot_vault_operator_delegation(vault, operator, ncn)
                     .await?;
             }
         }
@@ -620,8 +604,6 @@ impl TestBuilder {
     pub async fn snapshot_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
         self.add_snapshot_to_test_ncn(test_ncn).await?;
 
-        self.add_operator_snapshots_to_test_ncn(test_ncn).await?;
-
         self.add_vault_operator_delegation_snapshots_to_test_ncn(test_ncn)
             .await?;
 
@@ -640,21 +622,27 @@ impl TestBuilder {
 
     /// Casts votes (default WeatherStatus) for all active operators in the TestNcn for the current epoch.
     // 11 - Cast all votes for active operators
-    pub async fn cast_votes_for_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
+    pub async fn cast_vote_all_operators_who_can_vote(
+        &mut self,
+        test_ncn: &TestNcn,
+    ) -> TestResult<()> {
         let mut ncn_program_client = self.ncn_program_client();
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
+        let mut non_signers_indices: Vec<usize> = Vec::new();
 
         // Collect all active operators for voting
         let mut active_operators = Vec::new();
-        for operator_root in test_ncn.operators.iter() {
+        for (i, operator_root) in test_ncn.operators.iter().enumerate() {
             let operator = operator_root.operator_pubkey;
             let operator_snapshot = ncn_program_client
                 .get_operator_snapshot(operator, ncn)
                 .await?;
 
-            if operator_snapshot.is_active() {
+            if operator_snapshot.has_minimum_stake() {
                 active_operators.push(operator_root);
+            } else {
+                non_signers_indices.push(i)
             }
         }
 
@@ -694,7 +682,6 @@ impl TestBuilder {
             G1CompressedPoint::try_from(aggregated_signature).unwrap().0;
 
         // Create signers bitmap (all active operators signed, so no non-signers)
-        let non_signers_indices: Vec<usize> = Vec::new();
         let signers_bitmap = create_signer_bitmap(&non_signers_indices, test_ncn.operators.len());
 
         // Cast the aggregated vote
@@ -706,15 +693,6 @@ impl TestBuilder {
                 signers_bitmap,
             )
             .await?;
-
-        Ok(())
-    }
-
-    /// Performs the voting process for the TestNcn for the current epoch.
-    /// Initializes the ballot box and casts votes for all active operators.
-    // Intermission 3 - come to consensus
-    pub async fn vote_test_ncn(&mut self, test_ncn: &TestNcn) -> TestResult<()> {
-        self.cast_votes_for_test_ncn(test_ncn).await?;
 
         Ok(())
     }

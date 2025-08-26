@@ -31,8 +31,6 @@ pub struct Snapshot {
     bump: u8,
     /// Slot Snapshot was created
     slot_created: PodU64,
-    /// Number of operators in the epoch
-    operator_count: PodU64,
     /// Keeps track of the number of completed operator registration through `snapshot_vault_operator_delegation` and `initialize_operator_snapshot`
     operators_registered: PodU64,
     /// Keeps track of the number of valid operator vault delegations
@@ -55,19 +53,12 @@ impl Snapshot {
     const SNAPSHOT_SEED: &'static [u8] = b"snapshot";
     pub const SIZE: usize = 8 + size_of::<Self>();
 
-    pub fn new(
-        ncn: &Pubkey,
-        bump: u8,
-        current_slot: u64,
-        operator_count: u64,
-        minimum_stake: StakeWeights,
-    ) -> Self {
+    pub fn new(ncn: &Pubkey, bump: u8, current_slot: u64, minimum_stake: StakeWeights) -> Self {
         Self {
             ncn: *ncn,
             slot_created: PodU64::from(current_slot),
             last_snapshot_slot: PodU64::from(0),
             bump,
-            operator_count: PodU64::from(operator_count),
             operators_registered: PodU64::from(0),
             operators_can_vote_count: PodU64::from(0),
             total_aggregated_g1_pubkey: [0; G1_COMPRESSED_POINT_SIZE],
@@ -82,7 +73,6 @@ impl Snapshot {
         ncn: &Pubkey,
         bump: u8,
         current_slot: u64,
-        operator_count: u64,
         minimum_stake: StakeWeights,
     ) {
         // Initializes field by field to avoid overflowing stack
@@ -90,7 +80,6 @@ impl Snapshot {
         self.slot_created = PodU64::from(current_slot);
         self.last_snapshot_slot = PodU64::from(0);
         self.bump = bump;
-        self.operator_count = PodU64::from(operator_count);
         self.operators_registered = PodU64::from(0);
         self.operators_can_vote_count = PodU64::from(0);
         self.total_aggregated_g1_pubkey = [0; G1_COMPRESSED_POINT_SIZE];
@@ -138,10 +127,6 @@ impl Snapshot {
         Self::load(program_id, account_to_close, ncn, true)
     }
 
-    pub fn operator_count(&self) -> u64 {
-        self.operator_count.into()
-    }
-
     pub fn operators_registered(&self) -> u64 {
         self.operators_registered.into()
     }
@@ -162,7 +147,7 @@ impl Snapshot {
         &self.minimum_stake
     }
 
-    pub fn increment_operator_registration(
+    fn increment_operator_registration(
         &mut self,
         current_slot: u64,
     ) -> Result<(), NCNProgramError> {
@@ -224,9 +209,9 @@ impl Snapshot {
         operator: &Pubkey,
     ) -> Result<(), NCNProgramError> {
         // First, get the old G1 pubkey if the operator exists
-        let operator_count = self.operator_count();
+        let operator_registerd = self.operators_registered();
 
-        match operator_count {
+        match operator_registerd {
             0 => {
                 msg!("No operators registered in snapshot");
                 return Err(NCNProgramError::NoOperatorsRegistered);
@@ -259,7 +244,7 @@ impl Snapshot {
                 }
             }
             _ => {
-                msg!("Operator count is not valid: {}", operator_count);
+                msg!("Operator count is not valid: {}", operator_registerd);
                 return Err(NCNProgramError::InvalidOperatorCount);
             }
         }
@@ -272,32 +257,24 @@ impl Snapshot {
     }
 
     /// Get an operator snapshot by operator index
-    pub fn get_operator_snapshot(&self, operator_index: u64) -> Option<&OperatorSnapshot> {
-        if operator_index >= self.operator_count() {
+    pub fn get_operator_snapshot(&self, ncn_operator_index: u64) -> Option<&OperatorSnapshot> {
+        if ncn_operator_index >= self.operators_registered() {
             return None;
         }
-        let snapshot = &self.operator_snapshots[operator_index as usize];
-        if snapshot.ncn_operator_index() == u64::MAX {
-            None
-        } else {
-            Some(snapshot)
-        }
+        let snapshot = &self.operator_snapshots[ncn_operator_index as usize];
+        Some(snapshot)
     }
 
     /// Get a mutable operator snapshot by operator index
     pub fn get_mut_operator_snapshot(
         &mut self,
-        operator_index: u64,
+        ncn_operator_index: u64,
     ) -> Option<&mut OperatorSnapshot> {
-        if operator_index >= self.operator_count() {
+        if ncn_operator_index >= self.operators_registered() {
             return None;
         }
-        let snapshot = &mut self.operator_snapshots[operator_index as usize];
-        if snapshot.ncn_operator_index() == u64::MAX {
-            None
-        } else {
-            Some(snapshot)
-        }
+        let snapshot = &mut self.operator_snapshots[ncn_operator_index as usize];
+        Some(snapshot)
     }
 
     /// Find an operator snapshot by operator pubkey
@@ -321,6 +298,7 @@ impl Snapshot {
     pub fn add_operator_snapshot(
         &mut self,
         operator_snapshot: OperatorSnapshot,
+        slot: u64,
     ) -> Result<(), NCNProgramError> {
         let operator_index = operator_snapshot.ncn_operator_index();
         if operator_index >= MAX_OPERATORS as u64 {
@@ -333,6 +311,8 @@ impl Snapshot {
         }
 
         self.operator_snapshots[operator_index as usize] = operator_snapshot;
+
+        self.increment_operator_registration(slot)?;
         Ok(())
     }
 
@@ -469,10 +449,6 @@ impl OperatorSnapshot {
 
     pub fn last_snapshot_slot(&self) -> u64 {
         self.last_snapshot_slot.into()
-    }
-
-    pub fn is_snapshoted(&self) -> bool {
-        self.last_snapshot_slot() > self.slot_created.into()
     }
 
     pub fn have_valid_bn128_g1_pubkey(&self) -> bool {
@@ -637,7 +613,6 @@ impl fmt::Display for Snapshot {
        writeln!(f, "\n\n----------- Snapshot -------------")?;
        writeln!(f, "  NCN:                          {}", self.ncn)?;
        writeln!(f, "  Bump:                         {}", self.bump)?;
-       writeln!(f, "  Operator Count:               {}", self.operator_count())?;
        writeln!(f, "  Operators Registered:         {}", self.operators_registered())?;
        writeln!(f, "  Operators can vote:           {}", self.operators_can_vote_count())?;
        writeln!(f, "  Last Snapshot Slot:           {}", self.last_snapshot_slot())?;
@@ -663,7 +638,6 @@ impl fmt::Display for OperatorSnapshot {
        writeln!(f, "  Is Active:                    {}", self.is_active())?;
        writeln!(f, "  NCN Operator Index:           {}", self.ncn_operator_index())?;
        writeln!(f, "  Slot Last Snapshoted:         {}", self.last_snapshot_slot())?;
-       writeln!(f, "  Is Snapshoted:                {}", self.is_snapshoted())?;
        writeln!(f, "  G1 Pubkey:                    {:?}", self.g1_pubkey())?;
        writeln!(f, "  Has Minimum Stake Weight:     {}", self.has_minimum_stake())?;
        writeln!(f, "  Has Minimum next epoch:       {}", self.has_minimum_stake_next_epoch())?;
@@ -710,7 +684,6 @@ mod tests {
             + size_of::<u8>() // bump
             + size_of::<PodU64>() // slot_created
             + size_of::<PodU64>() // last_snapshot_slot
-            + size_of::<PodU64>() // operator_count
             + size_of::<PodU64>() // operators_registered
             + size_of::<PodU64>() // operators_can_vote_count
             + size_of::<[u8; G1_COMPRESSED_POINT_SIZE]>() // total_aggregated_g1_pubkey
@@ -730,29 +703,6 @@ mod tests {
         let non_empty_weight =
             VaultOperatorStakeWeight::new(&Pubkey::new_unique(), 1, &StakeWeights::default());
         assert!(!non_empty_weight.is_empty());
-    }
-
-    #[test]
-    fn test_increment_operator_registration_finalized() {
-        // Create a snapshot
-        let mut snapshot = Snapshot::new(
-            &Pubkey::new_unique(),
-            1,                    // ncn_epoch
-            100,                  // current_slot
-            1,                    // operator_count - set to 1
-            StakeWeights::new(1), // minimum_stake
-        );
-
-        // Set operators_registered equal to operator_count to make it finalized
-        snapshot.operators_registered = PodU64::from(1);
-
-        // Try to increment operator registration when already finalized
-        let result = snapshot.increment_operator_registration(
-            200, // current_slot
-        );
-
-        // Verify we get the expected error
-        assert!(result.is_ok());
     }
 
     #[test]
@@ -803,7 +753,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
         // Initial aggregated is zero
@@ -842,7 +791,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            3,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         ));
 
@@ -877,7 +825,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            3,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         ));
 
@@ -986,7 +933,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1003,7 +949,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
         // Snapshot 2: operator2 first, then operator1
@@ -1028,7 +973,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            1,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         ));
 
@@ -1053,7 +997,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            3,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         ));
 
@@ -1071,12 +1014,13 @@ mod tests {
         .unwrap();
 
         // Add the operator snapshot to the snapshot
-        let result = snapshot.add_operator_snapshot(operator_snapshot);
+        let result = snapshot.add_operator_snapshot(operator_snapshot, 100);
         assert!(result.is_ok());
 
         {
             // Verify the operator snapshot was added using its index
             let retrieved_snapshot = snapshot.get_operator_snapshot(0);
+            let test = snapshot.operator_snapshots[0];
             assert!(retrieved_snapshot.is_some());
             assert_eq!(retrieved_snapshot.unwrap().operator(), &operator_pubkey);
         }
@@ -1096,7 +1040,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            3,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         ));
 
@@ -1127,8 +1070,12 @@ mod tests {
         .unwrap();
 
         // Add both operator snapshots
-        snapshot.add_operator_snapshot(operator1_snapshot).unwrap();
-        snapshot.add_operator_snapshot(operator2_snapshot).unwrap();
+        snapshot
+            .add_operator_snapshot(operator1_snapshot, 100)
+            .unwrap();
+        snapshot
+            .add_operator_snapshot(operator2_snapshot, 110)
+            .unwrap();
 
         // Find operator snapshots by pubkey
         let found1 = snapshot.find_operator_snapshot(&operator1_pubkey);
@@ -1151,7 +1098,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            3,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         ));
 
@@ -1178,11 +1124,11 @@ mod tests {
         .unwrap();
 
         // Add first operator snapshot - should succeed
-        let result1 = snapshot.add_operator_snapshot(operator1_snapshot);
+        let result1 = snapshot.add_operator_snapshot(operator1_snapshot, 100);
         assert!(result1.is_ok());
 
         // Try to add second operator snapshot with same index - should fail
-        let result2 = snapshot.add_operator_snapshot(operator2_snapshot);
+        let result2 = snapshot.add_operator_snapshot(operator2_snapshot, 100);
         assert!(result2.is_err());
         assert_eq!(
             result2.unwrap_err(),
@@ -1197,7 +1143,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            3,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         ));
 
@@ -1227,10 +1172,10 @@ mod tests {
 
         // Add both operator snapshots
         snapshot
-            .add_operator_snapshot(active_operator_snapshot)
+            .add_operator_snapshot(active_operator_snapshot, 100)
             .unwrap();
         snapshot
-            .add_operator_snapshot(inactive_operator_snapshot)
+            .add_operator_snapshot(inactive_operator_snapshot, 100)
             .unwrap();
 
         // Get active operator snapshots
@@ -1249,7 +1194,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            1,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1257,14 +1201,12 @@ mod tests {
             &ncn,
             2,                      // bump
             200,                    // current_slot
-            10,                     // operator_count
             StakeWeights::new(100), // minimum_stake
         );
 
         assert_eq!(snapshot.ncn, ncn);
         assert_eq!(snapshot.bump, 2);
         assert_eq!(u64::from(snapshot.slot_created), 200u64);
-        assert_eq!(snapshot.operator_count(), 10);
         assert_eq!(snapshot.minimum_stake().stake_weight(), 100);
     }
 
@@ -1291,11 +1233,9 @@ mod tests {
             &ncn,
             3,                      // bump
             500,                    // current_slot
-            15,                     // operator_count
             StakeWeights::new(200), // minimum_stake
         );
 
-        assert_eq!(snapshot.operator_count(), 15);
         assert_eq!(snapshot.operators_registered(), 0);
         assert_eq!(snapshot.operators_can_vote_count(), 0);
         assert_eq!(snapshot.last_snapshot_slot(), 0);
@@ -1308,7 +1248,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1332,7 +1271,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1353,7 +1291,9 @@ mod tests {
         )
         .unwrap();
 
-        snapshot.add_operator_snapshot(operator_snapshot).unwrap();
+        snapshot
+            .add_operator_snapshot(operator_snapshot, 100)
+            .unwrap();
 
         // Test getting existing snapshot
         let retrieved = snapshot.get_operator_snapshot(0);
@@ -1370,7 +1310,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1387,7 +1326,9 @@ mod tests {
         )
         .unwrap();
 
-        snapshot.add_operator_snapshot(operator_snapshot).unwrap();
+        snapshot
+            .add_operator_snapshot(operator_snapshot, 100)
+            .unwrap();
 
         // Test getting mutable reference
         let mut_snapshot = snapshot.get_mut_operator_snapshot(0);
@@ -1410,7 +1351,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1426,7 +1366,9 @@ mod tests {
         )
         .unwrap();
 
-        snapshot.add_operator_snapshot(operator_snapshot).unwrap();
+        snapshot
+            .add_operator_snapshot(operator_snapshot, 100)
+            .unwrap();
 
         // Test finding by pubkey
         let mut_found = snapshot.find_mut_operator_snapshot(&operator_pubkey);
@@ -1443,7 +1385,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            2,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1458,7 +1399,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = snapshot.add_operator_snapshot(operator_snapshot);
+        let result = snapshot.add_operator_snapshot(operator_snapshot, 100);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
@@ -1602,7 +1543,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            1,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1621,11 +1561,9 @@ mod tests {
             &Pubkey::new_unique(),
             255,                          // bump
             u64::MAX,                     // current_slot
-            MAX_OPERATORS as u64,         // operator_count
             StakeWeights::new(u128::MAX), // minimum_stake
         );
 
-        assert_eq!(snapshot.operator_count(), MAX_OPERATORS as u64);
         assert_eq!(snapshot.minimum_stake().stake_weight(), u128::MAX);
     }
 
@@ -1655,7 +1593,6 @@ mod tests {
             &Pubkey::new_unique(),
             1,                    // bump
             100,                  // current_slot
-            1,                    // operator_count
             StakeWeights::new(1), // minimum_stake
         );
 
@@ -1665,57 +1602,6 @@ mod tests {
         let result = snapshot.increment_operator_registration(200);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), NCNProgramError::ArithmeticOverflow);
-    }
-
-    #[test]
-    fn test_operator_snapshot_is_snapshoted() {
-        // Default snapshot: slot_last_snapshoted == slot_created == 0
-        let snapshot = OperatorSnapshot::default();
-        assert_eq!(snapshot.slot_created(), 0u64);
-        assert_eq!(snapshot.last_snapshot_slot(), 0u64);
-        assert!(!snapshot.is_snapshoted());
-
-        // New snapshot: slot_last_snapshoted == 0, slot_created == 100
-        let operator = Pubkey::new_unique();
-        let g1_pubkey = G1CompressedPoint::from_random().0;
-        let snapshot = OperatorSnapshot::new(
-            &operator, 100, // current_slot
-            true, 0, 0, g1_pubkey,
-        )
-        .unwrap();
-        assert_eq!(snapshot.slot_created(), 100u64);
-        assert_eq!(snapshot.last_snapshot_slot(), 0u64);
-        assert!(!snapshot.is_snapshoted());
-
-        // After snapshot_vault_operator_delegation: slot_last_snapshoted > slot_created
-        let mut snapshot = OperatorSnapshot::new(
-            &operator, 100, // current_slot
-            true, 0, 0, g1_pubkey,
-        )
-        .unwrap();
-        // Manually set slot_last_snapshoted to 150
-        snapshot.last_snapshot_slot = PodU64::from(150u64);
-        assert_eq!(snapshot.slot_created(), 100u64);
-        assert_eq!(snapshot.last_snapshot_slot(), 150u64);
-        assert!(snapshot.is_snapshoted());
-
-        // Edge case: slot_last_snapshoted == slot_created (should be false)
-        let mut snapshot = OperatorSnapshot::new(
-            &operator, 200, // current_slot
-            true, 0, 0, g1_pubkey,
-        )
-        .unwrap();
-        snapshot.last_snapshot_slot = PodU64::from(200u64);
-        assert!(!snapshot.is_snapshoted());
-
-        // Edge case: slot_last_snapshoted < slot_created (should be false)
-        let mut snapshot = OperatorSnapshot::new(
-            &operator, 300, // current_slot
-            true, 0, 0, g1_pubkey,
-        )
-        .unwrap();
-        snapshot.last_snapshot_slot = PodU64::from(250u64);
-        assert!(!snapshot.is_snapshoted());
     }
 
     #[test]
@@ -1768,7 +1654,6 @@ mod tests {
         assert!(operator_snapshot.has_minimum_stake()); // 1000 >= 500
         assert!(operator_snapshot.has_minimum_stake_next_epoch()); // 1200 >= 500
         assert_eq!(operator_snapshot.last_snapshot_slot(), current_slot);
-        assert!(operator_snapshot.is_snapshoted());
     }
 
     #[test]
@@ -2004,7 +1889,6 @@ mod tests {
 
         // Initial state
         assert_eq!(operator_snapshot.last_snapshot_slot(), 0);
-        assert!(!operator_snapshot.is_snapshoted());
 
         // First snapshot
         let result = operator_snapshot.snapshot_vault_operator_delegation(
@@ -2015,7 +1899,6 @@ mod tests {
         );
         assert!(result.is_ok());
         assert_eq!(operator_snapshot.last_snapshot_slot(), 150);
-        assert!(operator_snapshot.is_snapshoted());
 
         // Second snapshot with later slot
         let result = operator_snapshot.snapshot_vault_operator_delegation(

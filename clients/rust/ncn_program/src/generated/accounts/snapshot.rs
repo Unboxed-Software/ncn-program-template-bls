@@ -22,7 +22,6 @@ pub struct Snapshot {
     pub ncn: Pubkey,
     pub bump: u8,
     pub slot_created: u64,
-    pub operator_count: u64,
     pub operators_registered: u64,
     pub operators_can_vote_count: u64,
     pub total_aggregated_g1_pubkey: [u8; 32],

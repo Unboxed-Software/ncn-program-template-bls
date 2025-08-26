@@ -1,7 +1,13 @@
 #[cfg(test)]
 mod tests {
 
-    use ncn_program_core::{error::NCNProgramError, snapshot::Snapshot};
+    use ncn_program_core::{
+        error::NCNProgramError,
+        g1_point::{G1CompressedPoint, G1Point},
+        g2_point::G2CompressedPoint,
+        schemes::Sha256Normalized,
+        snapshot::Snapshot,
+    };
 
     use crate::fixtures::{
         ncn_program_client::assert_ncn_program_error, test_builder::TestBuilder, TestResult,
@@ -16,17 +22,10 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
-
         let clock = fixture.clock().await;
         let epoch = clock.epoch;
         let ncn = test_ncn.ncn_root.ncn_pubkey;
         let operator = test_ncn.operators[0].operator_pubkey;
-
-        // Initialize operator snapshot
-        ncn_program_client
-            .do_initialize_operator_snapshot(operator, ncn)
-            .await?;
 
         // Check initial size is MAX_REALLOC_BYTES
         // OperatorSnapshot is now embedded in Snapshot, so we verify the snapshot exists
@@ -54,24 +53,33 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
-
         // Add New Operator
         fixture
             .add_operators_to_test_ncn(&mut test_ncn, 1, None)
             .await?;
         fixture.warp_epoch_incremental(2).await?;
 
-        let ncn = test_ncn.ncn_root.ncn_pubkey;
-        // Last added operator
-        let operator = test_ncn.operators[1].operator_pubkey;
+        let operator_root = test_ncn.operators.last().unwrap();
 
-        // Initialize operator snapshot
-        let result = ncn_program_client
-            .do_initialize_operator_snapshot(operator, ncn)
-            .await;
+        let g1_pubkey = G1Point::try_from(operator_root.bn128_privkey).unwrap();
+        let g1_compressed = G1CompressedPoint::try_from(g1_pubkey).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&operator_root.bn128_privkey).unwrap();
 
-        assert_ncn_program_error(result, NCNProgramError::NCNOperatorAccountDosentExist, None);
+        let signature = operator_root
+            .bn128_privkey
+            .sign::<Sha256Normalized, &[u8; 32]>(&g1_compressed.0)
+            .unwrap();
+
+        ncn_program_client
+            .do_register_operator(
+                test_ncn.ncn_root.ncn_pubkey,
+                operator_root.operator_pubkey,
+                &operator_root.operator_admin,
+                g1_compressed.0,
+                g2_compressed.0,
+                signature.0,
+            )
+            .await?;
 
         Ok(())
     }

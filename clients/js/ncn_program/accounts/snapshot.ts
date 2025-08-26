@@ -55,7 +55,6 @@ export type Snapshot = {
   ncn: Address;
   bump: number;
   slotCreated: bigint;
-  operatorCount: bigint;
   operatorsRegistered: bigint;
   operatorsCanVoteCount: bigint;
   totalAggregatedG1Pubkey: ReadonlyUint8Array;
@@ -69,7 +68,6 @@ export type SnapshotArgs = {
   ncn: Address;
   bump: number;
   slotCreated: number | bigint;
-  operatorCount: number | bigint;
   operatorsRegistered: number | bigint;
   operatorsCanVoteCount: number | bigint;
   totalAggregatedG1Pubkey: ReadonlyUint8Array;
@@ -84,7 +82,6 @@ export function getSnapshotEncoder(): Encoder<SnapshotArgs> {
     ['ncn', getAddressEncoder()],
     ['bump', getU8Encoder()],
     ['slotCreated', getU64Encoder()],
-    ['operatorCount', getU64Encoder()],
     ['operatorsRegistered', getU64Encoder()],
     ['operatorsCanVoteCount', getU64Encoder()],
     ['totalAggregatedG1Pubkey', fixEncoderSize(getBytesEncoder(), 32)],
@@ -103,7 +100,6 @@ export function getSnapshotDecoder(): Decoder<Snapshot> {
     ['ncn', getAddressDecoder()],
     ['bump', getU8Decoder()],
     ['slotCreated', getU64Decoder()],
-    ['operatorCount', getU64Decoder()],
     ['operatorsRegistered', getU64Decoder()],
     ['operatorsCanVoteCount', getU64Decoder()],
     ['totalAggregatedG1Pubkey', fixDecoderSize(getBytesDecoder(), 32)],

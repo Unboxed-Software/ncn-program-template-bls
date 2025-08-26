@@ -9,10 +9,10 @@ use jito_vault_core::{
 use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
-        CastVoteBuilder, InitializeConfigBuilder, InitializeOperatorSnapshotBuilder,
-        InitializeSnapshotBuilder, InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder,
-        ReallocSnapshotBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
-        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorBN128KeysBuilder,
+        CastVoteBuilder, InitializeConfigBuilder, InitializeSnapshotBuilder,
+        InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, ReallocSnapshotBuilder,
+        RegisterOperatorBuilder, RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
+        UpdateOperatorBN128KeysBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -551,62 +551,14 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Initializes the operator snapshot within the snapshot for a given operator, NCN, and epoch.
-    pub async fn do_initialize_operator_snapshot(
-        &mut self,
-        operator: Pubkey,
-        ncn: Pubkey,
-    ) -> TestResult<()> {
-        self.initialize_operator_snapshot(operator, ncn).await
-    }
-
-    /// Sends a transaction to initialize the operator snapshot account.
-    pub async fn initialize_operator_snapshot(
-        &mut self,
-        operator: Pubkey,
-        ncn: Pubkey,
-    ) -> TestResult<()> {
-        let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
-        let ncn_operator_state =
-            NcnOperatorState::find_program_address(&jito_restaking_program::id(), &ncn, &operator)
-                .0;
-        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
-
-        let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
-
-        let ncn_operator_account =
-            NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator).0;
-
-        let ix = InitializeOperatorSnapshotBuilder::new()
-            .restaking_config(restaking_config)
-            .ncn(ncn)
-            .operator(operator)
-            .ncn_operator_state(ncn_operator_state)
-            .ncn_operator_account(ncn_operator_account)
-            .snapshot(snapshot)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        let blockhash = self.banks_client.get_latest_blockhash().await?;
-        self.process_transaction(&Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&self.payer.pubkey()),
-            &[&self.payer],
-            blockhash,
-        ))
-        .await
-    }
-
     /// Snapshots the delegation information from a vault to an operator for a given NCN and epoch.
     pub async fn do_snapshot_vault_operator_delegation(
         &mut self,
         vault: Pubkey,
         operator: Pubkey,
         ncn: Pubkey,
-        epoch: u64,
     ) -> TestResult<()> {
-        self.snapshot_vault_operator_delegation(vault, operator, ncn, epoch)
+        self.snapshot_vault_operator_delegation(vault, operator, ncn)
             .await
     }
 
@@ -616,7 +568,6 @@ impl NCNProgramClient {
         vault: Pubkey,
         operator: Pubkey,
         ncn: Pubkey,
-        epoch: u64,
     ) -> TestResult<()> {
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
 
@@ -637,6 +588,10 @@ impl NCNProgramClient {
         )
         .0;
 
+        let ncn_operator_state =
+            NcnOperatorState::find_program_address(&jito_restaking_program::id(), &ncn, &operator)
+                .0;
+
         let ix = SnapshotVaultOperatorDelegationBuilder::new()
             .config(config_pda)
             .restaking_config(restaking_config)
@@ -646,6 +601,7 @@ impl NCNProgramClient {
             .vault_ncn_ticket(vault_ncn_ticket)
             .ncn_vault_ticket(ncn_vault_ticket)
             .vault_operator_delegation(vault_operator_delegation)
+            .ncn_operator_state(ncn_operator_state)
             .snapshot(snapshot)
             .instruction();
 
@@ -789,12 +745,14 @@ impl NCNProgramClient {
         .0;
         let restaking_config = Config::find_program_address(&jito_restaking_program::id()).0;
         let (account_payer, _, _) = AccountPayer::find_program_address(&ncn_program::id(), &ncn);
+        let snapshot = Snapshot::find_program_address(&ncn_program::id(), &ncn).0;
 
         self.register_operator(
             config,
             ncn_operator_account,
             ncn_operator_state,
             restaking_config,
+            snapshot,
             ncn,
             operator_pubkey,
             operator_admin,
@@ -814,6 +772,7 @@ impl NCNProgramClient {
         ncn_operator_account: Pubkey,
         ncn_operator_state: Pubkey,
         restaking_config: Pubkey,
+        snapshot: Pubkey,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
@@ -829,6 +788,7 @@ impl NCNProgramClient {
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())
             .ncn_operator_state(ncn_operator_state)
+            .snapshot(snapshot)
             .restaking_config(restaking_config)
             .account_payer(account_payer)
             .system_program(system_program::id())

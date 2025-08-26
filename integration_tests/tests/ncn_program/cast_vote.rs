@@ -49,7 +49,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -111,7 +113,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         {
@@ -150,7 +154,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         {
@@ -188,7 +194,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         fixture.warp_epoch_incremental(2).await?;
@@ -212,7 +220,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         fixture.warp_epoch_incremental(2).await?;
@@ -258,7 +268,7 @@ mod tests {
             }
 
             ncn_program_client
-                .do_snapshot_vault_operator_delegation(vault, operator, ncn, epoch)
+                .do_snapshot_vault_operator_delegation(vault, operator, ncn)
                 .await?;
         }
 
@@ -278,7 +288,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         // Remove stake from one operator to get it to below minimum stake
@@ -312,7 +324,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -374,7 +388,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -443,7 +459,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -490,7 +508,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -532,7 +552,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -585,7 +607,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -710,7 +734,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -813,7 +839,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;
@@ -902,7 +930,9 @@ mod tests {
 
         ///// NCNProgram Setup /////
         fixture.warp_slot_incremental(1000).await?;
-        fixture.snapshot_test_ncn(&test_ncn).await?;
+        fixture
+            .update_snapshot_test_ncn_new_epoch(&test_ncn)
+            .await?;
         //////
 
         let ncn = test_ncn.ncn_root.ncn_pubkey;

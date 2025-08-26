@@ -11,7 +11,6 @@ export * from './adminSetNewAdmin';
 export * from './adminSetParameters';
 export * from './castVote';
 export * from './initializeConfig';
-export * from './initializeOperatorSnapshot';
 export * from './initializeSnapshot';
 export * from './initializeVaultRegistry';
 export * from './initializeVoteCounter';

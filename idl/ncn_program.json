@@ -172,6 +172,11 @@
           "isSigner": false
         },
         {
+          "name": "snapshot",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "restakingConfig",
           "isMut": false,
           "isSigner": false
@@ -390,56 +395,6 @@
       }
     },
     {
-      "name": "InitializeOperatorSnapshot",
-      "accounts": [
-        {
-          "name": "restakingConfig",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncn",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "operator",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnOperatorState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "ncnOperatorAccount",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "snapshot",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "accountPayer",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [],
-      "discriminant": {
-        "type": "u8",
-        "value": 8
-      }
-    },
-    {
       "name": "SnapshotVaultOperatorDelegation",
       "accounts": [
         {
@@ -478,6 +433,11 @@
           "isSigner": false
         },
         {
+          "name": "ncnOperatorState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "vaultOperatorDelegation",
           "isMut": false,
           "isSigner": false
@@ -491,7 +451,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 8
       }
     },
     {
@@ -549,7 +509,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 9
       }
     },
     {
@@ -605,7 +565,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
+        "value": 10
       }
     },
     {
@@ -642,7 +602,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 11
       }
     },
     {
@@ -677,7 +637,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 13
+        "value": 12
       }
     }
   ],
@@ -770,7 +730,7 @@
             }
           },
           {
-            "name": "operatorIndex",
+            "name": "ncnOperatorIndex",
             "type": {
               "defined": "PodU64"
             }
@@ -812,12 +772,6 @@
           },
           {
             "name": "slotCreated",
-            "type": {
-              "defined": "PodU64"
-            }
-          },
-          {
-            "name": "operatorCount",
             "type": {
               "defined": "PodU64"
             }

@@ -32,9 +32,9 @@ use ncn_program_client::{
     instructions::{
         AdminRegisterStMintBuilder, AdminSetNewAdminBuilder, AdminSetParametersBuilder,
         CastVoteBuilder, InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
-        InitializeOperatorSnapshotBuilder, InitializeSnapshotBuilder,
-        InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, ReallocSnapshotBuilder,
-        RegisterOperatorBuilder, RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
+        InitializeSnapshotBuilder, InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder,
+        ReallocSnapshotBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
+        SnapshotVaultOperatorDelegationBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -447,12 +447,15 @@ pub async fn register_operator(
     let (restaking_config, _, _) =
         RestakingConfig::find_program_address(&handler.restaking_program_id);
 
+    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
+
     let register_operator_ix = RegisterOperatorBuilder::new()
         .config(config)
         .ncn_operator_account(ncn_operator_account)
         .ncn(ncn)
         .operator(operator)
         .operator_admin(keypair.pubkey())
+        .snapshot(snapshot)
         .ncn_operator_state(ncn_operator_state)
         .restaking_config(restaking_config)
         .account_payer(account_payer)
@@ -543,56 +546,6 @@ pub async fn create_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
     Ok(())
 }
 
-pub async fn create_operator_snapshot(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<()> {
-    let ncn = *handler.ncn()?;
-    let operator = *operator;
-    let (_config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
-    let (ncn_operator_state, _, _) =
-        NcnOperatorState::find_program_address(&handler.restaking_program_id, &ncn, &operator);
-    let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
-    let (account_payer, _, _) = AccountPayer::find_program_address(&handler.ncn_program_id, &ncn);
-    let (ncn_operator_account, _, _) =
-        NCNOperatorAccount::find_program_address(&handler.ncn_program_id, &ncn, &operator);
-
-    // Check if operator snapshot already exists by trying to get it
-    let operator_snapshot_result = get_operator_snapshot(handler, &operator, epoch).await;
-
-    if operator_snapshot_result.is_err() {
-        // Initialize operator snapshot
-        let initialize_operator_snapshot_ix = InitializeOperatorSnapshotBuilder::new()
-            .restaking_config(
-                RestakingConfig::find_program_address(&handler.restaking_program_id).0,
-            )
-            .ncn(ncn)
-            .operator(operator)
-            .ncn_operator_state(ncn_operator_state)
-            .ncn_operator_account(ncn_operator_account)
-            .snapshot(snapshot)
-            .account_payer(account_payer)
-            .system_program(system_program::id())
-            .instruction();
-
-        send_and_log_transaction(
-            handler,
-            &[initialize_operator_snapshot_ix],
-            &[],
-            "Initialized Operator Snapshot",
-            &[
-                format!("NCN: {:?}", ncn),
-                format!("Operator: {:?}", operator),
-                format!("Epoch: {:?}", epoch),
-            ],
-        )
-        .await?;
-    }
-
-    Ok(())
-}
-
 pub async fn snapshot_vault_operator_delegation(
     handler: &CliHandler,
     vault: &Pubkey,
@@ -618,6 +571,9 @@ pub async fn snapshot_vault_operator_delegation(
     let (vault_operator_delegation, _, _) =
         VaultOperatorDelegation::find_program_address(&handler.vault_program_id, &vault, &operator);
 
+    let (ncn_operator_state, _, _) =
+        NcnOperatorState::find_program_address(&handler.restaking_program_id, &ncn, &operator);
+
     let (snapshot, _, _) = Snapshot::find_program_address(&handler.ncn_program_id, &ncn);
 
     let snapshot_vault_operator_delegation_ix = SnapshotVaultOperatorDelegationBuilder::new()
@@ -627,6 +583,7 @@ pub async fn snapshot_vault_operator_delegation(
         .operator(operator)
         .vault(vault)
         .vault_ncn_ticket(vault_ncn_ticket)
+        .ncn_operator_state(ncn_operator_state)
         .ncn_vault_ticket(ncn_vault_ticket)
         .vault_operator_delegation(vault_operator_delegation)
         .snapshot(snapshot)
@@ -902,22 +859,6 @@ pub async fn get_or_create_snapshot(handler: &CliHandler, epoch: u64) -> Result<
     get_snapshot(handler, epoch).await
 }
 
-pub async fn get_or_create_operator_snapshot(
-    handler: &CliHandler,
-    operator: &Pubkey,
-    epoch: u64,
-) -> Result<OperatorSnapshot> {
-    // Try to get the operator snapshot from snapshot
-    match get_operator_snapshot(handler, operator, epoch).await {
-        std::result::Result::Ok(snapshot) => std::result::Result::Ok(snapshot),
-        std::result::Result::Err(_) => {
-            // If it doesn't exist, create it
-            create_operator_snapshot(handler, operator, epoch).await?;
-            get_operator_snapshot(handler, operator, epoch).await
-        }
-    }
-}
-
 // --------------------- CRANKERS ------------------------------
 
 pub async fn crank_register_vaults(handler: &CliHandler) -> Result<()> {
@@ -978,7 +919,7 @@ pub async fn crank_snapshot(handler: &CliHandler, epoch: u64) -> Result<()> {
     for operator in operators.iter() {
         // Create Vault Operator Delegation
         {
-            let result = get_or_create_operator_snapshot(handler, operator, epoch).await;
+            let result = get_operator_snapshot(handler, operator, epoch).await;
 
             if result.is_err() {
                 log::error!(
@@ -1069,7 +1010,7 @@ pub async fn crank_snapshot_unupdated(
 
     info!(
         "Found {} operators total: {} already snapshotted, {} need snapshotting",
-        snapshot.operator_count(),
+        snapshot.operators_registered(),
         already_snapshotted.len(),
         operators_to_snapshot.len()
     );

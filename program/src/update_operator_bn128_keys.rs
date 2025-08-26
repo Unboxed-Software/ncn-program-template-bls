@@ -8,7 +8,7 @@ use ncn_program_core::{
     g2_point::{G2CompressedPoint, G2Point},
     ncn_operator_account::NCNOperatorAccount,
     schemes::sha256_normalized::Sha256Normalized,
-    snapshot::{OperatorSnapshot, Snapshot},
+    snapshot::Snapshot,
 };
 use solana_program::{
     account_info::AccountInfo,

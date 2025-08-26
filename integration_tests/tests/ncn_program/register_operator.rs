@@ -41,6 +41,9 @@ mod tests {
         restaking_program_client
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
             .await?;
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
 
         // Generate BLS keypair
         let g1_compressed = G1CompressedPoint::try_from(operator_root.bn128_privkey).unwrap();
@@ -95,6 +98,9 @@ mod tests {
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
             .await?;
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
 
         // Generate mismatched BLS keypair
         let fake_privkey = PrivKey::from_random();
@@ -141,6 +147,10 @@ mod tests {
         // Setup operator
         let operator_root = restaking_program_client
             .do_initialize_operator(Some(200))
+            .await?;
+
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
             .await?;
 
         // Generate BLS keypair
@@ -197,6 +207,9 @@ mod tests {
             .await?;
 
         fixture.warp_epoch_incremental(2).await?;
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
+            .await?;
 
         // Now, NCN disables the operator
         restaking_program_client
@@ -255,6 +268,9 @@ mod tests {
             .await?;
         restaking_program_client
             .do_operator_warmup_ncn(&operator_root, &ncn_root.ncn_pubkey)
+            .await?;
+        ncn_program_client
+            .do_full_initialize_snapshot(ncn_root.ncn_pubkey)
             .await?;
 
         fixture.warp_epoch_incremental(2).await?;

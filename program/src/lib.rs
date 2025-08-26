@@ -6,7 +6,6 @@ mod cast_vote;
 
 mod initialize_snapshot;
 
-mod initialize_operator_snapshot;
 mod initialize_vault_registry;
 mod initialize_vote_counter;
 mod realloc_snapshot;
@@ -31,7 +30,6 @@ use crate::{
     admin_initialize_config::process_admin_initialize_config,
     admin_register_st_mint::process_admin_register_st_mint,
     admin_set_parameters::process_admin_set_parameters, cast_vote::process_cast_vote,
-    initialize_operator_snapshot::process_initialize_operator_snapshot,
     initialize_snapshot::process_initialize_snapshot,
     initialize_vault_registry::process_initialize_vault_registry,
     initialize_vote_counter::process_initialize_vote_counter,
@@ -134,10 +132,6 @@ pub fn process_instruction(
         NCNProgramInstruction::ReallocSnapshot {} => {
             msg!("Instruction: ReallocSnapshot");
             process_realloc_snapshot(program_id, accounts)
-        }
-        NCNProgramInstruction::InitializeOperatorSnapshot {} => {
-            msg!("Instruction: InitializeOperatorSnapshot");
-            process_initialize_operator_snapshot(program_id, accounts)
         }
         NCNProgramInstruction::SnapshotVaultOperatorDelegation {} => {
             msg!("Instruction: SnapshotVaultOperatorDelegation");

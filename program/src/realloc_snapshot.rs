@@ -50,17 +50,6 @@ pub fn process_realloc_snapshot(program_id: &Pubkey, accounts: &[AccountInfo]) -
     if should_initialize {
         let current_slot = Clock::get()?.slot;
 
-        let operator_count: u64 = {
-            let ncn_data = ncn.data.borrow();
-            let ncn_account = Ncn::try_from_slice_unchecked(&ncn_data)?;
-            ncn_account.operator_count()
-        };
-
-        if operator_count == 0 {
-            msg!("Error: No operators to snapshot");
-            return Err(NCNProgramError::NoOperators.into());
-        }
-
         let minimum_stake = {
             let config_data = config.try_borrow_data()?;
             let config_account = Config::try_from_slice_unchecked(&config_data)?;
@@ -71,18 +60,7 @@ pub fn process_realloc_snapshot(program_id: &Pubkey, accounts: &[AccountInfo]) -
         snapshot_data[0] = Snapshot::DISCRIMINATOR;
         let snapshot_account = Snapshot::try_from_slice_unchecked_mut(&mut snapshot_data)?;
 
-        msg!(
-            "Initializing snapshot with operator count: {}",
-            operator_count,
-        );
-
-        snapshot_account.initialize(
-            ncn.key,
-            snapshot_bump,
-            current_slot,
-            operator_count,
-            minimum_stake,
-        );
+        snapshot_account.initialize(ncn.key, snapshot_bump, current_slot, minimum_stake);
     } else {
         msg!("Snapshot already initialized, skipping initialization");
     }

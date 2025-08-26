@@ -26,7 +26,7 @@ pub struct NCNOperatorAccount {
     pub g1_pubkey: [u8; 32],
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub g2_pubkey: [u8; 64],
-    pub operator_index: u64,
+    pub ncn_operator_index: u64,
     pub slot_registered: u64,
     pub bump: u8,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]

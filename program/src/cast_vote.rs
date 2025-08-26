@@ -80,15 +80,15 @@ pub fn process_cast_vote(
     let snapshot_data = snapshot.data.borrow();
     let snapshot = Snapshot::try_from_slice_unchecked(&snapshot_data)?;
 
-    let operator_count = snapshot.operator_count();
+    let operators_registered = snapshot.operators_registered();
 
-    msg!("Total operators: {}", operator_count);
+    msg!("Total operators: {}", operators_registered);
 
     let slot = Clock::get()?.slot;
     msg!("Current slot: {}", slot);
 
     // Check bitmap size
-    let required_bitmap_bytes = (operator_count
+    let required_bitmap_bytes = (operators_registered
         .checked_add(7)
         .ok_or(ProgramError::ArithmeticOverflow)?)
         / 8;
@@ -107,7 +107,7 @@ pub fn process_cast_vote(
     let mut non_signers_count: u64 = 0;
 
     for (i, operator_snapshot) in snapshot.operator_snapshots().iter().enumerate() {
-        if i >= operator_count as usize {
+        if i >= operators_registered as usize {
             break;
         }
 
@@ -153,11 +153,11 @@ pub fn process_cast_vote(
     }
 
     // If non_signers_count is more than 1/3 of registered operators, throw an error because quorum didn't meet
-    if non_signers_count > operator_count / 3 {
+    if non_signers_count > operators_registered / 3 {
         msg!(
             "Quorum not met: non-signers count ({}) exceeds 1/3 of registered operators ({})",
             non_signers_count,
-            operator_count
+            operators_registered
         );
         return Err(NCNProgramError::QuorumNotMet.into());
     }

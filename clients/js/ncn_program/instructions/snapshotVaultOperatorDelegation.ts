@@ -27,7 +27,7 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const SNAPSHOT_VAULT_OPERATOR_DELEGATION_DISCRIMINATOR = 9;
+export const SNAPSHOT_VAULT_OPERATOR_DELEGATION_DISCRIMINATOR = 8;
 
 export function getSnapshotVaultOperatorDelegationDiscriminatorBytes() {
   return getU8Encoder().encode(
@@ -44,6 +44,7 @@ export type SnapshotVaultOperatorDelegationInstruction<
   TAccountVault extends string | IAccountMeta<string> = string,
   TAccountVaultNcnTicket extends string | IAccountMeta<string> = string,
   TAccountNcnVaultTicket extends string | IAccountMeta<string> = string,
+  TAccountNcnOperatorState extends string | IAccountMeta<string> = string,
   TAccountVaultOperatorDelegation extends
     | string
     | IAccountMeta<string> = string,
@@ -72,6 +73,9 @@ export type SnapshotVaultOperatorDelegationInstruction<
       TAccountNcnVaultTicket extends string
         ? ReadonlyAccount<TAccountNcnVaultTicket>
         : TAccountNcnVaultTicket,
+      TAccountNcnOperatorState extends string
+        ? ReadonlyAccount<TAccountNcnOperatorState>
+        : TAccountNcnOperatorState,
       TAccountVaultOperatorDelegation extends string
         ? ReadonlyAccount<TAccountVaultOperatorDelegation>
         : TAccountVaultOperatorDelegation,
@@ -120,6 +124,7 @@ export type SnapshotVaultOperatorDelegationInput<
   TAccountVault extends string = string,
   TAccountVaultNcnTicket extends string = string,
   TAccountNcnVaultTicket extends string = string,
+  TAccountNcnOperatorState extends string = string,
   TAccountVaultOperatorDelegation extends string = string,
   TAccountSnapshot extends string = string,
 > = {
@@ -130,6 +135,7 @@ export type SnapshotVaultOperatorDelegationInput<
   vault: Address<TAccountVault>;
   vaultNcnTicket: Address<TAccountVaultNcnTicket>;
   ncnVaultTicket: Address<TAccountNcnVaultTicket>;
+  ncnOperatorState: Address<TAccountNcnOperatorState>;
   vaultOperatorDelegation: Address<TAccountVaultOperatorDelegation>;
   snapshot: Address<TAccountSnapshot>;
 };
@@ -142,6 +148,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
   TAccountVault extends string,
   TAccountVaultNcnTicket extends string,
   TAccountNcnVaultTicket extends string,
+  TAccountNcnOperatorState extends string,
   TAccountVaultOperatorDelegation extends string,
   TAccountSnapshot extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
@@ -154,6 +161,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
     TAccountVault,
     TAccountVaultNcnTicket,
     TAccountNcnVaultTicket,
+    TAccountNcnOperatorState,
     TAccountVaultOperatorDelegation,
     TAccountSnapshot
   >,
@@ -167,6 +175,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
   TAccountVault,
   TAccountVaultNcnTicket,
   TAccountNcnVaultTicket,
+  TAccountNcnOperatorState,
   TAccountVaultOperatorDelegation,
   TAccountSnapshot
 > {
@@ -185,6 +194,10 @@ export function getSnapshotVaultOperatorDelegationInstruction<
     vault: { value: input.vault ?? null, isWritable: false },
     vaultNcnTicket: { value: input.vaultNcnTicket ?? null, isWritable: false },
     ncnVaultTicket: { value: input.ncnVaultTicket ?? null, isWritable: false },
+    ncnOperatorState: {
+      value: input.ncnOperatorState ?? null,
+      isWritable: false,
+    },
     vaultOperatorDelegation: {
       value: input.vaultOperatorDelegation ?? null,
       isWritable: false,
@@ -206,6 +219,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.vaultNcnTicket),
       getAccountMeta(accounts.ncnVaultTicket),
+      getAccountMeta(accounts.ncnOperatorState),
       getAccountMeta(accounts.vaultOperatorDelegation),
       getAccountMeta(accounts.snapshot),
     ],
@@ -220,6 +234,7 @@ export function getSnapshotVaultOperatorDelegationInstruction<
     TAccountVault,
     TAccountVaultNcnTicket,
     TAccountNcnVaultTicket,
+    TAccountNcnOperatorState,
     TAccountVaultOperatorDelegation,
     TAccountSnapshot
   >;
@@ -240,8 +255,9 @@ export type ParsedSnapshotVaultOperatorDelegationInstruction<
     vault: TAccountMetas[4];
     vaultNcnTicket: TAccountMetas[5];
     ncnVaultTicket: TAccountMetas[6];
-    vaultOperatorDelegation: TAccountMetas[7];
-    snapshot: TAccountMetas[8];
+    ncnOperatorState: TAccountMetas[7];
+    vaultOperatorDelegation: TAccountMetas[8];
+    snapshot: TAccountMetas[9];
   };
   data: SnapshotVaultOperatorDelegationInstructionData;
 };
@@ -254,7 +270,7 @@ export function parseSnapshotVaultOperatorDelegationInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSnapshotVaultOperatorDelegationInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 9) {
+  if (instruction.accounts.length < 10) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -274,6 +290,7 @@ export function parseSnapshotVaultOperatorDelegationInstruction<
       vault: getNextAccount(),
       vaultNcnTicket: getNextAccount(),
       ncnVaultTicket: getNextAccount(),
+      ncnOperatorState: getNextAccount(),
       vaultOperatorDelegation: getNextAccount(),
       snapshot: getNextAccount(),
     },

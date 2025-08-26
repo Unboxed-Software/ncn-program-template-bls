@@ -1099,7 +1099,9 @@ cargo build-sbf
 cargo build --bin ncn-program-bls-cli
 ```
 
-### 2. Deploy the Program
+TODO: add a point regarding updating the .env with proper values
+
+### 2. Deploy the Program to localnet
 
 ```bash
 # Deploy to local test validator or mainnet
@@ -1111,7 +1113,6 @@ solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_
 ```bash
 # Fund the payer account with 20 SOL for transaction fees
 ./target/debug/ncn-program-bls-cli admin-fund-account-payer --amount-in-sol 20
-sleep 2
 
 # Create and initialize the NCN program configuration
 ./target/debug/ncn-program-bls-cli admin-create-config \
@@ -1119,30 +1120,19 @@ sleep 2
   --ncn-fee-bps 100 \
   --valid-slots-after-consensus 10000 \
   --minimum-stake 100
-sleep 2
 
 # Initialize the vote counter for replay attack prevention
 ./target/debug/ncn-program-bls-cli create-vote-counter
-sleep 2
 
 # Create the vault registry to track supported stake vaults
 ./target/debug/ncn-program-bls-cli create-vault-registry
-sleep 2
+
+# Register a supported stake token mint and set its weight
+./target/debug/ncn-program-bls-cli admin-register-st-mint
 
 # Register vaults that are pending approval and add them to the registry
 ./target/debug/ncn-program-bls-cli crank-register-vaults
 
-# Register a supported stake token mint and set its weight
-./target/debug/ncn-program-bls-cli admin-register-st-mint --weight 10
-```
-
-### 4. Register Operators
-
-```bash
-# Register operators with BLS keypairs (repeat for all operators)
-./target/debug/ncn-program-bls-cli register-operator \
-  --operator <Operator Pubkey> \
-  --keypair-path <operator-admin-keypair>
 ```
 
 ### 5. Initialize Snapshot System
@@ -1150,9 +1140,13 @@ sleep 2
 ```bash
 # Create the snapshot account
 ./target/debug/ncn-program-bls-cli create-snapshot
+```
 
-# Initialize operator snapshots for each operator
-./target/debug/ncn-program-bls-cli create-operator-snapshot --operator <Operator Pubkey>
+```bash
+# Register operators with BLS keypairs (repeat for all operators)
+./target/debug/ncn-program-bls-cli register-operator \
+  --operator <Operator Pubkey> \
+  --keypair-path <operator-admin-keypair>
 ```
 
 ### 6. Snapshot Vault-Operator Delegations
@@ -1166,13 +1160,6 @@ sleep 2
 
 # Or you can snapshot all of them at once using
 ./target/debug/ncn-program-bls-cli crank-snapshot
-```
-
-### 7. Create the vote counter
-
-```bash
-# Create the vote counter
-./target/debug/ncn-program-bls-cli create-vote-counter
 ```
 
 ### 8. Generate a signature

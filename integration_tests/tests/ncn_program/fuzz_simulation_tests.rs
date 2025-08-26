@@ -189,32 +189,17 @@ mod fuzz_tests {
             println!("  ✅ NCN program setup completed");
         }
 
-        // 4. Register all operators in the NCN program
+        // initialize snapshots and register operators
+        fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
         fixture.register_operators_to_test_ncn(&test_ncn).await?;
 
-        // 4. Prepare the epoch consensus cycle
-        // In a real system, these steps would run each epoch to prepare for voting on weather status
+        // 4. Snapshot operators and vaults
+        // In a real system, this step would run each epoch to keep the snapshot updated
         {
-            // 4.b. Initialize the weight table - prepares the table that will track voting weights
-
-            // 4.d. Take the snapshot - records the current state for this epoch
-            fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
-
-            // 4.e. Take a snapshot for each operator - records their current stakes
-            fixture
-                .add_operator_snapshots_to_test_ncn(&test_ncn)
-                .await?;
-
-            // 4.f. Take a snapshot for each vault and its delegation - records delegations
             fixture
                 .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)
                 .await?;
-
-            println!("  ✅ Epoch preparation completed");
         }
-
-        // Define which weather status we expect to win in the vote
-        // In this example, operators will vote on a simulated weather status
 
         // 5. Cast votes from operators
         {

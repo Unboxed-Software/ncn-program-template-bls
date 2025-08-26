@@ -12,8 +12,8 @@ use crate::{
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
         admin_set_parameters, crank_register_vaults, crank_snapshot, crank_snapshot_unupdated,
-        create_operator_snapshot, create_snapshot, create_vault_registry, create_vote_counter,
-        full_vault_update, register_operator, register_vault, snapshot_vault_operator_delegation,
+        create_snapshot, create_vault_registry, create_vote_counter, full_vault_update,
+        register_operator, register_vault, snapshot_vault_operator_delegation,
     },
     keeper::keeper_loop::startup_ncn_keeper,
 };
@@ -328,11 +328,6 @@ impl CliHandler {
             }
 
             ProgramCommand::CreateSnapshot {} => create_snapshot(self, self.epoch).await,
-            ProgramCommand::CreateOperatorSnapshot { operator } => {
-                let operator = Pubkey::from_str(&operator)
-                    .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
-                create_operator_snapshot(self, &operator, self.epoch).await
-            }
             ProgramCommand::SnapshotVaultOperatorDelegation { operator } => {
                 let operator = Pubkey::from_str(&operator)
                     .map_err(|e| anyhow!("Error parsing operator: {}", e))?;

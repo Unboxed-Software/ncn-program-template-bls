@@ -20,23 +20,15 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        let epoch = fixture.clock().await.epoch;
-
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
 
-        ncn_program_client.do_full_initialize_snapshot(ncn).await?;
-
         let operator = test_ncn.operators[0].operator_pubkey;
 
         ncn_program_client
-            .do_initialize_operator_snapshot(operator, ncn)
-            .await?;
-
-        ncn_program_client
-            .do_snapshot_vault_operator_delegation(vault_address, operator, ncn, epoch)
+            .do_snapshot_vault_operator_delegation(vault_address, operator, ncn)
             .await?;
 
         Ok(())
@@ -54,26 +46,17 @@ mod tests {
 
         fixture.warp_slot_incremental(1000).await?;
 
-        let epoch = fixture.clock().await.epoch;
-
         let ncn = test_ncn.ncn_root.ncn_pubkey;
 
         let vault_root = test_ncn.vaults[0].clone();
         let vault_address = vault_root.vault_pubkey;
 
-        ncn_program_client.do_full_initialize_snapshot(ncn).await?;
-
         for operator_root in test_ncn.operators.iter() {
-            ncn_program_client
-                .do_initialize_operator_snapshot(operator_root.operator_pubkey, ncn)
-                .await?;
-
             ncn_program_client
                 .do_snapshot_vault_operator_delegation(
                     vault_address,
                     operator_root.operator_pubkey,
                     ncn,
-                    epoch,
                 )
                 .await?;
         }
@@ -116,16 +99,6 @@ mod tests {
             let current_epoch = fixture.clock().await.epoch;
             println!("=== Testing Epoch: {} ===", current_epoch);
 
-            // Initialize weight table for this epoch
-
-            // Initialize snapshot for this epoch
-            ncn_program_client.do_full_initialize_snapshot(ncn).await?;
-
-            // Initialize operator snapshot for this epoch
-            ncn_program_client
-                .do_initialize_operator_snapshot(operator, ncn)
-                .await?;
-
             // Get operator snapshot before delegation snapshot
             let operator_snapshot_before = ncn_program_client
                 .get_operator_snapshot(operator, ncn)
@@ -159,7 +132,7 @@ mod tests {
 
             // Take the operator snapshot
             ncn_program_client
-                .do_snapshot_vault_operator_delegation(vault_address, operator, ncn, current_epoch)
+                .do_snapshot_vault_operator_delegation(vault_address, operator, ncn)
                 .await?;
 
             // Get operator snapshot after delegation snapshot
@@ -396,11 +369,8 @@ mod tests {
             .add_delegation_in_test_ncn(&test_ncn, INITIAL_DELEGATION as u64)
             .await?;
         fixture.add_vault_registry_to_test_ncn(&test_ncn).await?;
-        fixture.register_operators_to_test_ncn(&test_ncn).await?;
         fixture.add_snapshot_to_test_ncn(&test_ncn).await?;
-        fixture
-            .add_operator_snapshots_to_test_ncn(&test_ncn)
-            .await?;
+        fixture.register_operators_to_test_ncn(&test_ncn).await?;
 
         fixture
             .add_vault_operator_delegation_snapshots_to_test_ncn(&test_ncn)

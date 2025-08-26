@@ -18,7 +18,6 @@ import {
   type ParsedAdminSetParametersInstruction,
   type ParsedCastVoteInstruction,
   type ParsedInitializeConfigInstruction,
-  type ParsedInitializeOperatorSnapshotInstruction,
   type ParsedInitializeSnapshotInstruction,
   type ParsedInitializeVaultRegistryInstruction,
   type ParsedInitializeVoteCounterInstruction,
@@ -49,7 +48,6 @@ export enum NcnProgramInstruction {
   InitializeVoteCounter,
   InitializeSnapshot,
   ReallocSnapshot,
-  InitializeOperatorSnapshot,
   SnapshotVaultOperatorDelegation,
   CastVote,
   AdminSetParameters,
@@ -86,21 +84,18 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.ReallocSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(8), 0)) {
-    return NcnProgramInstruction.InitializeOperatorSnapshot;
-  }
-  if (containsBytes(data, getU8Encoder().encode(9), 0)) {
     return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
-  if (containsBytes(data, getU8Encoder().encode(10), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(9), 0)) {
     return NcnProgramInstruction.CastVote;
   }
-  if (containsBytes(data, getU8Encoder().encode(11), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(10), 0)) {
     return NcnProgramInstruction.AdminSetParameters;
   }
-  if (containsBytes(data, getU8Encoder().encode(12), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(11), 0)) {
     return NcnProgramInstruction.AdminSetNewAdmin;
   }
-  if (containsBytes(data, getU8Encoder().encode(13), 0)) {
+  if (containsBytes(data, getU8Encoder().encode(12), 0)) {
     return NcnProgramInstruction.AdminRegisterStMint;
   }
   throw new Error(
@@ -135,9 +130,6 @@ export type ParsedNcnProgramInstruction<
   | ({
       instructionType: NcnProgramInstruction.ReallocSnapshot;
     } & ParsedReallocSnapshotInstruction<TProgram>)
-  | ({
-      instructionType: NcnProgramInstruction.InitializeOperatorSnapshot;
-    } & ParsedInitializeOperatorSnapshotInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.SnapshotVaultOperatorDelegation;
     } & ParsedSnapshotVaultOperatorDelegationInstruction<TProgram>)
