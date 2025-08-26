@@ -2,7 +2,9 @@
 mod tests {
     use crate::fixtures::{test_builder::TestBuilder, TestResult};
     use ncn_program_core::{
-        g1_point::G1CompressedPoint, g2_point::G2CompressedPoint, privkey::PrivKey,
+        g1_point::{G1CompressedPoint, G1Point},
+        g2_point::G2CompressedPoint,
+        privkey::PrivKey,
         schemes::Sha256Normalized,
     };
 

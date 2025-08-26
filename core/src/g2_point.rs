@@ -21,9 +21,9 @@ use solana_program::msg;
 use crate::{
     constants::{BN128_ADDITION_SUCESS_RESULT, G1_GENERATOR, G2_MINUS_ONE},
     error::NCNProgramError,
-    g1_point::G1Point,
+    g1_point::{G1CompressedPoint, G1Point},
     privkey::PrivKey,
-    schemes::{BLSSignature, HashToCurve},
+    schemes::{BLSSignature, HashToCurve, Sha256Normalized},
     utils::compute_alpha,
 };
 
@@ -41,6 +41,51 @@ impl G2Point {
         input[64..192].clone_from_slice(&self.0);
         // 3) Decompress our signature
         input[192..256].clone_from_slice(&signature.to_bytes()?);
+        // 4) Pair with -G2::one()
+        input[256..].clone_from_slice(&G2_MINUS_ONE);
+
+        // Calculate result
+        if let Ok(r) = alt_bn128_pairing(&input) {
+            msg!("Pairing result: {:?}", r);
+            if r.eq(&BN128_ADDITION_SUCESS_RESULT) {
+                Ok(())
+            } else {
+                Err(NCNProgramError::BLSVerificationError)
+            }
+        } else {
+            Err(NCNProgramError::AltBN128PairingError)
+        }
+    }
+
+    pub fn verify_operator_registeration(
+        self,
+        signature: G1Point,
+        g1_pubkey: [u8; 32],
+    ) -> Result<(), NCNProgramError> {
+        let g1_compressed = G1CompressedPoint::from(g1_pubkey);
+        let g1_pubkey_point = G1Point::try_from(&g1_compressed)
+            .map_err(|_| NCNProgramError::G1PointDecompressionError)?;
+
+        let message_hash = Sha256Normalized::try_hash_to_curve(g1_pubkey)?.0;
+        let alpha = compute_alpha(&message_hash, &signature.0, &g1_pubkey_point.0, &self.0);
+
+        let scaled_g1_generator = G1Point::from(G1_GENERATOR).mul(alpha)?;
+        let scaled_g1_pubkey = g1_pubkey_point.mul(alpha)?;
+
+        let msg_hash_plus_scaled_g1_generator = G1Point::from(message_hash) + scaled_g1_generator;
+        let signature_plus_scaled_g1 = signature + scaled_g1_pubkey;
+
+        let mut input = [0u8; 384];
+
+        // Pairing equation is:
+        // e(H(m) + G1_Generator * alpha, g2_pubkey) = e(signature + g1_pubkey * alpha, G2_MINUS_ONE)
+
+        // 1) Hash message to curve
+        input[..64].clone_from_slice(&msg_hash_plus_scaled_g1_generator.0);
+        // 2) Decompress our public key
+        input[64..192].clone_from_slice(&self.0);
+        // 3) Decompress our signature
+        input[192..256].clone_from_slice(&signature_plus_scaled_g1.0);
         // 4) Pair with -G2::one()
         input[256..].clone_from_slice(&G2_MINUS_ONE);
 
