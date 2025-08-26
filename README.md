@@ -1235,9 +1235,9 @@ ncn-program-bls-cli cast-vote \
 - [x] CLI: more fixes and tweaks.
 - [x] docs update and code cleanup and more
 - [x] Check to see if we are changing the snapshot if the operator changes it's g1 pubkey using upadte_bn128 keys ix.
+- [x] Registering an operator now is being done using two pairing equations, it could all be done by only one by merging the two equations.
 
 ### Remaining Optimizations 🔄
 
-- [ ] Registering an operator now is being done using two pairing equations, it could all be done by only one by merging the two equations.
 - [ ] Since it is only one vault, the vault registry is not needed, consider removing it.
 - [ ] Instead of having two Instructions (`RegisterOperator` and `InitOperatorSnapshot`) they could be only one
