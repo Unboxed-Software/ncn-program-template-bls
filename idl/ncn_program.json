@@ -295,6 +295,60 @@
       }
     },
     {
+      "name": "UpdateOperatorIpSocket",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ncnOperatorAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ncn",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operator",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "operatorAdmin",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "ipAddress",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "socket",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 5
+      }
+    },
+    {
       "name": "InitializeVoteCounter",
       "accounts": [
         {
@@ -326,7 +380,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 5
+        "value": 6
       }
     },
     {
@@ -356,7 +410,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 6
+        "value": 7
       }
     },
     {
@@ -391,7 +445,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 7
+        "value": 8
       }
     },
     {
@@ -451,7 +505,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 8
+        "value": 9
       }
     },
     {
@@ -509,7 +563,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 9
+        "value": 10
       }
     },
     {
@@ -565,7 +619,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 10
+        "value": 11
       }
     },
     {
@@ -602,7 +656,7 @@
       ],
       "discriminant": {
         "type": "u8",
-        "value": 11
+        "value": 12
       }
     },
     {
@@ -637,7 +691,7 @@
       "args": [],
       "discriminant": {
         "type": "u8",
-        "value": 12
+        "value": 13
       }
     }
   ],
@@ -739,6 +793,24 @@
             "name": "slotRegistered",
             "type": {
               "defined": "PodU64"
+            }
+          },
+          {
+            "name": "ipAddress",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "socket",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
             }
           },
           {

@@ -12,7 +12,7 @@ use ncn_program_client::{
         CastVoteBuilder, InitializeConfigBuilder, InitializeSnapshotBuilder,
         InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, ReallocSnapshotBuilder,
         RegisterOperatorBuilder, RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
-        UpdateOperatorBN128KeysBuilder,
+        UpdateOperatorBN128KeysBuilder, UpdateOperatorIpSocketBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -862,6 +862,65 @@ impl NCNProgramClient {
             .g1_pubkey(g1_pubkey)
             .g2_pubkey(g2_pubkey)
             .signature(signature)
+            .instruction();
+
+        let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);
+
+        let blockhash = self.banks_client.get_latest_blockhash().await?;
+        self.process_transaction(&Transaction::new_signed_with_payer(
+            &[ix, compute_budget_ix],
+            Some(&self.payer.pubkey()),
+            &[&self.payer, operator_admin],
+            blockhash,
+        ))
+        .await
+    }
+
+    /// Updates an operator's IP address and socket with simplified parameters
+    pub async fn do_update_operator_ip_socket(
+        &mut self,
+        ncn: Pubkey,
+        operator_pubkey: Pubkey,
+        operator_admin: &Keypair,
+        ip_address: [u8; 16],
+        socket: [u8; 16],
+    ) -> TestResult<()> {
+        let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
+        let ncn_operator_account =
+            NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
+
+        self.update_operator_ip_socket(
+            config,
+            ncn_operator_account,
+            ncn,
+            operator_pubkey,
+            operator_admin,
+            ip_address,
+            socket,
+        )
+        .await
+    }
+
+    /// Updates an operator's IP address and socket with full parameter control
+    #[allow(clippy::too_many_arguments)]
+    pub async fn update_operator_ip_socket(
+        &mut self,
+        config: Pubkey,
+        ncn_operator_account: Pubkey,
+        ncn: Pubkey,
+        operator_pubkey: Pubkey,
+        operator_admin: &Keypair,
+        ip_address: [u8; 16],
+        socket: [u8; 16],
+    ) -> TestResult<()> {
+        let ix = UpdateOperatorIpSocketBuilder::new()
+            .config(config)
+            .ncn_operator_account(ncn_operator_account)
+            .ncn(ncn)
+            .operator(operator_pubkey)
+            .operator_admin(operator_admin.pubkey())
+            .ip_address(ip_address)
+            .socket(socket)
             .instruction();
 
         let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);

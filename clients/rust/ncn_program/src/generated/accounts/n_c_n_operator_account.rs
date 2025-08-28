@@ -28,6 +28,8 @@ pub struct NCNOperatorAccount {
     pub g2_pubkey: [u8; 64],
     pub ncn_operator_index: u64,
     pub slot_registered: u64,
+    pub ip_address: [u8; 16],
+    pub socket: [u8; 16],
     pub bump: u8,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub reserved: [u8; 199],

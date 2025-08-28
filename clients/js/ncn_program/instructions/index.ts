@@ -19,3 +19,4 @@ export * from './registerOperator';
 export * from './registerVault';
 export * from './snapshotVaultOperatorDelegation';
 export * from './updateOperatorBN128Keys';
+export * from './updateOperatorIpSocket';

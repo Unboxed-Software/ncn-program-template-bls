@@ -92,6 +92,19 @@ pub enum NCNProgramInstruction {
         signature: [u8; 64],
     },
 
+    /// Updates an operator's IP address and socket in their individual operator PDA
+    #[account(0, name = "config")]
+    #[account(1, writable, name = "ncn_operator_account")]
+    #[account(2, name = "ncn")]
+    #[account(3, name = "operator")]
+    #[account(4, signer, name = "operator_admin")]
+    UpdateOperatorIpSocket {
+        /// New IP address (IPv4 format, 16 bytes)
+        ip_address: [u8; 16],
+        /// New socket (16 bytes)
+        socket: [u8; 16],
+    },
+
     /// Initializes the vote counter PDA for tracking successful votes
     /// This should be called after InitializeConfig to set up vote tracking
     #[account(0, name = "config")]
