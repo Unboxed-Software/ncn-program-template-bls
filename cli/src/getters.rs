@@ -20,6 +20,7 @@ use log::{info, warn};
 use ncn_program_core::{
     account_payer::AccountPayer,
     config::Config as NCNProgramConfig,
+    ncn_operator_account::NCNOperatorAccount,
     snapshot::{OperatorSnapshot, Snapshot},
     vault_registry::VaultRegistry,
     vote_counter::VoteCounter,
@@ -1021,4 +1022,54 @@ impl fmt::Display for NcnTickets {
 
         Ok(())
     }
+}
+
+pub async fn get_all_ncn_operator_accounts(
+    handler: &CliHandler,
+) -> Result<Vec<(Pubkey, NCNOperatorAccount)>> {
+    let client = handler.rpc_client();
+
+    let ncn_operator_account_size = size_of::<NCNOperatorAccount>() + 8;
+
+    let size_filter = RpcFilterType::DataSize(ncn_operator_account_size as u64);
+
+    let discriminator_filter = RpcFilterType::Memcmp(Memcmp::new(
+        0,                                                                     // offset
+        MemcmpEncodedBytes::Bytes([NCNOperatorAccount::DISCRIMINATOR].into()), // encoded bytes
+    ));
+
+    let ncn_filter = RpcFilterType::Memcmp(Memcmp::new(
+        8,
+        MemcmpEncodedBytes::Bytes(handler.ncn().unwrap().to_bytes().as_slice().to_vec()),
+    ));
+
+    let config = RpcProgramAccountsConfig {
+        filters: Some(vec![discriminator_filter, size_filter, ncn_filter]),
+        account_config: RpcAccountInfoConfig {
+            encoding: Some(UiAccountEncoding::Base64),
+            data_slice: Some(UiDataSliceConfig {
+                offset: 0,
+                length: ncn_operator_account_size,
+            }),
+            commitment: Some(handler.commitment),
+            min_context_slot: None,
+        },
+        with_context: Some(false),
+        sort_results: Some(false),
+    };
+
+    let results = client
+        .get_program_accounts_with_config(&handler.ncn_program_id, config)
+        .await?;
+
+    let accounts: Vec<(Pubkey, NCNOperatorAccount)> = results
+        .iter()
+        .filter_map(|result| {
+            NCNOperatorAccount::try_from_slice_unchecked(result.1.data.as_slice())
+                .map(|account| (result.0, *account))
+                .ok()
+        })
+        .collect();
+
+    Ok(accounts)
 }

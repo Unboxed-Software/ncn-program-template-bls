@@ -68,18 +68,6 @@ export TOKEN_PROGRAM_ID="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 export KEYPAIR_PATH="~/.config/solana/id.json"
 export NCN="<YOUR_NCN_ADDRESS>"  # Set after NCN creation
 export VAULT="<YOUR_VAULT_ADDRESS>"  # Set after vault creation
-export EPOCH="<TARGET_EPOCH>"  # Optional: defaults to current epoch
-
-# Transaction Settings
-export PRIORITY_FEE_MICRO_LAMPORTS="1000"  # Priority fee in micro-lamports
-export TRANSACTION_RETRIES="3"  # Number of retry attempts
-
-# External Services (Optional)
-export OPENWEATHER_API_KEY="<YOUR_API_KEY>"  # For weather-based consensus demo
-
-# Keeper Configuration (Optional)
-export LOOP_TIMEOUT_MS="600000"    # 10 minutes between keeper iterations
-export ERROR_TIMEOUT_MS="10000"    # 10 seconds timeout on errors
 ```
 
 ### Using .env File

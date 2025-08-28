@@ -4,10 +4,11 @@ use std::{collections::HashMap, mem::size_of, str::FromStr};
 use crate::{
     args::{Args, ProgramCommand},
     getters::{
-        get_account_payer, get_all_operators_in_ncn, get_all_tickets, get_all_vaults_in_ncn,
-        get_ncn, get_ncn_operator_state, get_ncn_program_config, get_ncn_vault_ticket,
-        get_operator_snapshot, get_snapshot, get_total_epoch_rent_cost, get_vault_ncn_ticket,
-        get_vault_operator_delegation, get_vault_registry, get_vote_counter,
+        get_account_payer, get_all_ncn_operator_accounts, get_all_operators_in_ncn,
+        get_all_tickets, get_all_vaults_in_ncn, get_ncn, get_ncn_operator_state,
+        get_ncn_program_config, get_ncn_vault_ticket, get_operator_snapshot, get_snapshot,
+        get_total_epoch_rent_cost, get_vault_ncn_ticket, get_vault_operator_delegation,
+        get_vault_registry, get_vote_counter,
     },
     instructions::{
         admin_create_config, admin_fund_account_payer, admin_register_st_mint, admin_set_new_admin,
@@ -48,7 +49,6 @@ pub struct CliHandler {
     pub rpc_client: RpcClient,
     pub retries: u64,
     pub priority_fee_micro_lamports: u64,
-    pub open_weather_api_key: Option<String>,
 }
 
 impl CliHandler {
@@ -74,8 +74,6 @@ impl CliHandler {
 
         let token_program_id = Pubkey::from_str(&args.token_program_id)?;
 
-        let open_weather_api_key = args.open_weather_api_key.clone();
-
         let ncn = args
             .ncn
             .clone()
@@ -100,7 +98,6 @@ impl CliHandler {
             rpc_client,
             retries: args.transaction_retries,
             priority_fee_micro_lamports: args.priority_fee_micro_lamports,
-            open_weather_api_key,
         };
 
         handler.epoch = {
@@ -148,12 +145,6 @@ impl CliHandler {
         };
 
         Ok(config)
-    }
-
-    pub fn open_weather_api_key(&self) -> Result<String> {
-        self.open_weather_api_key.clone().ok_or_else(|| {
-            anyhow!("No Open Weather API key provided. Set the OPENWEATHER_API_KEY environment variable or pass it as an argument.")
-        })
     }
 
     pub fn keypair(&self) -> Result<&Keypair> {
@@ -455,6 +446,26 @@ impl CliHandler {
             ProgramCommand::GetAllVaultsInNcn {} => {
                 let vaults = get_all_vaults_in_ncn(self).await?;
                 info!("Vaults: {:?}", vaults);
+                Ok(())
+            }
+            ProgramCommand::GetAllNCNOperatorAccounts {} => {
+                let ncn_operator_accounts = get_all_ncn_operator_accounts(self).await?;
+
+                info!(
+                    "Found {} NCN Operator Accounts:",
+                    ncn_operator_accounts.len()
+                );
+                for (address, account) in ncn_operator_accounts.iter() {
+                    info!("NCN Operator Account Address: {}", address);
+                    info!("  NCN: {}", account.ncn());
+                    info!("  Operator: {}", account.operator_pubkey());
+                    info!("  G1 Pubkey: {}", hex::encode(account.g1_pubkey()));
+                    info!("  G2 Pubkey: {}", hex::encode(account.g2_pubkey()));
+                    info!("  NCN Operator Index: {}", account.ncn_operator_index());
+                    info!("  Slot Registered: {}", account.slot_registered());
+                    info!("  Bump: {}", account.bump);
+                    info!("---");
+                }
                 Ok(())
             }
             ProgramCommand::GetAllTickets {} => {

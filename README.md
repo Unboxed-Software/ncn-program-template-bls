@@ -46,7 +46,6 @@
   - [Potential Security Risks](#potential-security-risks)
 - [📈 Performance & Scalability](#-performance--scalability)
   - [Current Limitations](#current-limitations)
-- [Optimization Opportunities and Development TODOs](#optimization-opportunities-and-development-todos)
 - [The command that you need to run to get started](#the-command-that-you-need-to-run-to-get-started)
 
 ### 🎯 Core Purpose
@@ -1074,8 +1073,7 @@ solana program close --buffers
 ### Potential Security Risks
 
 1. **Key Management**: BLS private keys must be securely stored
-2. **Vote Counter Synchronization**: Operators must coordinate to sign the correct counter value
-3. **Counter Overflow**: Theoretical risk after 2^64 votes (astronomically unlikely)
+2. **Counter Overflow**: Theoretical risk after 2^64 votes (astronomically unlikely)
 
 ## 📈 Performance & Scalability
 
@@ -1085,7 +1083,6 @@ solana program close --buffers
 - **Maximum Vaults**: Currently limited to 1 vault per registry
 - **Signature Verification**: On-chain BLS verification costs
 - **Storage Costs**: Large account sizes for snapshots
-- **Compute Units**: Complex cryptographic operations
 
 ## The command that you need to run to get started
 
@@ -1099,16 +1096,24 @@ cargo build-sbf
 cargo build --bin ncn-program-bls-cli
 ```
 
-TODO: add a point regarding updating the .env with proper values
+### 2. Setup environment variables
 
-### 2. Deploy the Program to localnet
+Make sure you have your .env file with the proper environment variables
+
+```bash
+mv .env.example .env
+```
+
+Now inside .env, make sure to set the right NCN address which you can find in `local-test-validator/keys/ncn/ncn_pubkey.text`, and the right `VAULT` address which you can find in `local-test-validator/keys/vault/vault_address.txt`
+
+### 3. Deploy the Program to localnet
 
 ```bash
 # Deploy to local test validator or mainnet
 solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_program.so
 ```
 
-### 3. Configure the NCN Program
+### 4. Configure the NCN Program
 
 ```bash
 # Fund the payer account with 20 SOL for transaction fees
@@ -1133,14 +1138,11 @@ solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_
 # Register vaults that are pending approval and add them to the registry
 ./target/debug/ncn-program-bls-cli crank-register-vaults
 
-```
-
-### 5. Initialize Snapshot System
-
-```bash
 # Create the snapshot account
 ./target/debug/ncn-program-bls-cli create-snapshot
 ```
+
+### 5. Register Operators
 
 ```bash
 # Register operators with BLS keypairs (repeat for all operators)
@@ -1162,7 +1164,7 @@ solana program deploy --program-id ./ncn_program-keypair.json target/deploy/ncn_
 ./target/debug/ncn-program-bls-cli crank-snapshot
 ```
 
-### 8. Generate a signature
+### 7. Generate a signature
 
 ```bash
 # Generate signature using current vote counter as message
@@ -1175,7 +1177,7 @@ ncn-program-bls-cli generate-vote-signature \
   --message <32_BYTE_HEX_MESSAGE>
 ```
 
-### 9. Aggregate the signatures
+### 8. Aggregate the signatures
 
 ```bash
 ncn-program-bls-cli aggregate-signatures \
@@ -1185,7 +1187,7 @@ ncn-program-bls-cli aggregate-signatures \
   --signers-bitmap <HEX_BITMAP>
 ```
 
-### 10. Cast Vote
+### 9. Cast Vote
 
 Submit an aggregated vote to the NCN program.
 
@@ -1196,34 +1198,3 @@ ncn-program-bls-cli cast-vote \
   --signers-bitmap <HEX_BITMAP> \
   [--message <32_BYTE_HEX_MESSAGE>]
 ```
-
-## Optimization Opportunities and Development TODOs
-
-### Completed Optimizations ✅
-
-- [x] Split Operator_Registry into multiple accounts, one PDA per operator to be able to add as much metadata as needed.
-- [x] Remove weight table since it is only one vault, no need to init and set weights every epoch.
-- [x] Uncouple epoch_snapshot account from epoch_state account and weight_table account.
-- [x] Remove epoch_state dependency for operator snapshots, merge with epoch_snapshot account.
-- [x] Check epoch_state logic, especially the tally of operator_snapshot, and check what will happen if you snapshot the same operator more than once.
-- [x] Remove epoch_state, epoch_marker, and weight_table accounts
-- [x] CLI: crank-update-all-vaults Removed
-- [x] CLI: update-vault fixed to work and update only one vault.
-- [x] CLI: run-keeper rewritten to support rolling over snapshot, and simple logic
-- [x] CLI: Vote command re-written to support multi-sig aggregation.
-- [x] CLI: sign message command, you provide a bn-128 privkey, and a message and it will sign it, if you don't provide a message it will sign the current vote counter value.
-- [x] CLI: aggregate signatures command, you provide multiple signatures, g1 pubkeys, g2 pubkeys and a bitmap of who signed and it will aggregate them into one signature and one aggregated g2 pubkey.
-- [x] CLI: Register operator now generates random G1, G2 pubkeys and BN128 privkey
-- [x] CLI: Register operator can take g1 and g2 pubkeys as input if you want to provide your own.
-- [x] CLI: add crankSnapshotUnupdated command: only snapshot operators that haven't been snapshotted yet for the current epoch.
-- [x] CLI: rename epoch_snapshot to snapshot
-- [x] CLI: rename epoch_snapshot to snapshot
-- [x] CLI: more fixes and tweaks.
-- [x] docs update and code cleanup and more
-- [x] Check to see if we are changing the snapshot if the operator changes it's g1 pubkey using upadte_bn128 keys ix.
-- [x] Registering an operator now is being done using two pairing equations, it could all be done by only one by merging the two equations.
-
-### Remaining Optimizations 🔄
-
-- [ ] Since it is only one vault, the vault registry is not needed, consider removing it.
-- [ ] Instead of having two Instructions (`RegisterOperator` and `InitOperatorSnapshot`) they could be only one
