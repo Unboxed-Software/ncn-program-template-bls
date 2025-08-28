@@ -30,6 +30,10 @@ pub struct NCNOperatorAccount {
     pub ncn_operator_index: PodU64,
     /// The slot the operator was registered
     pub slot_registered: PodU64,
+    /// The IP address of the operator (IPv4 format)
+    pub ip_address: [u8; 16],
+    /// The socket of the operator
+    pub socket: [u8; 16],
     /// The bump seed for the PDA
     pub bump: u8,
     /// Reserved for future use
@@ -63,11 +67,14 @@ impl NCNOperatorAccount {
             g2_pubkey: *g2_pubkey,
             ncn_operator_index: PodU64::from(ncn_operator_index),
             slot_registered: PodU64::from(slot_registered),
+            ip_address: [0; 16],
+            socket: [0; 16],
             bump,
             reserved: [0; 199],
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
         ncn: &Pubkey,
@@ -76,6 +83,8 @@ impl NCNOperatorAccount {
         g2_pubkey: &[u8; 64],
         ncn_operator_index: u64,
         slot_registered: u64,
+        ip_address: [u8; 16],
+        socket: [u8; 16],
         bump: u8,
     ) {
         self.ncn = *ncn;
@@ -84,6 +93,8 @@ impl NCNOperatorAccount {
         self.g2_pubkey = *g2_pubkey;
         self.ncn_operator_index = PodU64::from(ncn_operator_index);
         self.slot_registered = PodU64::from(slot_registered);
+        self.ip_address = ip_address;
+        self.socket = socket;
         self.bump = bump;
         self.reserved = [0; 199];
     }
@@ -152,6 +163,14 @@ impl NCNOperatorAccount {
         self.slot_registered() == Self::EMPTY_SLOT_REGISTERED
     }
 
+    pub fn ip_address(&self) -> &[u8; 16] {
+        &self.ip_address
+    }
+
+    pub fn socket(&self) -> &[u8; 16] {
+        &self.socket
+    }
+
     /// Verify that the G1 and G2 keys are related by verifying the pairing
     pub fn verify_keypair(&self) -> Result<(), ProgramError> {
         let g1_compressed = G1CompressedPoint::from(self.g1_pubkey);
@@ -197,6 +216,17 @@ impl NCNOperatorAccount {
         self.g2_pubkey = *new_g2_pubkey;
         self.slot_registered = PodU64::from(current_slot);
 
+        Ok(())
+    }
+
+    /// Update the IP address and socket for this ncn operator account
+    pub fn update_ip_socket(
+        &mut self,
+        new_ip_address: [u8; 16],
+        new_socket: [u8; 16],
+    ) -> Result<(), ProgramError> {
+        self.ip_address = new_ip_address;
+        self.socket = new_socket;
         Ok(())
     }
 }
@@ -376,5 +406,42 @@ mod tests {
         assert!(ncn_operator_account
             .update_keys(&g1_compressed2.0, &g2_compressed_wrong.0, 300)
             .is_err());
+    }
+
+    #[test]
+    #[cfg(not(target_os = "solana"))]
+    fn test_update_ip_socket() {
+        let ncn = Pubkey::new_unique();
+        let operator = Pubkey::new_unique();
+
+        // Generate valid keypair
+        let private_key = PrivKey::from_random();
+        let g1_compressed = G1CompressedPoint::try_from(private_key).unwrap();
+        let g2_compressed = G2CompressedPoint::try_from(&private_key).unwrap();
+
+        let mut ncn_operator_account = NCNOperatorAccount::new(
+            &ncn,
+            &operator,
+            &g1_compressed.0,
+            &g2_compressed.0,
+            0,
+            100,
+            255,
+        );
+
+        // Test initial values (should be zeros)
+        assert_eq!(ncn_operator_account.ip_address(), &[0; 16]);
+        assert_eq!(ncn_operator_account.socket(), &[0; 16]);
+
+        // Test updating IP and socket
+        let new_ip_address = [192, 168, 1, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let new_socket = [80, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        assert!(ncn_operator_account
+            .update_ip_socket(new_ip_address, new_socket)
+            .is_ok());
+
+        assert_eq!(ncn_operator_account.ip_address(), &new_ip_address);
+        assert_eq!(ncn_operator_account.socket(), &new_socket);
     }
 }

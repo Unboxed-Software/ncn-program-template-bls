@@ -48,6 +48,8 @@ export type NCNOperatorAccount = {
   g2Pubkey: ReadonlyUint8Array;
   ncnOperatorIndex: bigint;
   slotRegistered: bigint;
+  ipAddress: Array<number>;
+  socket: Array<number>;
   bump: number;
   reserved: Array<number>;
 };
@@ -60,6 +62,8 @@ export type NCNOperatorAccountArgs = {
   g2Pubkey: ReadonlyUint8Array;
   ncnOperatorIndex: number | bigint;
   slotRegistered: number | bigint;
+  ipAddress: Array<number>;
+  socket: Array<number>;
   bump: number;
   reserved: Array<number>;
 };
@@ -73,6 +77,8 @@ export function getNCNOperatorAccountEncoder(): Encoder<NCNOperatorAccountArgs> 
     ['g2Pubkey', fixEncoderSize(getBytesEncoder(), 64)],
     ['ncnOperatorIndex', getU64Encoder()],
     ['slotRegistered', getU64Encoder()],
+    ['ipAddress', getArrayEncoder(getU8Encoder(), { size: 16 })],
+    ['socket', getArrayEncoder(getU8Encoder(), { size: 16 })],
     ['bump', getU8Encoder()],
     ['reserved', getArrayEncoder(getU8Encoder(), { size: 199 })],
   ]);
@@ -87,6 +93,8 @@ export function getNCNOperatorAccountDecoder(): Decoder<NCNOperatorAccount> {
     ['g2Pubkey', fixDecoderSize(getBytesDecoder(), 64)],
     ['ncnOperatorIndex', getU64Decoder()],
     ['slotRegistered', getU64Decoder()],
+    ['ipAddress', getArrayDecoder(getU8Decoder(), { size: 16 })],
+    ['socket', getArrayDecoder(getU8Decoder(), { size: 16 })],
     ['bump', getU8Decoder()],
     ['reserved', getArrayDecoder(getU8Decoder(), { size: 199 })],
   ]);

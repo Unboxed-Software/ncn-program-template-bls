@@ -2,8 +2,7 @@ use jito_bytemuck::{AccountDeserialize, Discriminator};
 use jito_jsm_core::loader::load_system_program;
 use jito_restaking_core::ncn::Ncn;
 use ncn_program_core::{
-    account_payer::AccountPayer, config::Config, error::NCNProgramError, snapshot::Snapshot,
-    utils::get_new_size,
+    account_payer::AccountPayer, config::Config, snapshot::Snapshot, utils::get_new_size,
 };
 use solana_program::{
     account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, msg,

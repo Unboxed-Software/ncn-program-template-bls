@@ -48,6 +48,8 @@ pub fn process_register_operator(
     g1_pubkey: [u8; G1_COMPRESSED_POINT_SIZE],
     g2_pubkey: [u8; G2_COMPRESSED_POINT_SIZE],
     signature: [u8; 64],
+    ip_address: [u8; 16],
+    socket: [u8; 16],
 ) -> ProgramResult {
     let [config, ncn_operator_account, ncn, operator, operator_admin, ncn_operator_state, snapshot, restaking_config, account_payer, system_program] =
         accounts
@@ -197,6 +199,8 @@ pub fn process_register_operator(
         &g2_pubkey,
         ncn_operator_index,
         slot,
+        ip_address,
+        socket,
         ncn_operator_account_bump,
     );
 

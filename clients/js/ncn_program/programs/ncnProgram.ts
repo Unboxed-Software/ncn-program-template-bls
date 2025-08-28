@@ -26,6 +26,7 @@ import {
   type ParsedRegisterVaultInstruction,
   type ParsedSnapshotVaultOperatorDelegationInstruction,
   type ParsedUpdateOperatorBN128KeysInstruction,
+  type ParsedUpdateOperatorIpSocketInstruction,
 } from '../instructions';
 
 export const NCN_PROGRAM_PROGRAM_ADDRESS =
@@ -45,6 +46,7 @@ export enum NcnProgramInstruction {
   RegisterVault,
   RegisterOperator,
   UpdateOperatorBN128Keys,
+  UpdateOperatorIpSocket,
   InitializeVoteCounter,
   InitializeSnapshot,
   ReallocSnapshot,
@@ -75,27 +77,30 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.UpdateOperatorBN128Keys;
   }
   if (containsBytes(data, getU8Encoder().encode(5), 0)) {
-    return NcnProgramInstruction.InitializeVoteCounter;
+    return NcnProgramInstruction.UpdateOperatorIpSocket;
   }
   if (containsBytes(data, getU8Encoder().encode(6), 0)) {
-    return NcnProgramInstruction.InitializeSnapshot;
+    return NcnProgramInstruction.InitializeVoteCounter;
   }
   if (containsBytes(data, getU8Encoder().encode(7), 0)) {
-    return NcnProgramInstruction.ReallocSnapshot;
+    return NcnProgramInstruction.InitializeSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(8), 0)) {
-    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
+    return NcnProgramInstruction.ReallocSnapshot;
   }
   if (containsBytes(data, getU8Encoder().encode(9), 0)) {
-    return NcnProgramInstruction.CastVote;
+    return NcnProgramInstruction.SnapshotVaultOperatorDelegation;
   }
   if (containsBytes(data, getU8Encoder().encode(10), 0)) {
-    return NcnProgramInstruction.AdminSetParameters;
+    return NcnProgramInstruction.CastVote;
   }
   if (containsBytes(data, getU8Encoder().encode(11), 0)) {
-    return NcnProgramInstruction.AdminSetNewAdmin;
+    return NcnProgramInstruction.AdminSetParameters;
   }
   if (containsBytes(data, getU8Encoder().encode(12), 0)) {
+    return NcnProgramInstruction.AdminSetNewAdmin;
+  }
+  if (containsBytes(data, getU8Encoder().encode(13), 0)) {
     return NcnProgramInstruction.AdminRegisterStMint;
   }
   throw new Error(
@@ -121,6 +126,9 @@ export type ParsedNcnProgramInstruction<
   | ({
       instructionType: NcnProgramInstruction.UpdateOperatorBN128Keys;
     } & ParsedUpdateOperatorBN128KeysInstruction<TProgram>)
+  | ({
+      instructionType: NcnProgramInstruction.UpdateOperatorIpSocket;
+    } & ParsedUpdateOperatorIpSocketInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.InitializeVoteCounter;
     } & ParsedInitializeVoteCounterInstruction<TProgram>)

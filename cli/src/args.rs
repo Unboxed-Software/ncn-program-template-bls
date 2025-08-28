@@ -215,6 +215,18 @@ pub enum ProgramCommand {
         keys_file: String,
     },
 
+    UpdateOperatorIpSocket {
+        #[arg(long, help = "Operator address")]
+        operator: String,
+        #[arg(
+            long,
+            help = "IPv4 address in dotted decimal notation (e.g., 192.168.1.100)"
+        )]
+        ip_address: String,
+        #[arg(long, help = "Port number for the socket")]
+        port: u16,
+    },
+
     CreateSnapshot,
 
     SnapshotVaultOperatorDelegation {

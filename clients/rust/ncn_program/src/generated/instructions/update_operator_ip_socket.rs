@@ -9,41 +9,53 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct AdminSetParameters {
+pub struct UpdateOperatorIpSocket {
     pub config: solana_program::pubkey::Pubkey,
+
+    pub ncn_operator_account: solana_program::pubkey::Pubkey,
 
     pub ncn: solana_program::pubkey::Pubkey,
 
-    pub ncn_admin: solana_program::pubkey::Pubkey,
+    pub operator: solana_program::pubkey::Pubkey,
+
+    pub operator_admin: solana_program::pubkey::Pubkey,
 }
 
-impl AdminSetParameters {
+impl UpdateOperatorIpSocket {
     pub fn instruction(
         &self,
-        args: AdminSetParametersInstructionArgs,
+        args: UpdateOperatorIpSocketInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: AdminSetParametersInstructionArgs,
+        args: UpdateOperatorIpSocketInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.config,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.ncn_operator_account,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.ncn, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.ncn_admin,
+            self.operator,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.operator_admin,
             true,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = AdminSetParametersInstructionData::new()
+        let mut data = UpdateOperatorIpSocketInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -58,17 +70,17 @@ impl AdminSetParameters {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct AdminSetParametersInstructionData {
+pub struct UpdateOperatorIpSocketInstructionData {
     discriminator: u8,
 }
 
-impl AdminSetParametersInstructionData {
+impl UpdateOperatorIpSocketInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 11 }
+        Self { discriminator: 5 }
     }
 }
 
-impl Default for AdminSetParametersInstructionData {
+impl Default for UpdateOperatorIpSocketInstructionData {
     fn default() -> Self {
         Self::new()
     }
@@ -76,35 +88,33 @@ impl Default for AdminSetParametersInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct AdminSetParametersInstructionArgs {
-    pub starting_valid_epoch: Option<u64>,
-    pub epochs_before_stall: Option<u64>,
-    pub epochs_after_consensus_before_close: Option<u64>,
-    pub valid_slots_after_consensus: Option<u64>,
-    pub minimum_stake: Option<u128>,
+pub struct UpdateOperatorIpSocketInstructionArgs {
+    pub ip_address: [u8; 16],
+    pub socket: [u8; 16],
 }
 
-/// Instruction builder for `AdminSetParameters`.
+/// Instruction builder for `UpdateOperatorIpSocket`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` config
-///   1. `[]` ncn
-///   2. `[signer]` ncn_admin
+///   0. `[]` config
+///   1. `[writable]` ncn_operator_account
+///   2. `[]` ncn
+///   3. `[]` operator
+///   4. `[signer]` operator_admin
 #[derive(Clone, Debug, Default)]
-pub struct AdminSetParametersBuilder {
+pub struct UpdateOperatorIpSocketBuilder {
     config: Option<solana_program::pubkey::Pubkey>,
+    ncn_operator_account: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
-    ncn_admin: Option<solana_program::pubkey::Pubkey>,
-    starting_valid_epoch: Option<u64>,
-    epochs_before_stall: Option<u64>,
-    epochs_after_consensus_before_close: Option<u64>,
-    valid_slots_after_consensus: Option<u64>,
-    minimum_stake: Option<u128>,
+    operator: Option<solana_program::pubkey::Pubkey>,
+    operator_admin: Option<solana_program::pubkey::Pubkey>,
+    ip_address: Option<[u8; 16]>,
+    socket: Option<[u8; 16]>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl AdminSetParametersBuilder {
+impl UpdateOperatorIpSocketBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -114,46 +124,36 @@ impl AdminSetParametersBuilder {
         self
     }
     #[inline(always)]
+    pub fn ncn_operator_account(
+        &mut self,
+        ncn_operator_account: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.ncn_operator_account = Some(ncn_operator_account);
+        self
+    }
+    #[inline(always)]
     pub fn ncn(&mut self, ncn: solana_program::pubkey::Pubkey) -> &mut Self {
         self.ncn = Some(ncn);
         self
     }
     #[inline(always)]
-    pub fn ncn_admin(&mut self, ncn_admin: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.ncn_admin = Some(ncn_admin);
+    pub fn operator(&mut self, operator: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.operator = Some(operator);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn starting_valid_epoch(&mut self, starting_valid_epoch: u64) -> &mut Self {
-        self.starting_valid_epoch = Some(starting_valid_epoch);
+    pub fn operator_admin(&mut self, operator_admin: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.operator_admin = Some(operator_admin);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn epochs_before_stall(&mut self, epochs_before_stall: u64) -> &mut Self {
-        self.epochs_before_stall = Some(epochs_before_stall);
+    pub fn ip_address(&mut self, ip_address: [u8; 16]) -> &mut Self {
+        self.ip_address = Some(ip_address);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn epochs_after_consensus_before_close(
-        &mut self,
-        epochs_after_consensus_before_close: u64,
-    ) -> &mut Self {
-        self.epochs_after_consensus_before_close = Some(epochs_after_consensus_before_close);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn valid_slots_after_consensus(&mut self, valid_slots_after_consensus: u64) -> &mut Self {
-        self.valid_slots_after_consensus = Some(valid_slots_after_consensus);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn minimum_stake(&mut self, minimum_stake: u128) -> &mut Self {
-        self.minimum_stake = Some(minimum_stake);
+    pub fn socket(&mut self, socket: [u8; 16]) -> &mut Self {
+        self.socket = Some(socket);
         self
     }
     /// Add an additional account to the instruction.
@@ -176,57 +176,68 @@ impl AdminSetParametersBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = AdminSetParameters {
+        let accounts = UpdateOperatorIpSocket {
             config: self.config.expect("config is not set"),
+            ncn_operator_account: self
+                .ncn_operator_account
+                .expect("ncn_operator_account is not set"),
             ncn: self.ncn.expect("ncn is not set"),
-            ncn_admin: self.ncn_admin.expect("ncn_admin is not set"),
+            operator: self.operator.expect("operator is not set"),
+            operator_admin: self.operator_admin.expect("operator_admin is not set"),
         };
-        let args = AdminSetParametersInstructionArgs {
-            starting_valid_epoch: self.starting_valid_epoch.clone(),
-            epochs_before_stall: self.epochs_before_stall.clone(),
-            epochs_after_consensus_before_close: self.epochs_after_consensus_before_close.clone(),
-            valid_slots_after_consensus: self.valid_slots_after_consensus.clone(),
-            minimum_stake: self.minimum_stake.clone(),
+        let args = UpdateOperatorIpSocketInstructionArgs {
+            ip_address: self.ip_address.clone().expect("ip_address is not set"),
+            socket: self.socket.clone().expect("socket is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
-/// `admin_set_parameters` CPI accounts.
-pub struct AdminSetParametersCpiAccounts<'a, 'b> {
+/// `update_operator_ip_socket` CPI accounts.
+pub struct UpdateOperatorIpSocketCpiAccounts<'a, 'b> {
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub ncn_operator_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_admin: &'b solana_program::account_info::AccountInfo<'a>,
+    pub operator: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `admin_set_parameters` CPI instruction.
-pub struct AdminSetParametersCpi<'a, 'b> {
+/// `update_operator_ip_socket` CPI instruction.
+pub struct UpdateOperatorIpSocketCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub ncn_operator_account: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub ncn: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub ncn_admin: &'b solana_program::account_info::AccountInfo<'a>,
+    pub operator: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: AdminSetParametersInstructionArgs,
+    pub __args: UpdateOperatorIpSocketInstructionArgs,
 }
 
-impl<'a, 'b> AdminSetParametersCpi<'a, 'b> {
+impl<'a, 'b> UpdateOperatorIpSocketCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: AdminSetParametersCpiAccounts<'a, 'b>,
-        args: AdminSetParametersInstructionArgs,
+        accounts: UpdateOperatorIpSocketCpiAccounts<'a, 'b>,
+        args: UpdateOperatorIpSocketInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
             config: accounts.config,
+            ncn_operator_account: accounts.ncn_operator_account,
             ncn: accounts.ncn,
-            ncn_admin: accounts.ncn_admin,
+            operator: accounts.operator,
+            operator_admin: accounts.operator_admin,
             __args: args,
         }
     }
@@ -263,9 +274,13 @@ impl<'a, 'b> AdminSetParametersCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.config.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.ncn_operator_account.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -273,7 +288,11 @@ impl<'a, 'b> AdminSetParametersCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.ncn_admin.key,
+            *self.operator.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.operator_admin.key,
             true,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -283,7 +302,7 @@ impl<'a, 'b> AdminSetParametersCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = AdminSetParametersInstructionData::new()
+        let mut data = UpdateOperatorIpSocketInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
@@ -294,11 +313,13 @@ impl<'a, 'b> AdminSetParametersCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.config.clone());
+        account_infos.push(self.ncn_operator_account.clone());
         account_infos.push(self.ncn.clone());
-        account_infos.push(self.ncn_admin.clone());
+        account_infos.push(self.operator.clone());
+        account_infos.push(self.operator_admin.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -311,30 +332,31 @@ impl<'a, 'b> AdminSetParametersCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `AdminSetParameters` via CPI.
+/// Instruction builder for `UpdateOperatorIpSocket` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` config
-///   1. `[]` ncn
-///   2. `[signer]` ncn_admin
+///   0. `[]` config
+///   1. `[writable]` ncn_operator_account
+///   2. `[]` ncn
+///   3. `[]` operator
+///   4. `[signer]` operator_admin
 #[derive(Clone, Debug)]
-pub struct AdminSetParametersCpiBuilder<'a, 'b> {
-    instruction: Box<AdminSetParametersCpiBuilderInstruction<'a, 'b>>,
+pub struct UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
+    instruction: Box<UpdateOperatorIpSocketCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> AdminSetParametersCpiBuilder<'a, 'b> {
+impl<'a, 'b> UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(AdminSetParametersCpiBuilderInstruction {
+        let instruction = Box::new(UpdateOperatorIpSocketCpiBuilderInstruction {
             __program: program,
             config: None,
+            ncn_operator_account: None,
             ncn: None,
-            ncn_admin: None,
-            starting_valid_epoch: None,
-            epochs_before_stall: None,
-            epochs_after_consensus_before_close: None,
-            valid_slots_after_consensus: None,
-            minimum_stake: None,
+            operator: None,
+            operator_admin: None,
+            ip_address: None,
+            socket: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -348,50 +370,42 @@ impl<'a, 'b> AdminSetParametersCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn ncn_operator_account(
+        &mut self,
+        ncn_operator_account: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.ncn_operator_account = Some(ncn_operator_account);
+        self
+    }
+    #[inline(always)]
     pub fn ncn(&mut self, ncn: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.ncn = Some(ncn);
         self
     }
     #[inline(always)]
-    pub fn ncn_admin(
+    pub fn operator(
         &mut self,
-        ncn_admin: &'b solana_program::account_info::AccountInfo<'a>,
+        operator: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.ncn_admin = Some(ncn_admin);
+        self.instruction.operator = Some(operator);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn starting_valid_epoch(&mut self, starting_valid_epoch: u64) -> &mut Self {
-        self.instruction.starting_valid_epoch = Some(starting_valid_epoch);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn epochs_before_stall(&mut self, epochs_before_stall: u64) -> &mut Self {
-        self.instruction.epochs_before_stall = Some(epochs_before_stall);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn epochs_after_consensus_before_close(
+    pub fn operator_admin(
         &mut self,
-        epochs_after_consensus_before_close: u64,
+        operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.epochs_after_consensus_before_close =
-            Some(epochs_after_consensus_before_close);
+        self.instruction.operator_admin = Some(operator_admin);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn valid_slots_after_consensus(&mut self, valid_slots_after_consensus: u64) -> &mut Self {
-        self.instruction.valid_slots_after_consensus = Some(valid_slots_after_consensus);
+    pub fn ip_address(&mut self, ip_address: [u8; 16]) -> &mut Self {
+        self.instruction.ip_address = Some(ip_address);
         self
     }
-    /// `[optional argument]`
     #[inline(always)]
-    pub fn minimum_stake(&mut self, minimum_stake: u128) -> &mut Self {
-        self.instruction.minimum_stake = Some(minimum_stake);
+    pub fn socket(&mut self, socket: [u8; 16]) -> &mut Self {
+        self.instruction.socket = Some(socket);
         self
     }
     /// Add an additional account to the instruction.
@@ -435,24 +449,32 @@ impl<'a, 'b> AdminSetParametersCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = AdminSetParametersInstructionArgs {
-            starting_valid_epoch: self.instruction.starting_valid_epoch.clone(),
-            epochs_before_stall: self.instruction.epochs_before_stall.clone(),
-            epochs_after_consensus_before_close: self
+        let args = UpdateOperatorIpSocketInstructionArgs {
+            ip_address: self
                 .instruction
-                .epochs_after_consensus_before_close
-                .clone(),
-            valid_slots_after_consensus: self.instruction.valid_slots_after_consensus.clone(),
-            minimum_stake: self.instruction.minimum_stake.clone(),
+                .ip_address
+                .clone()
+                .expect("ip_address is not set"),
+            socket: self.instruction.socket.clone().expect("socket is not set"),
         };
-        let instruction = AdminSetParametersCpi {
+        let instruction = UpdateOperatorIpSocketCpi {
             __program: self.instruction.__program,
 
             config: self.instruction.config.expect("config is not set"),
 
+            ncn_operator_account: self
+                .instruction
+                .ncn_operator_account
+                .expect("ncn_operator_account is not set"),
+
             ncn: self.instruction.ncn.expect("ncn is not set"),
 
-            ncn_admin: self.instruction.ncn_admin.expect("ncn_admin is not set"),
+            operator: self.instruction.operator.expect("operator is not set"),
+
+            operator_admin: self
+                .instruction
+                .operator_admin
+                .expect("operator_admin is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -463,16 +485,15 @@ impl<'a, 'b> AdminSetParametersCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct AdminSetParametersCpiBuilderInstruction<'a, 'b> {
+struct UpdateOperatorIpSocketCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ncn_operator_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ncn_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    starting_valid_epoch: Option<u64>,
-    epochs_before_stall: Option<u64>,
-    epochs_after_consensus_before_close: Option<u64>,
-    valid_slots_after_consensus: Option<u64>,
-    minimum_stake: Option<u128>,
+    operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    operator_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ip_address: Option<[u8; 16]>,
+    socket: Option<[u8; 16]>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,
