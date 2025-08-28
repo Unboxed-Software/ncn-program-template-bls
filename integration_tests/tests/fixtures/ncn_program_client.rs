@@ -12,7 +12,7 @@ use ncn_program_client::{
         CastVoteBuilder, InitializeConfigBuilder, InitializeSnapshotBuilder,
         InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder, ReallocSnapshotBuilder,
         RegisterOperatorBuilder, RegisterVaultBuilder, SnapshotVaultOperatorDelegationBuilder,
-        UpdateOperatorBN128KeysBuilder, UpdateOperatorIpSocketBuilder,
+        UpdateOperatorBN128KeysBuilder, UpdateOperatorIpPortBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -876,51 +876,51 @@ impl NCNProgramClient {
         .await
     }
 
-    /// Updates an operator's IP address and socket with simplified parameters
-    pub async fn do_update_operator_ip_socket(
+    /// Updates an operator's IP address and port with simplified parameters
+    pub async fn do_update_operator_ip_port(
         &mut self,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
-        ip_address: [u8; 16],
-        socket: [u8; 16],
+        ip_address: [u8; 4],
+        port: u16,
     ) -> TestResult<()> {
         let config = NcnConfig::find_program_address(&ncn_program::id(), &ncn).0;
         let ncn_operator_account =
             NCNOperatorAccount::find_program_address(&ncn_program::id(), &ncn, &operator_pubkey).0;
 
-        self.update_operator_ip_socket(
+        self.update_operator_ip_port(
             config,
             ncn_operator_account,
             ncn,
             operator_pubkey,
             operator_admin,
             ip_address,
-            socket,
+            port,
         )
         .await
     }
 
-    /// Updates an operator's IP address and socket with full parameter control
+    /// Updates an operator's IP address and port with full parameter control
     #[allow(clippy::too_many_arguments)]
-    pub async fn update_operator_ip_socket(
+    pub async fn update_operator_ip_port(
         &mut self,
         config: Pubkey,
         ncn_operator_account: Pubkey,
         ncn: Pubkey,
         operator_pubkey: Pubkey,
         operator_admin: &Keypair,
-        ip_address: [u8; 16],
-        socket: [u8; 16],
+        ip_address: [u8; 4],
+        port: u16,
     ) -> TestResult<()> {
-        let ix = UpdateOperatorIpSocketBuilder::new()
+        let ix = UpdateOperatorIpPortBuilder::new()
             .config(config)
             .ncn_operator_account(ncn_operator_account)
             .ncn(ncn)
             .operator(operator_pubkey)
             .operator_admin(operator_admin.pubkey())
             .ip_address(ip_address)
-            .socket(socket)
+            .port(port)
             .instruction();
 
         let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(1_000_000);

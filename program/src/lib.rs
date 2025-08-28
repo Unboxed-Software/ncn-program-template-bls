@@ -14,7 +14,7 @@ mod register_operator;
 mod register_vault;
 mod snapshot_vault_operator_delegation;
 mod update_operator_bn128_keys;
-mod update_operator_ip_socket;
+mod update_operator_ip_port;
 
 use admin_set_new_admin::process_admin_set_new_admin;
 use borsh::BorshDeserialize;
@@ -38,7 +38,7 @@ use crate::{
     register_vault::process_register_vault,
     snapshot_vault_operator_delegation::process_snapshot_vault_operator_delegation,
     update_operator_bn128_keys::process_update_operator_bn128_keys,
-    update_operator_ip_socket::process_update_operator_ip_socket,
+    update_operator_ip_port::process_update_operator_ip_port,
 };
 
 declare_id!("3fKQSi6VzzDUJSmeksS8qK6RB3Gs3UoZWtsQD3xagy45");
@@ -107,7 +107,7 @@ pub fn process_instruction(
         } => {
             msg!("Instruction: RegisterOperator");
             process_register_operator(
-                program_id, accounts, g1_pubkey, g2_pubkey, signature, [0; 16], [0; 16],
+                program_id, accounts, g1_pubkey, g2_pubkey, signature, [0; 4], 0,
             )
         }
         NCNProgramInstruction::UpdateOperatorBN128Keys {
@@ -120,9 +120,9 @@ pub fn process_instruction(
                 program_id, accounts, g1_pubkey, g2_pubkey, signature,
             )
         }
-        NCNProgramInstruction::UpdateOperatorIpSocket { ip_address, socket } => {
-            msg!("Instruction: UpdateOperatorIpSocket");
-            process_update_operator_ip_socket(program_id, accounts, ip_address, socket)
+        NCNProgramInstruction::UpdateOperatorIpPort { ip_address, port } => {
+            msg!("Instruction: UpdateOperatorIpPort");
+            process_update_operator_ip_port(program_id, accounts, ip_address, port)
         }
 
         NCNProgramInstruction::InitializeVoteCounter => {

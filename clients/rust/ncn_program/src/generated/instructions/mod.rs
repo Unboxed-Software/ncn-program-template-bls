@@ -18,7 +18,7 @@ pub(crate) mod r#register_operator;
 pub(crate) mod r#register_vault;
 pub(crate) mod r#snapshot_vault_operator_delegation;
 pub(crate) mod r#update_operator_b_n128_keys;
-pub(crate) mod r#update_operator_ip_socket;
+pub(crate) mod r#update_operator_ip_port;
 
 pub use self::r#admin_register_st_mint::*;
 pub use self::r#admin_set_new_admin::*;
@@ -33,4 +33,4 @@ pub use self::r#register_operator::*;
 pub use self::r#register_vault::*;
 pub use self::r#snapshot_vault_operator_delegation::*;
 pub use self::r#update_operator_b_n128_keys::*;
-pub use self::r#update_operator_ip_socket::*;
+pub use self::r#update_operator_ip_port::*;

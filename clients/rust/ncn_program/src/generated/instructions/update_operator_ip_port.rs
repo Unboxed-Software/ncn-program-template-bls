@@ -9,7 +9,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct UpdateOperatorIpSocket {
+pub struct UpdateOperatorIpPort {
     pub config: solana_program::pubkey::Pubkey,
 
     pub ncn_operator_account: solana_program::pubkey::Pubkey,
@@ -21,17 +21,17 @@ pub struct UpdateOperatorIpSocket {
     pub operator_admin: solana_program::pubkey::Pubkey,
 }
 
-impl UpdateOperatorIpSocket {
+impl UpdateOperatorIpPort {
     pub fn instruction(
         &self,
-        args: UpdateOperatorIpSocketInstructionArgs,
+        args: UpdateOperatorIpPortInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: UpdateOperatorIpSocketInstructionArgs,
+        args: UpdateOperatorIpPortInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
@@ -55,7 +55,7 @@ impl UpdateOperatorIpSocket {
             true,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = UpdateOperatorIpSocketInstructionData::new()
+        let mut data = UpdateOperatorIpPortInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -70,17 +70,17 @@ impl UpdateOperatorIpSocket {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct UpdateOperatorIpSocketInstructionData {
+pub struct UpdateOperatorIpPortInstructionData {
     discriminator: u8,
 }
 
-impl UpdateOperatorIpSocketInstructionData {
+impl UpdateOperatorIpPortInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 5 }
     }
 }
 
-impl Default for UpdateOperatorIpSocketInstructionData {
+impl Default for UpdateOperatorIpPortInstructionData {
     fn default() -> Self {
         Self::new()
     }
@@ -88,12 +88,12 @@ impl Default for UpdateOperatorIpSocketInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct UpdateOperatorIpSocketInstructionArgs {
-    pub ip_address: [u8; 16],
-    pub socket: [u8; 16],
+pub struct UpdateOperatorIpPortInstructionArgs {
+    pub ip_address: [u8; 4],
+    pub port: u16,
 }
 
-/// Instruction builder for `UpdateOperatorIpSocket`.
+/// Instruction builder for `UpdateOperatorIpPort`.
 ///
 /// ### Accounts:
 ///
@@ -103,18 +103,18 @@ pub struct UpdateOperatorIpSocketInstructionArgs {
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
 #[derive(Clone, Debug, Default)]
-pub struct UpdateOperatorIpSocketBuilder {
+pub struct UpdateOperatorIpPortBuilder {
     config: Option<solana_program::pubkey::Pubkey>,
     ncn_operator_account: Option<solana_program::pubkey::Pubkey>,
     ncn: Option<solana_program::pubkey::Pubkey>,
     operator: Option<solana_program::pubkey::Pubkey>,
     operator_admin: Option<solana_program::pubkey::Pubkey>,
-    ip_address: Option<[u8; 16]>,
-    socket: Option<[u8; 16]>,
+    ip_address: Option<[u8; 4]>,
+    port: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl UpdateOperatorIpSocketBuilder {
+impl UpdateOperatorIpPortBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -147,13 +147,13 @@ impl UpdateOperatorIpSocketBuilder {
         self
     }
     #[inline(always)]
-    pub fn ip_address(&mut self, ip_address: [u8; 16]) -> &mut Self {
+    pub fn ip_address(&mut self, ip_address: [u8; 4]) -> &mut Self {
         self.ip_address = Some(ip_address);
         self
     }
     #[inline(always)]
-    pub fn socket(&mut self, socket: [u8; 16]) -> &mut Self {
-        self.socket = Some(socket);
+    pub fn port(&mut self, port: u16) -> &mut Self {
+        self.port = Some(port);
         self
     }
     /// Add an additional account to the instruction.
@@ -176,7 +176,7 @@ impl UpdateOperatorIpSocketBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = UpdateOperatorIpSocket {
+        let accounts = UpdateOperatorIpPort {
             config: self.config.expect("config is not set"),
             ncn_operator_account: self
                 .ncn_operator_account
@@ -185,17 +185,17 @@ impl UpdateOperatorIpSocketBuilder {
             operator: self.operator.expect("operator is not set"),
             operator_admin: self.operator_admin.expect("operator_admin is not set"),
         };
-        let args = UpdateOperatorIpSocketInstructionArgs {
+        let args = UpdateOperatorIpPortInstructionArgs {
             ip_address: self.ip_address.clone().expect("ip_address is not set"),
-            socket: self.socket.clone().expect("socket is not set"),
+            port: self.port.clone().expect("port is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
-/// `update_operator_ip_socket` CPI accounts.
-pub struct UpdateOperatorIpSocketCpiAccounts<'a, 'b> {
+/// `update_operator_ip_port` CPI accounts.
+pub struct UpdateOperatorIpPortCpiAccounts<'a, 'b> {
     pub config: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub ncn_operator_account: &'b solana_program::account_info::AccountInfo<'a>,
@@ -207,8 +207,8 @@ pub struct UpdateOperatorIpSocketCpiAccounts<'a, 'b> {
     pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `update_operator_ip_socket` CPI instruction.
-pub struct UpdateOperatorIpSocketCpi<'a, 'b> {
+/// `update_operator_ip_port` CPI instruction.
+pub struct UpdateOperatorIpPortCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -222,14 +222,14 @@ pub struct UpdateOperatorIpSocketCpi<'a, 'b> {
 
     pub operator_admin: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: UpdateOperatorIpSocketInstructionArgs,
+    pub __args: UpdateOperatorIpPortInstructionArgs,
 }
 
-impl<'a, 'b> UpdateOperatorIpSocketCpi<'a, 'b> {
+impl<'a, 'b> UpdateOperatorIpPortCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: UpdateOperatorIpSocketCpiAccounts<'a, 'b>,
-        args: UpdateOperatorIpSocketInstructionArgs,
+        accounts: UpdateOperatorIpPortCpiAccounts<'a, 'b>,
+        args: UpdateOperatorIpPortInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
@@ -302,7 +302,7 @@ impl<'a, 'b> UpdateOperatorIpSocketCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = UpdateOperatorIpSocketInstructionData::new()
+        let mut data = UpdateOperatorIpPortInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
@@ -332,7 +332,7 @@ impl<'a, 'b> UpdateOperatorIpSocketCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `UpdateOperatorIpSocket` via CPI.
+/// Instruction builder for `UpdateOperatorIpPort` via CPI.
 ///
 /// ### Accounts:
 ///
@@ -342,13 +342,13 @@ impl<'a, 'b> UpdateOperatorIpSocketCpi<'a, 'b> {
 ///   3. `[]` operator
 ///   4. `[signer]` operator_admin
 #[derive(Clone, Debug)]
-pub struct UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
-    instruction: Box<UpdateOperatorIpSocketCpiBuilderInstruction<'a, 'b>>,
+pub struct UpdateOperatorIpPortCpiBuilder<'a, 'b> {
+    instruction: Box<UpdateOperatorIpPortCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
+impl<'a, 'b> UpdateOperatorIpPortCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(UpdateOperatorIpSocketCpiBuilderInstruction {
+        let instruction = Box::new(UpdateOperatorIpPortCpiBuilderInstruction {
             __program: program,
             config: None,
             ncn_operator_account: None,
@@ -356,7 +356,7 @@ impl<'a, 'b> UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
             operator: None,
             operator_admin: None,
             ip_address: None,
-            socket: None,
+            port: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -399,13 +399,13 @@ impl<'a, 'b> UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn ip_address(&mut self, ip_address: [u8; 16]) -> &mut Self {
+    pub fn ip_address(&mut self, ip_address: [u8; 4]) -> &mut Self {
         self.instruction.ip_address = Some(ip_address);
         self
     }
     #[inline(always)]
-    pub fn socket(&mut self, socket: [u8; 16]) -> &mut Self {
-        self.instruction.socket = Some(socket);
+    pub fn port(&mut self, port: u16) -> &mut Self {
+        self.instruction.port = Some(port);
         self
     }
     /// Add an additional account to the instruction.
@@ -449,15 +449,15 @@ impl<'a, 'b> UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = UpdateOperatorIpSocketInstructionArgs {
+        let args = UpdateOperatorIpPortInstructionArgs {
             ip_address: self
                 .instruction
                 .ip_address
                 .clone()
                 .expect("ip_address is not set"),
-            socket: self.instruction.socket.clone().expect("socket is not set"),
+            port: self.instruction.port.clone().expect("port is not set"),
         };
-        let instruction = UpdateOperatorIpSocketCpi {
+        let instruction = UpdateOperatorIpPortCpi {
             __program: self.instruction.__program,
 
             config: self.instruction.config.expect("config is not set"),
@@ -485,15 +485,15 @@ impl<'a, 'b> UpdateOperatorIpSocketCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct UpdateOperatorIpSocketCpiBuilderInstruction<'a, 'b> {
+struct UpdateOperatorIpPortCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     config: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn_operator_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ncn: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     operator_admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ip_address: Option<[u8; 16]>,
-    socket: Option<[u8; 16]>,
+    ip_address: Option<[u8; 4]>,
+    port: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

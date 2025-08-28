@@ -26,7 +26,7 @@ import {
   type ParsedRegisterVaultInstruction,
   type ParsedSnapshotVaultOperatorDelegationInstruction,
   type ParsedUpdateOperatorBN128KeysInstruction,
-  type ParsedUpdateOperatorIpSocketInstruction,
+  type ParsedUpdateOperatorIpPortInstruction,
 } from '../instructions';
 
 export const NCN_PROGRAM_PROGRAM_ADDRESS =
@@ -46,7 +46,7 @@ export enum NcnProgramInstruction {
   RegisterVault,
   RegisterOperator,
   UpdateOperatorBN128Keys,
-  UpdateOperatorIpSocket,
+  UpdateOperatorIpPort,
   InitializeVoteCounter,
   InitializeSnapshot,
   ReallocSnapshot,
@@ -77,7 +77,7 @@ export function identifyNcnProgramInstruction(
     return NcnProgramInstruction.UpdateOperatorBN128Keys;
   }
   if (containsBytes(data, getU8Encoder().encode(5), 0)) {
-    return NcnProgramInstruction.UpdateOperatorIpSocket;
+    return NcnProgramInstruction.UpdateOperatorIpPort;
   }
   if (containsBytes(data, getU8Encoder().encode(6), 0)) {
     return NcnProgramInstruction.InitializeVoteCounter;
@@ -127,8 +127,8 @@ export type ParsedNcnProgramInstruction<
       instructionType: NcnProgramInstruction.UpdateOperatorBN128Keys;
     } & ParsedUpdateOperatorBN128KeysInstruction<TProgram>)
   | ({
-      instructionType: NcnProgramInstruction.UpdateOperatorIpSocket;
-    } & ParsedUpdateOperatorIpSocketInstruction<TProgram>)
+      instructionType: NcnProgramInstruction.UpdateOperatorIpPort;
+    } & ParsedUpdateOperatorIpPortInstruction<TProgram>)
   | ({
       instructionType: NcnProgramInstruction.InitializeVoteCounter;
     } & ParsedInitializeVoteCounterInstruction<TProgram>)

@@ -2,7 +2,10 @@ use core::fmt;
 use std::mem::size_of;
 
 use bytemuck::{Pod, Zeroable};
-use jito_bytemuck::{types::PodU64, AccountDeserialize, Discriminator};
+use jito_bytemuck::{
+    types::{PodU16, PodU64},
+    AccountDeserialize, Discriminator,
+};
 use shank::ShankAccount;
 use solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
@@ -31,9 +34,9 @@ pub struct NCNOperatorAccount {
     /// The slot the operator was registered
     pub slot_registered: PodU64,
     /// The IP address of the operator (IPv4 format)
-    pub ip_address: [u8; 16],
-    /// The socket of the operator
-    pub socket: [u8; 16],
+    pub ip_address: [u8; 4],
+    /// The port of the operator
+    pub port: PodU16,
     /// The bump seed for the PDA
     pub bump: u8,
     /// Reserved for future use
@@ -67,8 +70,8 @@ impl NCNOperatorAccount {
             g2_pubkey: *g2_pubkey,
             ncn_operator_index: PodU64::from(ncn_operator_index),
             slot_registered: PodU64::from(slot_registered),
-            ip_address: [0; 16],
-            socket: [0; 16],
+            ip_address: [0; 4],
+            port: PodU16::from(0),
             bump,
             reserved: [0; 199],
         }
@@ -83,8 +86,8 @@ impl NCNOperatorAccount {
         g2_pubkey: &[u8; 64],
         ncn_operator_index: u64,
         slot_registered: u64,
-        ip_address: [u8; 16],
-        socket: [u8; 16],
+        ip_address: [u8; 4],
+        port: u16,
         bump: u8,
     ) {
         self.ncn = *ncn;
@@ -94,7 +97,7 @@ impl NCNOperatorAccount {
         self.ncn_operator_index = PodU64::from(ncn_operator_index);
         self.slot_registered = PodU64::from(slot_registered);
         self.ip_address = ip_address;
-        self.socket = socket;
+        self.port = PodU16::from(port);
         self.bump = bump;
         self.reserved = [0; 199];
     }
@@ -163,12 +166,12 @@ impl NCNOperatorAccount {
         self.slot_registered() == Self::EMPTY_SLOT_REGISTERED
     }
 
-    pub fn ip_address(&self) -> &[u8; 16] {
+    pub fn ip_address(&self) -> &[u8; 4] {
         &self.ip_address
     }
 
-    pub fn socket(&self) -> &[u8; 16] {
-        &self.socket
+    pub fn port(&self) -> u16 {
+        self.port.into()
     }
 
     /// Verify that the G1 and G2 keys are related by verifying the pairing
@@ -219,14 +222,14 @@ impl NCNOperatorAccount {
         Ok(())
     }
 
-    /// Update the IP address and socket for this ncn operator account
-    pub fn update_ip_socket(
+    /// Update the IP address and port for this ncn operator account
+    pub fn update_ip_port(
         &mut self,
-        new_ip_address: [u8; 16],
-        new_socket: [u8; 16],
+        new_ip_address: [u8; 4],
+        port: u16,
     ) -> Result<(), ProgramError> {
         self.ip_address = new_ip_address;
-        self.socket = new_socket;
+        self.port = port.into();
         Ok(())
     }
 }
@@ -266,6 +269,8 @@ impl fmt::Display for NCNOperatorAccount {
             "  Slot Registered:              {}",
             self.slot_registered()
         )?;
+        writeln!(f, "  IP Address:                   {:?}", self.ip_address())?;
+        writeln!(f, "  port:                       {:?}", self.port())?;
 
         Ok(())
     }
@@ -288,6 +293,8 @@ mod tests {
             + 64 // g2_pubkey
             + size_of::<PodU64>() // ncn_operator_index
             + size_of::<PodU64>() // slot_registered
+            + 4 // ip_address
+            + size_of::<PodU16>() // port
             + 1 // bump
             + 199; // reserved
 
@@ -410,7 +417,7 @@ mod tests {
 
     #[test]
     #[cfg(not(target_os = "solana"))]
-    fn test_update_ip_socket() {
+    fn test_update_ip_port() {
         let ncn = Pubkey::new_unique();
         let operator = Pubkey::new_unique();
 
@@ -430,18 +437,18 @@ mod tests {
         );
 
         // Test initial values (should be zeros)
-        assert_eq!(ncn_operator_account.ip_address(), &[0; 16]);
-        assert_eq!(ncn_operator_account.socket(), &[0; 16]);
+        assert_eq!(ncn_operator_account.ip_address(), &[0; 4]);
+        assert_eq!(ncn_operator_account.port(), 0);
 
-        // Test updating IP and socket
-        let new_ip_address = [192, 168, 1, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let new_socket = [80, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // Test updating IP and port
+        let new_ip_address = [192, 168, 1, 100];
+        let new_port = 3000;
 
         assert!(ncn_operator_account
-            .update_ip_socket(new_ip_address, new_socket)
+            .update_ip_port(new_ip_address, new_port)
             .is_ok());
 
         assert_eq!(ncn_operator_account.ip_address(), &new_ip_address);
-        assert_eq!(ncn_operator_account.socket(), &new_socket);
+        assert_eq!(ncn_operator_account.port(), new_port);
     }
 }

@@ -215,7 +215,7 @@ pub enum ProgramCommand {
         keys_file: String,
     },
 
-    UpdateOperatorIpSocket {
+    UpdateOperatorIpPort {
         #[arg(long, help = "Operator address")]
         operator: String,
         #[arg(
@@ -223,7 +223,7 @@ pub enum ProgramCommand {
             help = "IPv4 address in dotted decimal notation (e.g., 192.168.1.100)"
         )]
         ip_address: String,
-        #[arg(long, help = "Port number for the socket")]
+        #[arg(long, help = "Port number for the port")]
         port: u16,
     },
 

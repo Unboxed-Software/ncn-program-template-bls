@@ -12,6 +12,8 @@ import {
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   getU8Decoder,
   getU8Encoder,
   transformEncoder,
@@ -32,13 +34,13 @@ import {
 import { NCN_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const UPDATE_OPERATOR_IP_SOCKET_DISCRIMINATOR = 5;
+export const UPDATE_OPERATOR_IP_PORT_DISCRIMINATOR = 5;
 
-export function getUpdateOperatorIpSocketDiscriminatorBytes() {
-  return getU8Encoder().encode(UPDATE_OPERATOR_IP_SOCKET_DISCRIMINATOR);
+export function getUpdateOperatorIpPortDiscriminatorBytes() {
+  return getU8Encoder().encode(UPDATE_OPERATOR_IP_PORT_DISCRIMINATOR);
 }
 
-export type UpdateOperatorIpSocketInstruction<
+export type UpdateOperatorIpPortInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountConfig extends string | IAccountMeta<string> = string,
   TAccountNcnOperatorAccount extends string | IAccountMeta<string> = string,
@@ -68,50 +70,50 @@ export type UpdateOperatorIpSocketInstruction<
     ]
   >;
 
-export type UpdateOperatorIpSocketInstructionData = {
+export type UpdateOperatorIpPortInstructionData = {
   discriminator: number;
   ipAddress: Array<number>;
-  socket: Array<number>;
+  port: number;
 };
 
-export type UpdateOperatorIpSocketInstructionDataArgs = {
+export type UpdateOperatorIpPortInstructionDataArgs = {
   ipAddress: Array<number>;
-  socket: Array<number>;
+  port: number;
 };
 
-export function getUpdateOperatorIpSocketInstructionDataEncoder(): Encoder<UpdateOperatorIpSocketInstructionDataArgs> {
+export function getUpdateOperatorIpPortInstructionDataEncoder(): Encoder<UpdateOperatorIpPortInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', getU8Encoder()],
-      ['ipAddress', getArrayEncoder(getU8Encoder(), { size: 16 })],
-      ['socket', getArrayEncoder(getU8Encoder(), { size: 16 })],
+      ['ipAddress', getArrayEncoder(getU8Encoder(), { size: 4 })],
+      ['port', getU16Encoder()],
     ]),
     (value) => ({
       ...value,
-      discriminator: UPDATE_OPERATOR_IP_SOCKET_DISCRIMINATOR,
+      discriminator: UPDATE_OPERATOR_IP_PORT_DISCRIMINATOR,
     })
   );
 }
 
-export function getUpdateOperatorIpSocketInstructionDataDecoder(): Decoder<UpdateOperatorIpSocketInstructionData> {
+export function getUpdateOperatorIpPortInstructionDataDecoder(): Decoder<UpdateOperatorIpPortInstructionData> {
   return getStructDecoder([
     ['discriminator', getU8Decoder()],
-    ['ipAddress', getArrayDecoder(getU8Decoder(), { size: 16 })],
-    ['socket', getArrayDecoder(getU8Decoder(), { size: 16 })],
+    ['ipAddress', getArrayDecoder(getU8Decoder(), { size: 4 })],
+    ['port', getU16Decoder()],
   ]);
 }
 
-export function getUpdateOperatorIpSocketInstructionDataCodec(): Codec<
-  UpdateOperatorIpSocketInstructionDataArgs,
-  UpdateOperatorIpSocketInstructionData
+export function getUpdateOperatorIpPortInstructionDataCodec(): Codec<
+  UpdateOperatorIpPortInstructionDataArgs,
+  UpdateOperatorIpPortInstructionData
 > {
   return combineCodec(
-    getUpdateOperatorIpSocketInstructionDataEncoder(),
-    getUpdateOperatorIpSocketInstructionDataDecoder()
+    getUpdateOperatorIpPortInstructionDataEncoder(),
+    getUpdateOperatorIpPortInstructionDataDecoder()
   );
 }
 
-export type UpdateOperatorIpSocketInput<
+export type UpdateOperatorIpPortInput<
   TAccountConfig extends string = string,
   TAccountNcnOperatorAccount extends string = string,
   TAccountNcn extends string = string,
@@ -123,11 +125,11 @@ export type UpdateOperatorIpSocketInput<
   ncn: Address<TAccountNcn>;
   operator: Address<TAccountOperator>;
   operatorAdmin: TransactionSigner<TAccountOperatorAdmin>;
-  ipAddress: UpdateOperatorIpSocketInstructionDataArgs['ipAddress'];
-  socket: UpdateOperatorIpSocketInstructionDataArgs['socket'];
+  ipAddress: UpdateOperatorIpPortInstructionDataArgs['ipAddress'];
+  port: UpdateOperatorIpPortInstructionDataArgs['port'];
 };
 
-export function getUpdateOperatorIpSocketInstruction<
+export function getUpdateOperatorIpPortInstruction<
   TAccountConfig extends string,
   TAccountNcnOperatorAccount extends string,
   TAccountNcn extends string,
@@ -135,7 +137,7 @@ export function getUpdateOperatorIpSocketInstruction<
   TAccountOperatorAdmin extends string,
   TProgramAddress extends Address = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
 >(
-  input: UpdateOperatorIpSocketInput<
+  input: UpdateOperatorIpPortInput<
     TAccountConfig,
     TAccountNcnOperatorAccount,
     TAccountNcn,
@@ -143,7 +145,7 @@ export function getUpdateOperatorIpSocketInstruction<
     TAccountOperatorAdmin
   >,
   config?: { programAddress?: TProgramAddress }
-): UpdateOperatorIpSocketInstruction<
+): UpdateOperatorIpPortInstruction<
   TProgramAddress,
   TAccountConfig,
   TAccountNcnOperatorAccount,
@@ -183,10 +185,10 @@ export function getUpdateOperatorIpSocketInstruction<
       getAccountMeta(accounts.operatorAdmin),
     ],
     programAddress,
-    data: getUpdateOperatorIpSocketInstructionDataEncoder().encode(
-      args as UpdateOperatorIpSocketInstructionDataArgs
+    data: getUpdateOperatorIpPortInstructionDataEncoder().encode(
+      args as UpdateOperatorIpPortInstructionDataArgs
     ),
-  } as UpdateOperatorIpSocketInstruction<
+  } as UpdateOperatorIpPortInstruction<
     TProgramAddress,
     TAccountConfig,
     TAccountNcnOperatorAccount,
@@ -198,7 +200,7 @@ export function getUpdateOperatorIpSocketInstruction<
   return instruction;
 }
 
-export type ParsedUpdateOperatorIpSocketInstruction<
+export type ParsedUpdateOperatorIpPortInstruction<
   TProgram extends string = typeof NCN_PROGRAM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
@@ -210,17 +212,17 @@ export type ParsedUpdateOperatorIpSocketInstruction<
     operator: TAccountMetas[3];
     operatorAdmin: TAccountMetas[4];
   };
-  data: UpdateOperatorIpSocketInstructionData;
+  data: UpdateOperatorIpPortInstructionData;
 };
 
-export function parseUpdateOperatorIpSocketInstruction<
+export function parseUpdateOperatorIpPortInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedUpdateOperatorIpSocketInstruction<TProgram, TAccountMetas> {
+): ParsedUpdateOperatorIpPortInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -240,7 +242,7 @@ export function parseUpdateOperatorIpSocketInstruction<
       operator: getNextAccount(),
       operatorAdmin: getNextAccount(),
     },
-    data: getUpdateOperatorIpSocketInstructionDataDecoder().decode(
+    data: getUpdateOperatorIpPortInstructionDataDecoder().decode(
       instruction.data
     ),
   };

@@ -34,7 +34,7 @@ use ncn_program_client::{
         CastVoteBuilder, InitializeConfigBuilder as InitializeNCNProgramConfigBuilder,
         InitializeSnapshotBuilder, InitializeVaultRegistryBuilder, InitializeVoteCounterBuilder,
         ReallocSnapshotBuilder, RegisterOperatorBuilder, RegisterVaultBuilder,
-        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorIpSocketBuilder,
+        SnapshotVaultOperatorDelegationBuilder, UpdateOperatorIpPortBuilder,
     },
     types::ConfigAdminRole,
 };
@@ -479,7 +479,7 @@ pub async fn register_operator(
     Ok(())
 }
 
-pub async fn update_operator_ip_socket(
+pub async fn update_operator_ip_port(
     handler: &CliHandler,
     operator: &Pubkey,
     ip_address: &str,
@@ -491,33 +491,27 @@ pub async fn update_operator_ip_socket(
     // Parse IP address from string to bytes
     let ip_bytes = parse_ip_address(ip_address)?;
 
-    // Convert port to bytes (little-endian)
-    let mut socket_bytes = [0u8; 16];
-    let port_bytes = port.to_le_bytes();
-    socket_bytes[0] = port_bytes[0];
-    socket_bytes[1] = port_bytes[1];
-
     let (config, _, _) = NCNProgramConfig::find_program_address(&handler.ncn_program_id, &ncn);
     let (ncn_operator_account, _, _) =
         NCNOperatorAccount::find_program_address(&handler.ncn_program_id, &ncn, operator);
 
-    let update_operator_ip_socket_ix = UpdateOperatorIpSocketBuilder::new()
+    let update_operator_ip_port_ix = UpdateOperatorIpPortBuilder::new()
         .config(config)
         .ncn_operator_account(ncn_operator_account)
         .ncn(ncn)
         .operator(*operator)
         .operator_admin(keypair.pubkey())
         .ip_address(ip_bytes)
-        .socket(socket_bytes)
+        .port(port)
         .instruction();
 
     let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(400_000);
 
     send_and_log_transaction(
         handler,
-        &[update_operator_ip_socket_ix, compute_budget_ix],
+        &[update_operator_ip_port_ix, compute_budget_ix],
         &[],
-        "Updated Operator IP and Socket",
+        "Updated Operator IP and Port",
         &[
             format!("NCN: {:?}", ncn),
             format!("Operator: {:?}", operator),
@@ -531,7 +525,7 @@ pub async fn update_operator_ip_socket(
 }
 
 /// Parse IPv4 address from string to 16-byte array (IPv4-mapped IPv6 format)
-fn parse_ip_address(ip_str: &str) -> Result<[u8; 16]> {
+fn parse_ip_address(ip_str: &str) -> Result<[u8; 4]> {
     let parts: Vec<&str> = ip_str.split('.').collect();
     if parts.len() != 4 {
         return Err(anyhow!(
@@ -539,16 +533,13 @@ fn parse_ip_address(ip_str: &str) -> Result<[u8; 16]> {
         ));
     }
 
-    let mut ip_bytes = [0u8; 16];
-    // IPv4-mapped IPv6 format: ::ffff:a.b.c.d
-    ip_bytes[10] = 0xff;
-    ip_bytes[11] = 0xff;
+    let mut ip_bytes = [0u8; 4];
 
     for (i, part) in parts.iter().enumerate() {
         let octet: u8 = part
             .parse()
             .map_err(|_| anyhow!("Invalid IPv4 octet: {}", part))?;
-        ip_bytes[12 + i] = octet;
+        ip_bytes[i] = octet;
     }
 
     Ok(ip_bytes)

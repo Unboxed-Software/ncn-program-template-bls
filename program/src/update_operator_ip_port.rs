@@ -8,11 +8,11 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-/// Updates an operator's IP address and socket in their individual ncn operator account.
+/// Updates an operator's IP address and port in their individual ncn operator account.
 ///
 /// ### Parameters:
 /// - `ip_address`: New IP address (IPv4 format, 16 bytes)
-/// - `socket`: New socket (16 bytes)
+/// - `port`: New port (16 bytes)
 ///
 /// ### Accounts:
 /// 1. `[]` config: NCN configuration account
@@ -20,11 +20,11 @@ use solana_program::{
 /// 3. `[]` ncn: The NCN account
 /// 4. `[]` operator: The operator to update
 /// 5. `[signer]` operator_admin: The operator admin that must sign
-pub fn process_update_operator_ip_socket(
+pub fn process_update_operator_ip_port(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    ip_address: [u8; 16],
-    socket: [u8; 16],
+    ip_address: [u8; 4],
+    port: u16,
 ) -> ProgramResult {
     let [config, ncn_operator_account, ncn, operator, operator_admin] = accounts else {
         msg!("Error: Not enough account keys provided");
@@ -88,11 +88,11 @@ pub fn process_update_operator_ip_socket(
     let ncn_operator_account_account =
         NCNOperatorAccount::try_from_slice_unchecked_mut(&mut ncn_operator_account_data)?;
 
-    // Update the operator's IP address and socket
-    ncn_operator_account_account.update_ip_socket(ip_address, socket)?;
+    // Update the operator's IP address and port
+    ncn_operator_account_account.update_ip_port(ip_address, port)?;
 
     msg!(
-        "Operator IP address and socket updated successfully for operator {}",
+        "Operator IP address and port updated successfully for operator {}",
         operator.key
     );
 

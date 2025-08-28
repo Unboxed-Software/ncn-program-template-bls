@@ -295,7 +295,7 @@
       }
     },
     {
-      "name": "UpdateOperatorIpSocket",
+      "name": "UpdateOperatorIpPort",
       "accounts": [
         {
           "name": "config",
@@ -329,18 +329,13 @@
           "type": {
             "array": [
               "u8",
-              16
+              4
             ]
           }
         },
         {
-          "name": "socket",
-          "type": {
-            "array": [
-              "u8",
-              16
-            ]
-          }
+          "name": "port",
+          "type": "u16"
         }
       ],
       "discriminant": {
@@ -800,17 +795,14 @@
             "type": {
               "array": [
                 "u8",
-                16
+                4
               ]
             }
           },
           {
-            "name": "socket",
+            "name": "port",
             "type": {
-              "array": [
-                "u8",
-                16
-              ]
+              "defined": "PodU16"
             }
           },
           {

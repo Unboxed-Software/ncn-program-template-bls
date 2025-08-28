@@ -6,7 +6,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn test_update_operator_ip_socket_success() -> TestResult<()> {
+    async fn test_update_operator_ip_port_success() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
 
         let mut restaking_program_client = fixture.restaking_program_client();
@@ -60,24 +60,24 @@ mod tests {
             )
             .await?;
 
-        // Verify initial IP address and socket are zeros
+        // Verify initial IP address and port are zeros
         let ncn_operator_account = ncn_program_client
             .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
-        assert_eq!(ncn_operator_account.ip_address(), &[0u8; 16]);
-        assert_eq!(ncn_operator_account.socket(), &[0u8; 16]);
+        assert_eq!(ncn_operator_account.ip_address(), &[0u8; 4]);
+        assert_eq!(ncn_operator_account.port(), 0);
 
-        // Update IP address and socket
-        let new_ip_address = [192, 168, 1, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let new_socket = [80, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // Update IP address and port
+        let new_ip_address = [192, 168, 1, 100];
+        let new_port = 8080;
 
         ncn_program_client
-            .do_update_operator_ip_socket(
+            .do_update_operator_ip_port(
                 ncn_root.ncn_pubkey,
                 operator_root.operator_pubkey,
                 &operator_root.operator_admin,
                 new_ip_address,
-                new_socket,
+                new_port,
             )
             .await?;
 
@@ -86,13 +86,13 @@ mod tests {
             .get_ncn_operator_account(ncn_root.ncn_pubkey, operator_root.operator_pubkey)
             .await?;
         assert_eq!(updated_ncn_operator_account.ip_address(), &new_ip_address);
-        assert_eq!(updated_ncn_operator_account.socket(), &new_socket);
+        assert_eq!(updated_ncn_operator_account.port(), new_port);
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_update_operator_ip_socket_unauthorized() -> TestResult<()> {
+    async fn test_update_operator_ip_port_unauthorized() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
 
         let mut restaking_program_client = fixture.restaking_program_client();
@@ -151,17 +151,17 @@ mod tests {
             .do_initialize_operator(Some(200))
             .await?;
 
-        // Try to update IP address and socket with unauthorized operator admin
-        let new_ip_address = [192, 168, 1, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let new_socket = [80, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // Try to update IP address and port with unauthorized operator admin
+        let new_ip_address = [192, 168, 1, 100];
+        let new_port = 8080;
 
         let result = ncn_program_client
-            .do_update_operator_ip_socket(
+            .do_update_operator_ip_port(
                 ncn_root.ncn_pubkey,
                 operator_root.operator_pubkey,
                 &unauthorized_operator_root.operator_admin, // Wrong admin
                 new_ip_address,
-                new_socket,
+                new_port,
             )
             .await;
 
@@ -172,7 +172,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_operator_ip_socket_operator_not_registered() -> TestResult<()> {
+    async fn test_update_operator_ip_port_operator_not_registered() -> TestResult<()> {
         let mut fixture = TestBuilder::new().await;
 
         let mut restaking_program_client = fixture.restaking_program_client();
@@ -190,17 +190,17 @@ mod tests {
             .do_initialize_operator(Some(200))
             .await?;
 
-        // Try to update IP address and socket for unregistered operator
-        let new_ip_address = [192, 168, 1, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let new_socket = [80, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // Try to update IP address and port for unregistered operator
+        let new_ip_address = [192, 168, 1, 100];
+        let new_port = 8080;
 
         let result = ncn_program_client
-            .do_update_operator_ip_socket(
+            .do_update_operator_ip_port(
                 ncn_root.ncn_pubkey,
                 operator_root.operator_pubkey,
                 &operator_root.operator_admin,
                 new_ip_address,
-                new_socket,
+                new_port,
             )
             .await;
 

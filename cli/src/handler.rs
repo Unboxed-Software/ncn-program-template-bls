@@ -15,7 +15,7 @@ use crate::{
         admin_set_parameters, crank_register_vaults, crank_snapshot, crank_snapshot_unupdated,
         create_snapshot, create_vault_registry, create_vote_counter, full_vault_update,
         register_operator, register_vault, snapshot_vault_operator_delegation,
-        update_operator_ip_socket,
+        update_operator_ip_port,
     },
     keeper::keeper_loop::startup_ncn_keeper,
 };
@@ -319,7 +319,7 @@ impl CliHandler {
                 register_operator(self, &operator, g1_array, g2_array, sig_array).await
             }
 
-            ProgramCommand::UpdateOperatorIpSocket {
+            ProgramCommand::UpdateOperatorIpPort {
                 operator,
                 ip_address,
                 port,
@@ -327,7 +327,7 @@ impl CliHandler {
                 let operator = Pubkey::from_str(&operator)
                     .map_err(|e| anyhow!("Error parsing operator: {}", e))?;
 
-                update_operator_ip_socket(self, &operator, &ip_address, port).await
+                update_operator_ip_port(self, &operator, &ip_address, port).await
             }
 
             ProgramCommand::CreateSnapshot {} => create_snapshot(self, self.epoch).await,
@@ -476,6 +476,7 @@ impl CliHandler {
                     info!("  NCN Operator Index: {}", account.ncn_operator_index());
                     info!("  Slot Registered: {}", account.slot_registered());
                     info!("  Bump: {}", account.bump);
+                    info!("op: {}", account);
                     info!("---");
                 }
                 Ok(())

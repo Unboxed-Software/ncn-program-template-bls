@@ -14,4 +14,4 @@ mod set_new_admin;
 mod simulation_test;
 mod snapshot_vault_operator_delegation;
 mod update_operator_bn128_keys;
-mod update_operator_ip_socket;
+mod update_operator_ip_port;
