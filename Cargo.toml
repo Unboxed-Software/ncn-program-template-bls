@@ -1,11 +1,12 @@
 [workspace]
 members = [
-    "cli",
-    "clients/rust/ncn_program",
-    "core",
-    "integration_tests",
-    "program",
-    "shank_cli",
+  "cli",
+  "clients/rust/ncn_program",
+  "core",
+  "integration_tests",
+  "program",
+  "shank_cli",
+  "commonware-avs-router-solana",
 ]
 
 resolver = "2"
@@ -16,7 +17,7 @@ authors = ["Jito Network Maintainers <support@jito.network>"]
 repository = "https://github.com/Unboxed-Software/ncn-program-template"
 homepage = "https://jito.network/"
 license = "MIT OR Apache-2.0"
-edition = "2021"
+edition = "2024"
 readme = "README.md"
 
 [workspace.dependencies]
